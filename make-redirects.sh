@@ -9,8 +9,8 @@ declare -A MAP=(
   [docs]="https://docs.hivecommons.dev"
   [code]="https://github.com/hivecommons"
   [github]="https://github.com/hivecommons"
-  [joinus]="https://github.com/hivecommons"
-  [join_us]="https://github.com/hivecommons"
+  [joinus]="https://groups.google.com/g/hivecommons-dev"
+  [join_us]="https://groups.google.com/g/hivecommons-dev"
 )
 for path in "${!MAP[@]}"; do
   url="${MAP[$path]}"
