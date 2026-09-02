@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hive Commons</title>
+<meta name="description" content="Hive Commons — governed, audited AI-agent fleet orchestration. Coming soon.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+  :root{
+    --bg:#14110b; --bg-2:#1b170f; --ink:#efe7d7; --ink-2:#b9ad93; --ink-3:#7d7460;
+    --honey:#e0a33a; --honey-deep:#b8791a; --line:#332c1e;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    display:grid; place-items:center; padding:2rem;
+    background-image:radial-gradient(1100px 600px at 70% -10%, #241d10 0%, transparent 60%);
+  }
+  main{max-width:34rem; width:100%; display:flex; flex-direction:column; gap:1.6rem}
+  .mark{width:56px; height:62px; color:var(--honey)}
+  h1{
+    font-family:"Fraunces",Georgia,serif; font-weight:640; font-size:clamp(2.4rem,7vw,3.4rem);
+    line-height:1.05; margin:0; letter-spacing:-.01em; text-wrap:balance;
+  }
+  h1 .amp{color:var(--honey)}
+  .tag{
+    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.8rem; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--honey); margin:0;
+  }
+  p.lede{margin:0; font-size:1.05rem; line-height:1.65; color:var(--ink-2); max-width:30rem}
+  .cells{display:flex; gap:.5rem; align-items:center}
+  .cells span{width:11px;height:12px;background:var(--line);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+  .cells span:nth-child(1){background:var(--honey)}
+  .cells span:nth-child(2){background:var(--honey-deep)}
+  .links{display:flex; gap:1.4rem; flex-wrap:wrap; align-items:center; border-top:1px solid var(--line); padding-top:1.4rem}
+  a{color:var(--ink); text-decoration:none; font-size:.95rem; border-bottom:1px solid var(--honey-deep); padding-bottom:1px}
+  a:hover{color:var(--honey)}
+  a:focus-visible{outline:2px solid var(--honey); outline-offset:3px; border-bottom-color:transparent}
+  .foot{color:var(--ink-3); font-size:.8rem}
+  @media (prefers-reduced-motion:no-preference){
+    main{animation:rise .6s ease-out both}
+    @keyframes rise{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:none}}
+  }
+</style>
+</head>
+<body>
+<main>
+  <svg class="mark" viewBox="0 0 100 110" fill="none" aria-hidden="true">
+    <path d="M50 4 92 27v46L50 96 8 73V27L50 4Z" stroke="currentColor" stroke-width="6"/>
+    <path d="M50 34 68 44v20L50 74 32 64V44l18-10Z" fill="currentColor"/>
+  </svg>
+  <div>
+    <p class="tag">hivecommons.dev</p>
+    <h1>Hive Commons</h1>
+  </div>
+  <p class="lede">An open community for governed, audited AI-agent fleet orchestration — agent swarms that ship real software under accountable human maintainers.</p>
+  <div class="cells" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+  <p class="lede">The full site is on its way. The code is already working in the open:</p>
+  <div class="links">
+    <a href="https://github.com/hivecommons">github.com/hivecommons</a>
+    <a href="https://github.com/kubestellar/hive">kubestellar/hive</a>
+  </div>
+  <p class="foot">© 2026 Hive Commons maintainers · Apache-2.0</p>
+</main>
+</body>
+</html>
