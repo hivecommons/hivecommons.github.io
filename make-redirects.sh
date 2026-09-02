@@ -5,6 +5,7 @@ set -euo pipefail
 declare -A MAP=(
   [tv]="https://youtube.com/@hivecommons"
   [youtube]="https://youtube.com/@hivecommons"
+  [discord]="https://discord.gg/x5SxvPeVJ"
   [doc]="https://docs.hivecommons.dev"
   [docs]="https://docs.hivecommons.dev"
   [code]="https://github.com/hivecommons"
