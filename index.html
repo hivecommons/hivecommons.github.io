@@ -36,7 +36,7 @@
     display:grid; place-items:center; padding:2rem;
     background-image:radial-gradient(1100px 600px at 70% -10%, #241d10 0%, transparent 60%);
   }
-  main{max-width:34rem; width:100%; display:flex; flex-direction:column; gap:1.6rem}
+  main{max-width:40rem; width:100%; display:flex; flex-direction:column; gap:1.6rem}
   .mark{width:140px; height:140px; display:block}
   h1{
     font-family:"Fraunces",Georgia,serif; font-weight:640; font-size:clamp(2.4rem,7vw,3.4rem);
@@ -57,6 +57,24 @@
   a:hover{color:var(--honey)}
   a:focus-visible{outline:2px solid var(--honey); outline-offset:3px; border-bottom-color:transparent}
   .foot{color:var(--ink-3); font-size:.8rem}
+  h2{
+    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.8rem; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--honey); margin:0; font-weight:400;
+  }
+  .projects{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(15rem,1fr)); gap:.75rem;
+    list-style:none; margin:0; padding:0;
+  }
+  .projects a{
+    display:flex; gap:.8rem; align-items:flex-start; height:100%;
+    padding:.9rem 1rem; border:1px solid var(--line); border-radius:.6rem; background:var(--bg-2);
+    text-decoration:none; border-bottom:1px solid var(--line); color:inherit;
+    transition:border-color .15s ease, transform .15s ease;
+  }
+  .projects a:hover{border-color:var(--honey-deep); transform:translateY(-1px); color:inherit}
+  .projects svg{flex:none; width:26px; height:26px; margin-top:.1rem; color:var(--honey)}
+  .projects b{display:block; font-weight:500; color:var(--ink); font-size:.95rem}
+  .projects small{display:block; color:var(--ink-2); font-size:.82rem; line-height:1.45; margin-top:.15rem}
   @media (prefers-reduced-motion:no-preference){
     main{animation:rise .6s ease-out both}
     @keyframes rise{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:none}}
@@ -72,11 +90,41 @@
   </div>
   <p class="lede">An open community for governed, audited AI-agent fleet orchestration — agent swarms that ship real software under accountable human maintainers.</p>
   <div class="cells" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-  <p class="lede">The full site is on its way. The documentation and code are already live:</p>
+  <p class="lede">The full site is on its way. The documentation and code are already live — pick a project below to jump straight to its repo.</p>
   <div class="links">
     <a href="https://docs.hivecommons.dev">docs.hivecommons.dev</a>
     <a href="https://github.com/hivecommons">github.com/hivecommons</a>
   </div>
+  <h2>Projects</h2>
+  <ul class="projects">
+    <li><a href="https://github.com/hivecommons/hive">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9z"/><path d="M12 2v18M4 6.5l8 4.5 8-4.5"/></svg>
+      <span><b>hive</b><small>Governed, audited orchestration of AI-agent fleets that triage, fix, review, and ship — under accountable human maintainers.</small></span></a></li>
+    <li><a href="https://github.com/hivecommons/hotshot">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 8a2 2 0 012-2h2l2-2h6l2 2h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      <span><b>hotshot</b><small>Take a screenshot and it lands in your terminal — straight into Claude Code, Copilot CLI, and friends.</small></span></a></li>
+    <li><a href="https://github.com/hivecommons/pluk">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg>
+      <span><b>pluk</b><small>Lightweight pub-sub event streaming for tmux sessions running AI coding agents.</small></span></a></li>
+    <li><a href="https://github.com/hivecommons/promptargs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 4H6a2 2 0 00-2 2v4a2 2 0 01-2 2 2 2 0 012 2v4a2 2 0 002 2h2M16 4h2a2 2 0 012 2v4a2 2 0 002 2 2 2 0 00-2 2v4a2 2 0 01-2 2h-2"/></svg>
+      <span><b>promptargs</b><small>Template expansion for AI prompts — variable substitution for Claude Code, Copilot, Goose, Bob, and more.</small></span></a></li>
+    <li><a href="https://github.com/hivecommons/rationguard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 7.8-8 9-4.6-1.2-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span><b>rationguard</b><small>Detect and rebut rationalization patterns in AI-agent output before they reach your codebase.</small></span></a></li>
+    <li><a href="https://github.com/hivecommons/dibs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 13h6M9 17h6"/></svg>
+      <span><b>dibs</b><small>Your idea, your credit, their code — the missing contributor layer for the AI-agent era.</small></span></a></li>
+    <li><a href="https://github.com/hivecommons/homebrew-hive">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 9h10v9a3 3 0 01-3 3H9a3 3 0 01-3-3z"/><path d="M16 11h2a2 2 0 010 4h-2M7 9a2.5 2.5 0 015-1 2.5 2.5 0 014 1"/></svg>
+      <span><b>homebrew-hive</b><small>Homebrew tap — one-command install of the Hive contribute app.</small></span></a></li>
+    <li><a href="https://github.com/hivecommons/docs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 5a2 2 0 012-2h5v18H6a2 2 0 01-2-2zM13 3h5a2 2 0 012 2v14a2 2 0 01-2 2h-5z"/></svg>
+      <span><b>docs</b><small>Source for docs.hivecommons.dev — guides and reference for every project here.</small></span></a></li>
+    <li><a href="https://github.com/hivecommons/infra">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>
+      <span><b>infra</b><small>Shared CI workflows, Prow configuration, and org automation for Hive Commons.</small></span></a></li>
+  </ul>
   <p class="lede">Community — biweekly meeting, Thursdays 10:00 AM ET:</p>
   <div class="links">
     <a href="/join">join the mailing list</a>
