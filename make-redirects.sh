@@ -23,6 +23,7 @@ for path in "${!MAP[@]}"; do
 <meta charset="utf-8">
 <title>Hive Commons — redirecting…</title>
 <meta http-equiv="refresh" content="0; url=$url">
+<meta name="robots" content="noindex">
 <link rel="canonical" href="$url">
 <script>window.location.replace("$url");</script>
 </head>
