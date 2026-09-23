@@ -466,14 +466,18 @@ h1 {
 .car-btn:hover { border-color: var(--honey-deep); color: var(--honey); }
 .car-btn svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-.carousel { position: relative; }
+.carousel {
+  --car-inset: max(var(--gutter), calc((100% - var(--wrap)) / 2));
+  position: relative;
+  overflow: hidden;
+  padding-inline: var(--car-inset);
+}
 .track {
   list-style: none; margin: 0;
   display: flex; gap: 1rem;
   overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
-  scroll-padding-inline: max(var(--gutter), calc((100% - var(--wrap)) / 2));
-  padding-inline: max(var(--gutter), calc((100% - var(--wrap)) / 2));
-  padding-block: .5rem 1rem;
+  scroll-padding-inline: 0;
+  padding: .5rem 0 1rem;
   scrollbar-width: thin; scrollbar-color: var(--line) transparent;
 }
 .track:focus-visible { outline-offset: -2px; }
@@ -483,10 +487,16 @@ h1 {
   padding: 1.4rem 1.4rem 1.3rem;
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg);
   text-decoration: none;
-  transition: border-color .15s ease;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background-color .2s ease;
 }
 .card:hover { border-color: var(--honey-deep); }
 .card-flagship { background: linear-gradient(160deg, var(--bg-3), var(--bg)); border-color: var(--honey-deep); }
+.slide.is-current .card {
+  transform: translateY(-4px);
+  border-color: var(--honey);
+  background: linear-gradient(160deg, var(--bg-3), var(--bg));
+  box-shadow: 0 .85rem 1.7rem color-mix(in srgb, var(--honey) 15%, transparent);
+}
 .card-icon { width: 2.2rem; height: 2.2rem; fill: none; stroke: var(--honey); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .card h3 { margin-top: 1rem; font-size: 1.35rem; display: flex; flex-wrap: wrap; gap: .5rem; align-items: baseline; }
 .card p { margin-top: .5rem; color: var(--ink-2); font-size: .95rem; flex: 1; }
@@ -505,6 +515,10 @@ h1 {
 .family-note { margin-top: 1.5rem; color: var(--ink-3); font-size: .9rem; }
 .family-note a { color: var(--ink-2); text-decoration-color: var(--honey-deep); text-underline-offset: 3px; }
 .family-note a:hover { color: var(--honey); }
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+  .slide.is-current .card { transform: none; }
+}
 
 /* ---------- how it fits ---------- */
 .fit { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: clamp(1.5rem, 3vw, 2.5rem); align-items: start; }

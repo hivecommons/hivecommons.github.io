@@ -876,6 +876,7 @@
   var current = 0;
   var timer = null;
   var paused = false;
+  var programmaticScroll = false;
 
   // Dot indicators
   var dots = slides.map(function (slide, i) {
@@ -894,19 +895,49 @@
 
   function scrollBehavior() { return reduceMotion.matches ? 'auto' : 'smooth'; }
 
-  function goTo(i, focusCard) {
+  function trackInset() {
+    return parseFloat(window.getComputedStyle(track).paddingLeft) || 0;
+  }
+
+  function slideLeft(slide) {
+    return slide.offsetLeft - track.offsetLeft - trackInset();
+  }
+
+  function interactiveTarget(slide) {
+    return slide.querySelector('a, button');
+  }
+
+  function setCurrent(i, options) {
+    options = options || {};
     current = (i + slides.length) % slides.length;
-    var slide = slides[current];
-    var left = slide.offsetLeft - track.offsetLeft;
-    track.scrollTo({ left: left, behavior: scrollBehavior() });
     paint();
-    if (focusCard) {
-      var card = slide.querySelector('a');
-      if (card) card.focus({ preventScroll: true });
+    if (options.scroll) scrollToCurrent();
+    if (options.focusCard) {
+      var target = interactiveTarget(slides[current]);
+      if (target) {
+        try { target.focus({ preventScroll: true }); }
+        catch (e) { target.focus(); }
+      }
     }
   }
 
+  function scrollToCurrent() {
+    var slide = slides[current];
+    programmaticScroll = true;
+    track.scrollTo({ left: slideLeft(slide), behavior: scrollBehavior() });
+    window.setTimeout(function () { programmaticScroll = false; syncFromScroll(); }, reduceMotion.matches ? 80 : 450);
+  }
+
+  function goTo(i, focusCard) {
+    setCurrent(i, { scroll: true, focusCard: focusCard });
+  }
+
   function paint() {
+    slides.forEach(function (s, i) {
+      var on = i === current;
+      s.classList.toggle('is-current', on);
+      s.setAttribute('aria-current', on ? 'true' : 'false');
+    });
     dots.forEach(function (d, i) {
       var on = i === current;
       d.setAttribute('aria-selected', on ? 'true' : 'false');
@@ -914,20 +945,48 @@
     });
   }
 
-  // Keep `current` in sync with manual scrolling and snap
+  function nearestSlide() {
+    var best = 0, bestDist = Infinity;
+    slides.forEach(function (s, i) {
+      var d = Math.abs(slideLeft(s) - track.scrollLeft);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+  }
+
+  function syncFromScroll() {
+    setCurrent(nearestSlide());
+  }
+
+  // Keep `current` in sync with manual scrolling and snap.
   var syncTimer = null;
   track.addEventListener('scroll', function () {
     clearTimeout(syncTimer);
     syncTimer = setTimeout(function () {
-      var best = 0, bestDist = Infinity;
-      slides.forEach(function (s, i) {
-        var d = Math.abs((s.offsetLeft - track.offsetLeft) - track.scrollLeft);
-        if (d < bestDist) { bestDist = d; best = i; }
-      });
-      current = best;
-      paint();
+      if (!programmaticScroll) syncFromScroll();
     }, 80);
   }, { passive: true });
+  if ('onscrollend' in window) {
+    track.addEventListener('scrollend', function () {
+      programmaticScroll = false;
+      syncFromScroll();
+    });
+  }
+  if ('IntersectionObserver' in window) {
+    var observer = new IntersectionObserver(function (entries) {
+      if (programmaticScroll) return;
+      var best = null;
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        if (!best || entry.intersectionRatio > best.intersectionRatio) best = entry;
+      });
+      if (best) {
+        var index = slides.indexOf(best.target);
+        if (index !== -1) setCurrent(index);
+      }
+    }, { root: track, threshold: [.55, .7, .85, 1] });
+    slides.forEach(function (slide) { observer.observe(slide); });
+  }
 
   var prev = document.querySelector('[data-car-prev]');
   var next = document.querySelector('[data-car-next]');
@@ -953,23 +1012,32 @@
   });
 
   // Gentle auto-advance; pauses on hover and focus, off under reduced motion
-  function tick() { if (!paused && !document.hidden) goTo(current + 1, false); }
+  function canAutoAdvance() {
+    return !reduceMotion.matches && !paused && !document.hidden;
+  }
+  function tick() {
+    if (canAutoAdvance()) goTo(current + 1, false);
+  }
   function start() {
-    if (reduceMotion.matches || timer) return;
+    if (!canAutoAdvance() || timer) return;
     timer = setInterval(tick, AUTO_ADVANCE_MS);
   }
   function stop() { clearInterval(timer); timer = null; }
   function restart() { stop(); start(); }
-  root.addEventListener('mouseenter', function () { paused = true; });
-  root.addEventListener('mouseleave', function () { paused = false; });
-  root.addEventListener('focusin', function () { paused = true; });
+  root.addEventListener('mouseenter', function () { paused = true; stop(); });
+  root.addEventListener('mouseleave', function () { paused = false; start(); });
+  root.addEventListener('focusin', function () { paused = true; stop(); });
   root.addEventListener('focusout', function (e) {
-    if (!root.contains(e.relatedTarget)) paused = false;
+    if (!root.contains(e.relatedTarget)) {
+      paused = false;
+      start();
+    }
   });
+  document.addEventListener('visibilitychange', function () { document.hidden ? stop() : start(); });
   if (reduceMotion.addEventListener) {
     reduceMotion.addEventListener('change', function () { reduceMotion.matches ? stop() : start(); });
   }
-  paint();
+  setCurrent(current, { scroll: true });
   start();
 })();
 </script>
