@@ -273,56 +273,112 @@
 
     <div class="acmm" data-acmm-levels>
       <h3 class="acmm-title">Six ACMM levels, from advisory to fully autonomous</h3>
-      <ol class="ladder" aria-label="ACMM levels" data-acmm-list>
+      <ol class="ladder" role="tablist" aria-label="ACMM levels" data-acmm-list>
         <li class="acmm-level is-active" style="--n:1" data-acmm-level>
-          <button type="button" class="acmm-card" aria-expanded="true">
+          <button type="button" class="acmm-card" id="acmm-tab-1" role="tab" aria-selected="true" aria-controls="acmm-panel-1" data-acmm-tab>
             <span class="hex" aria-hidden="true"></span>
             <b>L1 Inception</b>
             <small>Spektacular, interactive advisor, project inception, spec and plan. Advisory only.</small>
           </button>
-          <p class="level-detail">This is where Spektacular comes into play: raw ideas become a spec, a plan, and project inception material. The advisor helps with setup and architecture decisions, but the level stays advisory only.</p>
         </li>
         <li class="acmm-level" style="--n:2" data-acmm-level>
-          <button type="button" class="acmm-card" aria-expanded="false">
+          <button type="button" class="acmm-card" id="acmm-tab-2" role="tab" aria-selected="false" aria-controls="acmm-panel-2" data-acmm-tab>
             <span class="hex" aria-hidden="true"></span>
             <b>L2 Advisory</b>
             <small>Agents observe and post findings as comments on an advisory issue. No PRs.</small>
           </button>
-          <p class="level-detail">Agents report findings to the dashboard and to the advisory tracking issue as comments. Humans decide what to act on, and agents do not open pull requests at this level.</p>
         </li>
         <li class="acmm-level" style="--n:3" data-acmm-level>
-          <button type="button" class="acmm-card" aria-expanded="false">
+          <button type="button" class="acmm-card" id="acmm-tab-3" role="tab" aria-selected="false" aria-controls="acmm-panel-3" data-acmm-tab>
             <span class="hex" aria-hidden="true"></span>
             <b>L3 Quality-Gated</b>
             <small>Quality agent opens issues and hold-gated PRs for tests, coverage, and CI.</small>
           </button>
-          <p class="level-detail">Trust is built by automating 90%+ of quality tests through optimized CI. The quality agent opens issues and hold-gated pull requests while other agents remain advisory.</p>
         </li>
         <li class="acmm-level" style="--n:4" data-acmm-level>
-          <button type="button" class="acmm-card" aria-expanded="false">
+          <button type="button" class="acmm-card" id="acmm-tab-4" role="tab" aria-selected="false" aria-controls="acmm-panel-4" data-acmm-tab>
             <span class="hex" aria-hidden="true"></span>
             <b>L4 Security-Aware</b>
             <small>Security joins. All agents file issues, with quality, sec-check, and CI opening hold-gated PRs.</small>
           </button>
-          <p class="level-detail">Trust is built by finding vulnerabilities and CVEs, and sec-check joins the fleet. All delivery agents may file issues, while quality, sec-check, and ci-maintainer may open hold-gated pull requests.</p>
         </li>
         <li class="acmm-level" style="--n:5" data-acmm-level>
-          <button type="button" class="acmm-card" aria-expanded="false">
+          <button type="button" class="acmm-card" id="acmm-tab-5" role="tab" aria-selected="false" aria-controls="acmm-panel-5" data-acmm-tab>
             <span class="hex" aria-hidden="true"></span>
             <b>L5 Semi-Autonomous</b>
             <small>All agents open hold-gated PRs. Reviewer checks work before humans batch-review.</small>
           </button>
-          <p class="level-detail">All agents can open issues and hold-gated pull requests. The reviewer agent works the PR queue before humans batch-review, approve, and remove holds.</p>
         </li>
         <li class="acmm-level" style="--n:6" data-acmm-level>
-          <button type="button" class="acmm-card" aria-expanded="false">
+          <button type="button" class="acmm-card" id="acmm-tab-6" role="tab" aria-selected="false" aria-controls="acmm-panel-6" data-acmm-tab>
             <span class="hex" aria-hidden="true"></span>
             <b>L6 Fully Autonomous</b>
             <small>Agents open PRs and auto-merge on green CI with reviewer as the gate.</small>
           </button>
-          <p class="level-detail">Agents open pull requests and auto-merge on green CI. The reviewer agent is the gate: verdicts that require human attention pull a pull request out of the auto-merge lane.</p>
         </li>
       </ol>
+      <div class="acmm-details" data-acmm-details>
+        <article class="level-detail is-active" id="acmm-panel-1" role="tabpanel" aria-labelledby="acmm-tab-1" data-acmm-panel>
+          <span class="level-kicker">L1 · #1</span>
+          <h4>L1 Inception</h4>
+          <p>This is where Spektacular comes into play: raw ideas become a spec, a plan, and project inception material. The advisor helps with setup and architecture decisions, but the level stays advisory only.</p>
+          <ul>
+            <li><strong>Who acts:</strong> Spektacular and the named human owner.</li>
+            <li><strong>What opens:</strong> Specs, plans, and project inception notes.</li>
+            <li><strong>Human role:</strong> Direction, approval, and all execution choices.</li>
+          </ul>
+        </article>
+        <article class="level-detail" id="acmm-panel-2" role="tabpanel" aria-labelledby="acmm-tab-2" data-acmm-panel>
+          <span class="level-kicker">L2 · #2</span>
+          <h4>L2 Advisory</h4>
+          <p>Agents report findings to the dashboard and to the advisory tracking issue as comments. Humans decide what to act on, and agents do not open pull requests at this level.</p>
+          <ul>
+            <li><strong>Who acts:</strong> Advisory agents observe and comment.</li>
+            <li><strong>What opens:</strong> Dashboard findings and advisory issue comments.</li>
+            <li><strong>Human role:</strong> Triage every finding and choose the work.</li>
+          </ul>
+        </article>
+        <article class="level-detail" id="acmm-panel-3" role="tabpanel" aria-labelledby="acmm-tab-3" data-acmm-panel>
+          <span class="level-kicker">L3 · #3</span>
+          <h4>L3 Quality-Gated</h4>
+          <p>Trust is built by automating 90%+ of quality tests through optimized CI. The quality agent opens issues and hold-gated pull requests while other agents remain advisory.</p>
+          <ul>
+            <li><strong>Who acts:</strong> Quality agent plus advisory agents.</li>
+            <li><strong>What opens:</strong> Issues and hold-gated pull requests for tests, coverage, and CI.</li>
+            <li><strong>Human role:</strong> Review, approve, and remove holds.</li>
+          </ul>
+        </article>
+        <article class="level-detail" id="acmm-panel-4" role="tabpanel" aria-labelledby="acmm-tab-4" data-acmm-panel>
+          <span class="level-kicker">L4 · #4</span>
+          <h4>L4 Security-Aware</h4>
+          <p>Trust is built by finding vulnerabilities and CVEs, and sec-check joins the fleet. All delivery agents may file issues, while quality, sec-check, and ci-maintainer may open hold-gated pull requests.</p>
+          <ul>
+            <li><strong>Who acts:</strong> Delivery agents, quality, sec-check, and ci-maintainer.</li>
+            <li><strong>What opens:</strong> Security issues and hold-gated quality or CI pull requests.</li>
+            <li><strong>Human role:</strong> Decide risk, review fixes, and lift holds.</li>
+          </ul>
+        </article>
+        <article class="level-detail" id="acmm-panel-5" role="tabpanel" aria-labelledby="acmm-tab-5" data-acmm-panel>
+          <span class="level-kicker">L5 · #5</span>
+          <h4>L5 Semi-Autonomous</h4>
+          <p>All agents can open issues and hold-gated pull requests. The reviewer agent works the PR queue before humans batch-review, approve, and remove holds.</p>
+          <ul>
+            <li><strong>Who acts:</strong> All agents plus the reviewer agent.</li>
+            <li><strong>What opens:</strong> Hold-gated pull requests across the work queue.</li>
+            <li><strong>Human role:</strong> Batch-review, approve, and release ready work.</li>
+          </ul>
+        </article>
+        <article class="level-detail" id="acmm-panel-6" role="tabpanel" aria-labelledby="acmm-tab-6" data-acmm-panel>
+          <span class="level-kicker">L6 · #6</span>
+          <h4>L6 Fully Autonomous</h4>
+          <p>Agents open pull requests and auto-merge on green CI. The reviewer agent is the gate: verdicts that require human attention pull a pull request out of the auto-merge lane.</p>
+          <ul>
+            <li><strong>Who acts:</strong> Agents open work and reviewer gates it.</li>
+            <li><strong>What opens:</strong> Pull requests that auto-merge after green CI.</li>
+            <li><strong>Human role:</strong> Handle exceptions and reviewer escalations.</li>
+          </ul>
+        </article>
+      </div>
     </div>
 
     <p class="agents-line">Works with the coding agents your team already uses: <span>Claude Code</span> <span>GitHub Copilot</span> <span>Codex</span> <span>Gemini</span> <span>Goose</span> <span>Bob</span> and OpenAI-compatible self-hosted gateways.</p>
@@ -682,65 +738,66 @@
   var root = document.querySelector('[data-acmm-levels]');
   if (!root) return;
   var levels = Array.prototype.slice.call(root.querySelectorAll('[data-acmm-level]'));
-  if (!levels.length) return;
+  var panels = Array.prototype.slice.call(root.querySelectorAll('[data-acmm-panel]'));
+  if (!levels.length || panels.length !== levels.length) return;
 
   var HOLD_MS = 5000;
-  var LOWER_MS = 450;
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   var current = Math.max(0, levels.findIndex(function (level) { return level.classList.contains('is-active'); }));
   var timer = null;
-  var hoverPaused = false;
+  var pointerPaused = false;
   var focusPaused = false;
-  var raised = true;
+  var inView = false;
 
-  function setActive(index) {
+  function buttonFor(level) {
+    return level.querySelector('[data-acmm-tab]');
+  }
+
+  function setActive(index, focusButton) {
     current = (index + levels.length) % levels.length;
-    raised = true;
     levels.forEach(function (level, i) {
       var active = i === current;
-      var button = level.querySelector('.acmm-card');
+      var button = buttonFor(level);
       level.classList.toggle('is-active', active);
-      if (button) button.setAttribute('aria-expanded', active ? 'true' : 'false');
+      if (button) {
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+        button.tabIndex = active ? 0 : -1;
+        if (active && focusButton) {
+          try { button.focus({ preventScroll: true }); }
+          catch (e) { button.focus(); }
+        }
+      }
+      if (panels[i]) {
+        panels[i].classList.toggle('is-active', active);
+        panels[i].setAttribute('aria-hidden', active ? 'false' : 'true');
+      }
     });
   }
 
-  function lowerActive() {
-    raised = false;
-    levels.forEach(function (level) {
-      var button = level.querySelector('.acmm-card');
-      level.classList.remove('is-active');
-      if (button) button.setAttribute('aria-expanded', 'false');
-    });
-  }
-
-  function queue(delay) {
+  function queue() {
     clearTimeout(timer);
-    timer = setTimeout(step, delay);
+    timer = setTimeout(step, HOLD_MS);
   }
 
   function step() {
-    if (isPaused() || document.hidden) {
-      queue(LOWER_MS);
+    if (!canRotate()) {
+      stop();
       return;
     }
-    if (raised) {
-      lowerActive();
-      queue(LOWER_MS);
-      return;
-    }
-    setActive(current + 1);
-    queue(HOLD_MS);
+    setActive(current + 1, false);
+    queue();
   }
 
   function start() {
-    if (reduceMotion.matches || isPaused() || timer) return;
-    if (!raised) setActive(current);
-    queue(HOLD_MS);
+    if (!canRotate() || timer) return;
+    root.classList.add('is-rotating');
+    queue();
   }
 
   function stop() {
     clearTimeout(timer);
     timer = null;
+    root.classList.remove('is-rotating');
   }
 
   function restart() {
@@ -748,38 +805,58 @@
     start();
   }
 
-  function isPaused() {
-    return hoverPaused || focusPaused;
+  function canRotate() {
+    return inView && !reduceMotion.matches && !pointerPaused && !focusPaused && !document.hidden;
   }
 
   levels.forEach(function (level, i) {
-    var button = level.querySelector('.acmm-card');
+    var button = buttonFor(level);
     if (!button) return;
     button.addEventListener('click', function () {
-      try { button.focus({ preventScroll: true }); }
-      catch (e) { button.focus(); }
-      setActive(i);
-      if (isPaused()) stop();
-      else restart();
+      setActive(i, true);
+      restart();
     });
     button.addEventListener('focus', function () {
       focusPaused = true;
-      setActive(i);
+      setActive(i, false);
+      stop();
+    });
+    button.addEventListener('keydown', function (e) {
+      var next = null;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = current + 1;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = current - 1;
+      if (e.key === 'Home') next = 0;
+      if (e.key === 'End') next = levels.length - 1;
+      if (next === null) return;
+      e.preventDefault();
+      setActive(next, true);
       stop();
     });
   });
 
-  root.addEventListener('mouseenter', function () { hoverPaused = true; stop(); });
-  root.addEventListener('mouseleave', function () { hoverPaused = false; start(); });
+  root.addEventListener('pointerenter', function () { pointerPaused = true; stop(); });
+  root.addEventListener('pointerleave', function () { pointerPaused = false; start(); });
   root.addEventListener('focusout', function (e) {
-    if (!root.contains(e.relatedTarget)) { focusPaused = false; start(); }
+    if (!root.contains(e.relatedTarget)) {
+      focusPaused = false;
+      start();
+    }
   });
+  document.addEventListener('visibilitychange', function () { document.hidden ? stop() : start(); });
   if (reduceMotion.addEventListener) {
     reduceMotion.addEventListener('change', function () { reduceMotion.matches ? stop() : start(); });
   }
 
   setActive(current);
-  start();
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      inView = entries.some(function (entry) { return entry.isIntersecting; });
+      inView ? start() : stop();
+    }, { threshold: .25 }).observe(root);
+  } else {
+    inView = true;
+    start();
+  }
 })();
 </script>
 

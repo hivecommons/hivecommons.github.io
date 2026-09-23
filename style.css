@@ -223,6 +223,7 @@ h1 {
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-slide, .btn, .hero-btn, .acmm-card, .level-detail { transition: none; }
+  .acmm-card::after { animation: none; }
 }
 
 /* ---------- elevator pitch ---------- */
@@ -279,7 +280,10 @@ h1 {
 .adopters-note a:hover { color: var(--honey); }
 
 /* ACMM ladder */
-.acmm { margin-top: clamp(2.5rem, 5vw, 4rem); }
+.acmm {
+  --acmm-interval: 5s;
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+}
 .acmm-title { font-size: 1.15rem; color: var(--ink); margin-bottom: 1.25rem; }
 .ladder {
   list-style: none;
@@ -288,17 +292,33 @@ h1 {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: .75rem;
-  align-items: end;
+  align-items: stretch;
+  position: relative;
+}
+.ladder::before {
+  content: "";
+  position: absolute;
+  left: calc(100% / 12);
+  right: calc(100% / 12);
+  top: 2.05rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line), var(--honey-deep), var(--line), transparent);
+  opacity: .8;
+  pointer-events: none;
 }
 .acmm-level {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: .6rem;
+  min-width: 0;
+  z-index: 1;
 }
 .acmm-card {
+  position: relative;
+  overflow: hidden;
   width: 100%;
-  min-height: 12.25rem;
+  height: 12.75rem;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -311,55 +331,125 @@ h1 {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: transform .22s ease, border-color .18s ease, background-color .18s ease;
+  transition: transform .3s ease, border-color .22s ease, background-color .22s ease, box-shadow .22s ease, opacity .22s ease;
 }
-.acmm-card:hover { border-color: var(--honey-deep); }
+.acmm-card:hover, .acmm-card:focus-visible { border-color: var(--honey-deep); }
+.acmm-card:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--honey) 28%, transparent); }
+.acmm-card::after {
+  content: "";
+  position: absolute;
+  left: .85rem;
+  right: .85rem;
+  bottom: .55rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--honey);
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+}
 .acmm-card .hex {
   width: 2.1rem; height: 2.4rem; margin-bottom: .35rem;
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
   background: color-mix(in srgb, var(--honey) calc(var(--n) * 16%), var(--line));
+  box-shadow: 0 0 0 6px var(--bg-2);
+  transition: background-color .22s ease, box-shadow .22s ease;
 }
 .acmm-card b { font-weight: 600; font-size: .95rem; }
 .acmm-card small { color: var(--ink-2); font-size: .82rem; line-height: 1.45; }
+.acmm-details {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
 .level-detail {
   margin: 0;
-  color: var(--ink-2);
-  font-size: .9rem;
-  line-height: 1.5;
-}
-.js .ladder {
-  min-height: 27rem;
-  padding-top: 11rem;
-}
-.js .acmm-level { min-width: 0; }
-.js .level-detail {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(100% + .9rem);
-  min-height: 9.5rem;
-  padding: 1rem;
-  border: 1px solid var(--honey-deep);
+  min-height: 13.5rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   background: linear-gradient(160deg, var(--bg-3), var(--bg-2));
-  box-shadow: 0 1.5rem 3rem #0004;
+  box-shadow: 0 1rem 2rem #0002;
+  color: var(--ink-2);
+  font-size: .95rem;
+  line-height: 1.5;
+}
+.level-kicker {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: .45rem;
+  color: var(--honey);
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.level-detail h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+}
+.level-detail p { margin-top: .55rem; max-width: 70ch; }
+.level-detail ul {
+  margin: .9rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .75rem;
+}
+.level-detail li {
+  padding: .75rem;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) * .65);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  color: var(--ink-2);
+  font-size: .88rem;
+}
+.level-detail strong { color: var(--ink); font-weight: 600; }
+.js .acmm-details {
+  position: relative;
+  min-height: 13.5rem;
+  grid-template: 1fr / 1fr;
+}
+.js .level-detail {
+  grid-area: 1 / 1;
   opacity: 0;
   transform: translateY(.5rem);
-  transition: opacity .18s ease, transform .22s ease;
+  transition: opacity .3s ease-out, transform .3s ease-out;
   pointer-events: none;
 }
+.js .acmm-level:not(.is-active) .acmm-card { opacity: .72; }
 .js .acmm-level.is-active .acmm-card {
-  transform: translateY(-.75rem);
+  transform: translateY(-6px);
   border-color: var(--honey);
   background: linear-gradient(160deg, var(--bg-3), var(--bg));
+  box-shadow: 0 .9rem 1.8rem color-mix(in srgb, var(--honey) 16%, transparent);
 }
-.js .acmm-level.is-active .hex { background: var(--honey); }
-.js .acmm-level.is-active .level-detail {
+.js .acmm.is-rotating .acmm-level.is-active .acmm-card::after {
+  opacity: 1;
+  animation: acmm-progress var(--acmm-interval) linear both;
+}
+.js .acmm-level.is-active .hex {
+  background: var(--honey);
+  box-shadow: 0 0 0 6px var(--bg), 0 0 1.4rem color-mix(in srgb, var(--honey) 42%, transparent);
+}
+.js .level-detail.is-active {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
+  border-color: color-mix(in srgb, var(--honey) 48%, var(--line));
+}
+@keyframes acmm-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 @media (prefers-reduced-motion: reduce) {
   .acmm-card, .level-detail { transition: none; }
+  .js .acmm.is-rotating .acmm-level.is-active .acmm-card::after {
+    animation: none;
+    transform: scaleX(1);
+  }
 }
 
 .agents-line { margin-top: clamp(2rem, 4vw, 3rem); color: var(--ink-2); font-size: .98rem; line-height: 2; }
@@ -449,8 +539,6 @@ h1 {
 /* ---------- responsive ---------- */
 @media (max-width: 64rem) {
   .hero-carousel { --hero-h: 48rem; --hero-stage-h: 38rem; }
-  .ladder { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem 1rem; }
-  .js .ladder { min-height: 42rem; }
 }
 @media (max-width: 52rem) {
   .hero-carousel { --hero-h: 68rem; --hero-stage-h: 56rem; }
@@ -466,17 +554,22 @@ h1 {
   .foot-row { grid-template-columns: 1fr; }
   .foot-nav { justify-self: start; }
 }
+@media (max-width: 56.25rem) {
+  .ladder { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .ladder::before { display: none; }
+  .level-detail ul { grid-template-columns: 1fr; }
+  .js .acmm-details, .level-detail { min-height: 18rem; }
+}
 @media (max-width: 36rem) {
   .hero-carousel { --hero-h: 72rem; --hero-stage-h: 60rem; }
   .stats { grid-template-columns: 1fr; gap: .9rem; }
   .ladder { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .js .ladder { min-height: 56rem; }
+  .acmm-card { height: 13.5rem; }
+  .js .acmm-details, .level-detail { min-height: 24rem; }
   h1 { max-width: none; }
 }
 @media (max-width: 26rem) {
   .hero-carousel { --hero-h: 76rem; --hero-stage-h: 64rem; }
-  .ladder { grid-template-columns: 1fr; }
-  .js .ladder { min-height: 86rem; }
   .top-nav { gap: .75rem; }
   .top-nav a { font-size: .88rem; }
   .slide { width: 86vw; }
