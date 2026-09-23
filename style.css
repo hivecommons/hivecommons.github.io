@@ -99,6 +99,7 @@ p { margin: 0; }
   --hero-h: 42rem;
   --hero-stage-h: 33rem;
   position: relative;
+  height: var(--hero-h);
   min-height: var(--hero-h);
   padding-block: clamp(2rem, 5vw, 4rem);
   background-image:
@@ -166,6 +167,7 @@ h1 {
 
 .hero-art { margin: 0; display: flex; flex-direction: column; align-items: center; gap: .75rem; }
 .hero-visual { width: 100%; max-width: 30rem; color: var(--ink-3); }
+.hero-visual { aspect-ratio: 13 / 12; height: auto; }
 .hero-visual .cell path { fill: var(--bg-2); stroke: var(--honey-deep); stroke-width: 1.5; }
 .hero-visual .cell text, .workflow-labels, .cluster-labels { fill: var(--ink-2); }
 .hero-visual .hub path { fill: var(--honey); stroke: var(--honey); stroke-width: 1.5; }
@@ -198,6 +200,20 @@ h1 {
 }
 .hero-dot[aria-current="true"] { background: var(--honey); }
 .hero-dot:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--honey); clip-path: none; border-radius: 50%; }
+.hero-measure {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+.hero-measure .hero-slide {
+  position: static;
+  inset: auto;
+  display: grid;
+}
+.hero-measure .hero-slide[hidden] { display: grid; }
 
 @media (prefers-reduced-motion: no-preference) {
   .hero-visual .hub { animation: pour .7s ease-out both; transform-origin: 260px 240px; }

@@ -70,7 +70,7 @@
           <p class="hero-note">The community maintains related tooling for agent-assisted development, including hotshot, pluk, promptargs, rationguard and dibs.</p>
         </div>
         <figure class="hero-art">
-          <svg class="hero-visual" viewBox="0 0 520 480" role="img" aria-labelledby="hero-commons-title">
+          <svg class="hero-visual" width="520" height="480" viewBox="0 0 520 480" role="img" aria-labelledby="hero-commons-title">
             <title id="hero-commons-title">Hive Commons mark</title>
             <defs>
               <linearGradient id="commonsFill" x1="0" y1="0" x2="0" y2="1">
@@ -101,7 +101,7 @@
           <p class="hero-note">A single Go binary enumerates GitHub issues and PRs, classifies them by complexity, and dispatches work to AI agents.</p>
         </div>
         <figure class="hero-art">
-          <svg class="hero-visual" viewBox="0 0 520 480" role="img" aria-labelledby="hero-hive-title">
+          <svg class="hero-visual" width="520" height="480" viewBox="0 0 520 480" role="img" aria-labelledby="hero-hive-title">
             <title id="hero-hive-title">Hive hub and spoke honeycomb</title>
             <g class="spoke-lines" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5">
               <line x1="260" y1="240" x2="260" y2="96"/>
@@ -140,7 +140,7 @@
           <p class="hero-note">Write a spec. Spektacular plans, then implements, driving the coding agent of your choice from a single markdown source of truth.</p>
         </div>
         <figure class="hero-art">
-          <svg class="hero-visual" viewBox="0 0 520 480" role="img" aria-labelledby="hero-spektacular-title">
+          <svg class="hero-visual" width="520" height="480" viewBox="0 0 520 480" role="img" aria-labelledby="hero-spektacular-title">
             <title id="hero-spektacular-title">Spec to plan to implementation</title>
             <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <rect x="70" y="145" width="104" height="150" rx="10"/>
@@ -173,7 +173,7 @@
           <p class="hero-note">Lightweight pub-sub event streaming, screenshots straight into the terminal, template expansion for AI prompts, rationalization detection, and contributor attribution.</p>
         </div>
         <figure class="hero-art">
-          <svg class="hero-visual" viewBox="0 0 520 480" role="img" aria-labelledby="hero-family-title">
+          <svg class="hero-visual" width="520" height="480" viewBox="0 0 520 480" role="img" aria-labelledby="hero-family-title">
             <title id="hero-family-title">Project family cluster</title>
             <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M260 212l64-38M260 212l78 64M260 212l-80 58M260 212l-62-74M260 212v96" stroke-dasharray="5 6"/>
@@ -457,6 +457,7 @@
   var root = document.querySelector('[data-hero-carousel]');
   if (!root) return;
   var slides = Array.prototype.slice.call(root.querySelectorAll('[data-hero-slide]'));
+  var stage = root.querySelector('[data-hero-stage]');
   var controls = root.querySelector('[data-hero-controls]');
   var dotsWrap = root.querySelector('[data-hero-dots]');
   var status = root.querySelector('[data-hero-status]');
@@ -469,6 +470,7 @@
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   var current = 0;
   var timer = null;
+  var resizeTimer = null;
   var paused = false;
   var pointerStartX = null;
   var pointerStartY = null;
@@ -485,6 +487,42 @@
   });
 
   if (controls) controls.hidden = false;
+
+  function measureHero() {
+    if (!stage) return;
+    var measure = document.createElement('div');
+    var rootStyle = window.getComputedStyle(root);
+    var controlsStyle = controls ? window.getComputedStyle(controls) : null;
+    var controlsHeight = controls ? controls.getBoundingClientRect().height : 0;
+    var controlsGap = controlsStyle ? parseFloat(controlsStyle.marginTop) || 0 : 0;
+    var paddingY = (parseFloat(rootStyle.paddingTop) || 0) + (parseFloat(rootStyle.paddingBottom) || 0);
+    var tallest = 0;
+
+    measure.className = 'hero-measure';
+    measure.style.width = stage.getBoundingClientRect().width + 'px';
+    slides.forEach(function (slide) {
+      var clone = slide.cloneNode(true);
+      clone.hidden = false;
+      clone.removeAttribute('inert');
+      clone.removeAttribute('id');
+      measure.appendChild(clone);
+    });
+    root.appendChild(measure);
+    Array.prototype.forEach.call(measure.children, function (slide) {
+      tallest = Math.max(tallest, slide.getBoundingClientRect().height);
+    });
+    measure.remove();
+
+    var stageHeight = Math.ceil(tallest);
+    var heroHeight = Math.ceil(stageHeight + controlsHeight + controlsGap + paddingY);
+    root.style.setProperty('--hero-stage-h', stageHeight + 'px');
+    root.style.setProperty('--hero-h', heroHeight + 'px');
+  }
+
+  function scheduleMeasure() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(measureHero, 80);
+  }
 
   function linkedIndex() {
     var id = window.location.hash.slice(1);
@@ -579,6 +617,10 @@
   if (reduceMotion.addEventListener) {
     reduceMotion.addEventListener('change', function () { reduceMotion.matches ? stop() : start(); });
   }
+  window.addEventListener('resize', scheduleMeasure);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(measureHero);
+  }
   window.addEventListener('hashchange', function () {
     var i = linkedIndex();
     if (i !== -1) { goTo(i, true); restart(); }
@@ -586,6 +628,7 @@
 
   var initial = linkedIndex();
   if (initial !== -1) current = initial;
+  measureHero();
   paint(false);
   start();
 })();
