@@ -1,5 +1,5 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -25,6 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,560;0,9..144,640;1,9..144,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<script>document.documentElement.classList.replace('no-js', 'js');</script>
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -54,52 +55,159 @@
 <main id="main">
 
 <!-- ============ HERO ============ -->
-<section class="hero">
-  <div class="wrap hero-grid">
-    <div class="hero-copy">
-      <p class="kicker">The umbrella community for Hive</p>
-      <h1>Fleets of coding agents, governed and audited, doing real work on your repositories.</h1>
-      <p class="lede">Hive Commons is the open source community behind Hive, AI-agent fleet orchestration with governed, audited agent swarms, and the family of tools that make agent-assisted development trustworthy.</p>
-      <div class="cta-row">
-        <a class="btn btn-primary" href="https://hive.hivecommons.dev">Open the Hive Hub</a>
-        <a class="btn btn-quiet" href="https://docs.hivecommons.dev">Read the docs</a>
-        <a class="btn btn-quiet" href="https://github.com/hivecommons">Browse on GitHub</a>
-      </div>
-      <p class="hero-note">Everything is Apache 2.0 on GitHub under the hivecommons organization.</p>
+<section id="hero" class="hero-carousel" aria-roledescription="carousel" aria-label="Featured" data-hero-carousel>
+  <div class="wrap hero-carousel-wrap">
+    <div class="hero-stage" data-hero-stage>
+      <article class="hero-slide" id="hero-hivecommons" role="group" aria-roledescription="slide" aria-label="1 of 4" data-hero-slide data-hero-name="Hive Commons">
+        <div class="hero-copy">
+          <p class="kicker">The umbrella community for Hive</p>
+          <h1>Human judgment is the scarce resource.</h1>
+          <p class="lede">Hive Commons is the umbrella community for Hive, an AI-agent fleet orchestration system that runs governed swarms of coding agents against real repositories.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="/join">Join the community</a>
+            <a class="btn btn-quiet" href="https://github.com/hivecommons">Browse on GitHub</a>
+          </div>
+          <p class="hero-note">The community maintains related tooling for agent-assisted development, including hotshot, pluk, promptargs, rationguard and dibs.</p>
+        </div>
+        <figure class="hero-art">
+          <svg class="hero-visual" viewBox="0 0 520 480" role="img" aria-labelledby="hero-commons-title">
+            <title id="hero-commons-title">Hive Commons mark</title>
+            <defs>
+              <linearGradient id="commonsFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#e0a33a"/>
+                <stop offset="1" stop-color="#b8791a"/>
+              </linearGradient>
+            </defs>
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M260 56l154 89v178l-154 89-154-89V145z"/>
+              <path d="M260 116l102 59v118l-102 59-102-59V175z"/>
+              <path d="M260 176l50 29v70l-50 29-50-29v-70z" fill="url(#commonsFill)" stroke="#e0a33a"/>
+              <path d="M260 116v60M310 205l52-30M310 275l52 18M260 304v48M210 275l-52 18M210 205l-52-30" stroke-dasharray="5 6"/>
+            </g>
+          </svg>
+          <figcaption>Hive Commons is the umbrella community for Hive.</figcaption>
+        </figure>
+      </article>
+
+      <article class="hero-slide" id="hero-hive" role="group" aria-roledescription="slide" aria-label="2 of 4" data-hero-slide data-hero-name="Hive" hidden inert>
+        <div class="hero-copy">
+          <p class="kicker">Hive</p>
+          <h1>AI agent orchestration for open source projects.</h1>
+          <p class="lede">Hive separates decisions into two layers: a deterministic pipeline handles filtering, classification, merge-gating, and enforcement before any LLM sees the work. Agents only handle judgment calls.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://hive.hivecommons.dev/get-started">Request a hive</a>
+            <a class="btn btn-quiet" href="https://github.com/hivecommons/hive">View Hive source</a>
+          </div>
+          <p class="hero-note">A single Go binary enumerates GitHub issues and PRs, classifies them by complexity, and dispatches work to AI agents.</p>
+        </div>
+        <figure class="hero-art">
+          <svg class="hero-visual" viewBox="0 0 520 480" role="img" aria-labelledby="hero-hive-title">
+            <title id="hero-hive-title">Hive hub and spoke honeycomb</title>
+            <g class="spoke-lines" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5">
+              <line x1="260" y1="240" x2="260" y2="96"/>
+              <line x1="260" y1="240" x2="385" y2="168"/>
+              <line x1="260" y1="240" x2="385" y2="312"/>
+              <line x1="260" y1="240" x2="260" y2="384"/>
+              <line x1="260" y1="240" x2="135" y2="312"/>
+              <line x1="260" y1="240" x2="135" y2="168"/>
+            </g>
+            <g class="spokes" font-family="'IBM Plex Sans', system-ui, sans-serif" font-size="13" text-anchor="middle">
+              <g class="cell" style="--i:1"><path d="M260 48l42 24v48l-42 24-42-24V72z"/><text x="260" y="101">spoke</text></g>
+              <g class="cell" style="--i:2"><path d="M385 120l42 24v48l-42 24-42-24v-48z"/><text x="385" y="173">spoke</text></g>
+              <g class="cell" style="--i:3"><path d="M385 264l42 24v48l-42 24-42-24v-48z"/><text x="385" y="317">spoke</text></g>
+              <g class="cell" style="--i:4"><path d="M260 336l42 24v48l-42 24-42-24v-48z"/><text x="260" y="389">spoke</text></g>
+              <g class="cell" style="--i:5"><path d="M135 264l42 24v48l-42 24-42-24v-48z"/><text x="135" y="317">spoke</text></g>
+              <g class="cell" style="--i:6"><path d="M135 120l42 24v48l-42 24-42-24v-48z"/><text x="135" y="173">spoke</text></g>
+            </g>
+            <g class="hub" font-family="'Fraunces', Georgia, serif" font-size="22" text-anchor="middle">
+              <path d="M260 178l54 31v62l-54 31-54-31v-62z"/>
+              <text x="260" y="248">hub</text>
+            </g>
+          </svg>
+          <figcaption>A hub coordinates many self-hosted spoke hives.</figcaption>
+        </figure>
+      </article>
+
+      <article class="hero-slide" id="hero-spektacular" role="group" aria-roledescription="slide" aria-label="3 of 4" data-hero-slide data-hero-name="Spektacular" hidden inert>
+        <div class="hero-copy">
+          <p class="kicker">Spektacular</p>
+          <h1>Write the spec. Ship the software.</h1>
+          <p class="lede">Spektacular takes a markdown specification and uses AI coding agents to plan and implement your features. Agent-agnostic. Pluggable.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="https://spektacular.dev">Get started</a>
+            <a class="btn btn-quiet" href="https://github.com/hivecommons/spektacular">View on GitHub</a>
+          </div>
+          <p class="hero-note">Write a spec. Spektacular plans, then implements, driving the coding agent of your choice from a single markdown source of truth.</p>
+        </div>
+        <figure class="hero-art">
+          <svg class="hero-visual" viewBox="0 0 520 480" role="img" aria-labelledby="hero-spektacular-title">
+            <title id="hero-spektacular-title">Spec to plan to implementation</title>
+            <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="70" y="145" width="104" height="150" rx="10"/>
+              <path d="M100 185h44M100 220h54M100 255h34"/>
+              <rect x="208" y="116" width="104" height="208" rx="10"/>
+              <path d="M238 156h44M238 191h54M238 226h48M238 261h32"/>
+              <rect x="346" y="145" width="104" height="150" rx="10"/>
+              <path d="M376 190l18 18 34-42M376 246h44"/>
+              <path d="M178 220h24M196 211l10 9-10 9M316 220h24M334 211l10 9-10 9" stroke="#e0a33a"/>
+            </g>
+            <g class="workflow-labels" font-family="'IBM Plex Sans', system-ui, sans-serif" font-size="15" text-anchor="middle">
+              <text x="122" y="326">spec</text>
+              <text x="260" y="355">plan</text>
+              <text x="398" y="326">implement</text>
+            </g>
+          </svg>
+          <figcaption>Plan explores codebase, asks questions. Implement executes plan.</figcaption>
+        </figure>
+      </article>
+
+      <article class="hero-slide" id="hero-family" role="group" aria-roledescription="slide" aria-label="4 of 4" data-hero-slide data-hero-name="The family" hidden inert>
+        <div class="hero-copy">
+          <p class="kicker">The family</p>
+          <h1>Related tooling for agent-assisted development.</h1>
+          <p class="lede">pluk, hotshot, promptargs, rationguard, and dibs each remove a specific piece of friction from working with agents, and each is useful on its own.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#projects">Browse projects</a>
+            <a class="btn btn-quiet" href="https://docs.hivecommons.dev">Read the docs</a>
+          </div>
+          <p class="hero-note">Lightweight pub-sub event streaming, screenshots straight into the terminal, template expansion for AI prompts, rationalization detection, and contributor attribution.</p>
+        </div>
+        <figure class="hero-art">
+          <svg class="hero-visual" viewBox="0 0 520 480" role="img" aria-labelledby="hero-family-title">
+            <title id="hero-family-title">Project family cluster</title>
+            <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M260 212l64-38M260 212l78 64M260 212l-80 58M260 212l-62-74M260 212v96" stroke-dasharray="5 6"/>
+              <path d="M260 164l44 25v50l-44 25-44-25v-50z" fill="#221c11" stroke="#e0a33a"/>
+              <path d="M324 102l44 25v50l-44 25-44-25v-50z"/>
+              <path d="M390 245l44 25v50l-44 25-44-25v-50z"/>
+              <path d="M260 288l44 25v50l-44 25-44-25v-50z"/>
+              <path d="M132 238l44 25v50l-44 25-44-25v-50z"/>
+              <path d="M178 86l44 25v50l-44 25-44-25v-50z"/>
+            </g>
+            <g class="cluster-labels" font-family="'IBM Plex Sans', system-ui, sans-serif" font-size="13" text-anchor="middle">
+              <text x="260" y="218">family</text>
+              <text x="324" y="156">pluk</text>
+              <text x="390" y="299">hotshot</text>
+              <text x="260" y="342">prompt</text>
+              <text x="132" y="292">guard</text>
+              <text x="178" y="140">dibs</text>
+            </g>
+          </svg>
+          <figcaption>Five tools share a single family slide.</figcaption>
+        </figure>
+      </article>
     </div>
 
-    <figure class="hero-art">
-      <!-- Hub and spokes drawn as a honeycomb -->
-      <svg class="comb" viewBox="0 0 520 480" aria-hidden="true">
-        <defs>
-          <linearGradient id="honeyFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#e0a33a"/>
-            <stop offset="1" stop-color="#b8791a"/>
-          </linearGradient>
-        </defs>
-        <g class="spoke-lines" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5">
-          <line x1="260" y1="240" x2="260" y2="96"/>
-          <line x1="260" y1="240" x2="385" y2="168"/>
-          <line x1="260" y1="240" x2="385" y2="312"/>
-          <line x1="260" y1="240" x2="260" y2="384"/>
-          <line x1="260" y1="240" x2="135" y2="312"/>
-          <line x1="260" y1="240" x2="135" y2="168"/>
-        </g>
-        <g class="spokes" font-family="'IBM Plex Sans', system-ui, sans-serif" font-size="13" text-anchor="middle">
-          <g class="cell" style="--i:1"><path d="M260 48l42 24v48l-42 24-42-24V72z"/><text x="260" y="101">spoke</text></g>
-          <g class="cell" style="--i:2"><path d="M385 120l42 24v48l-42 24-42-24v-48z"/><text x="385" y="173">spoke</text></g>
-          <g class="cell" style="--i:3"><path d="M385 264l42 24v48l-42 24-42-24v-48z"/><text x="385" y="317">spoke</text></g>
-          <g class="cell" style="--i:4"><path d="M260 336l42 24v48l-42 24-42-24v-48z"/><text x="260" y="389">spoke</text></g>
-          <g class="cell" style="--i:5"><path d="M135 264l42 24v48l-42 24-42-24v-48z"/><text x="135" y="317">spoke</text></g>
-          <g class="cell" style="--i:6"><path d="M135 120l42 24v48l-42 24-42-24v-48z"/><text x="135" y="173">spoke</text></g>
-        </g>
-        <g class="hub" font-family="'Fraunces', Georgia, serif" font-size="22" text-anchor="middle">
-          <path d="M260 178l54 31v62l-54 31-54-31v-62z" fill="url(#honeyFill)"/>
-          <text x="260" y="248" fill="#14110b">hub</text>
-        </g>
-      </svg>
-      <figcaption>One hub coordinates many self-hosted spoke hives. Every agent action is audited.</figcaption>
-    </figure>
+    <div class="hero-controls" data-hero-controls hidden>
+      <button type="button" class="hero-btn" data-hero-prev aria-label="Previous slide">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="hero-dots" data-hero-dots role="group" aria-label="Choose a featured slide"></div>
+      <button type="button" class="hero-btn" data-hero-next aria-label="Next slide">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+    <p class="sr-only" data-hero-status aria-live="off" aria-atomic="true"></p>
   </div>
 </section>
 
@@ -140,8 +248,8 @@
       </article>
     </div>
 
-    <div class="proof">
-      <dl class="stats" aria-label="Figures from Hive's own repository">
+    <div class="proof" role="group" aria-label="Figures from Hive's own repository">
+      <dl class="stats">
         <div><dt>merged pull requests</dt><dd>5,600+</dd></div>
         <div><dt>median issue close time</dt><dd>3 hours</dd></div>
         <div><dt>counting since</dt><dd>April 2026</dd></div>
@@ -149,7 +257,7 @@
       <p class="proof-note">Hive maintains its own repository. These are its figures.</p>
     </div>
 
-    <div class="adopters" aria-labelledby="adopters-title">
+    <div class="adopters" role="group" aria-labelledby="adopters-title">
       <h3 id="adopters-title" class="adopters-title">Adopted by</h3>
       <ul class="logo-strip">
         <li><a href="https://github.com/kubestellar/console"><img src="/assets/adopters/kubestellar.png" width="48" height="48" alt="KubeStellar Console"><span>KubeStellar Console</span></a></li>
@@ -342,6 +450,146 @@
     <p class="foot-legal">&copy; 2026 Hive Commons maintainers. Code is licensed under Apache 2.0. Security contact: security@hivecommons.dev</p>
   </div>
 </footer>
+
+<script>
+(function () {
+  'use strict';
+  var root = document.querySelector('[data-hero-carousel]');
+  if (!root) return;
+  var slides = Array.prototype.slice.call(root.querySelectorAll('[data-hero-slide]'));
+  var controls = root.querySelector('[data-hero-controls]');
+  var dotsWrap = root.querySelector('[data-hero-dots]');
+  var status = root.querySelector('[data-hero-status]');
+  var prev = root.querySelector('[data-hero-prev]');
+  var next = root.querySelector('[data-hero-next]');
+  if (slides.length < 2 || !dotsWrap) return;
+
+  var AUTO_ROTATE_MS = 7000;
+  var SWIPE_THRESHOLD_PX = 48;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var current = 0;
+  var timer = null;
+  var paused = false;
+  var pointerStartX = null;
+  var pointerStartY = null;
+
+  var dots = slides.map(function (slide, i) {
+    var button = document.createElement('button');
+    var name = slide.getAttribute('data-hero-name') || 'Slide ' + (i + 1);
+    button.type = 'button';
+    button.className = 'hero-dot';
+    button.setAttribute('aria-label', 'Go to slide: ' + name);
+    button.addEventListener('click', function () { goTo(i, true); restart(); });
+    dotsWrap.appendChild(button);
+    return button;
+  });
+
+  if (controls) controls.hidden = false;
+
+  function linkedIndex() {
+    var id = window.location.hash.slice(1);
+    if (!id) return -1;
+    return slides.findIndex(function (slide) { return slide.id === id; });
+  }
+
+  function setLiveMode(isAuto) {
+    if (status) status.setAttribute('aria-live', isAuto ? 'off' : 'polite');
+  }
+
+  function paint(announce) {
+    slides.forEach(function (slide, i) {
+      var active = i === current;
+      slide.hidden = !active;
+      if (active) slide.removeAttribute('inert');
+      else slide.setAttribute('inert', '');
+    });
+    dots.forEach(function (dot, i) {
+      var active = i === current;
+      dot.setAttribute('aria-current', active ? 'true' : 'false');
+    });
+    if (announce && status) {
+      status.textContent = (slides[current].getAttribute('data-hero-name') || 'Slide ' + (current + 1)) + ', slide ' + (current + 1) + ' of ' + slides.length;
+    }
+  }
+
+  function goTo(i, announce) {
+    current = (i + slides.length) % slides.length;
+    if (announce) setLiveMode(false);
+    paint(announce);
+  }
+
+  function tick() {
+    if (!paused && !document.hidden) goTo(current + 1, false);
+  }
+
+  function start() {
+    if (reduceMotion.matches || timer) {
+      setLiveMode(false);
+      return;
+    }
+    setLiveMode(true);
+    timer = setInterval(tick, AUTO_ROTATE_MS);
+  }
+
+  function stop() {
+    clearInterval(timer);
+    timer = null;
+    setLiveMode(false);
+  }
+
+  function restart() {
+    stop();
+    start();
+  }
+
+  function onKey(e) {
+    if (e.key === 'ArrowRight') { e.preventDefault(); goTo(current + 1, true); restart(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1, true); restart(); }
+    else if (e.key === 'Home') { e.preventDefault(); goTo(0, true); restart(); }
+    else if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1, true); restart(); }
+  }
+
+  if (prev) prev.addEventListener('click', function () { goTo(current - 1, true); restart(); });
+  if (next) next.addEventListener('click', function () { goTo(current + 1, true); restart(); });
+  root.addEventListener('keydown', onKey);
+
+  root.addEventListener('mouseenter', function () { paused = true; stop(); });
+  root.addEventListener('mouseleave', function () { paused = false; start(); });
+  root.addEventListener('focusin', function () { paused = true; stop(); });
+  root.addEventListener('focusout', function (e) {
+    if (!root.contains(e.relatedTarget)) { paused = false; start(); }
+  });
+
+  root.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse') return;
+    pointerStartX = e.clientX;
+    pointerStartY = e.clientY;
+  }, { passive: true });
+  root.addEventListener('pointerup', function (e) {
+    if (pointerStartX === null || pointerStartY === null) return;
+    var dx = e.clientX - pointerStartX;
+    var dy = e.clientY - pointerStartY;
+    pointerStartX = null;
+    pointerStartY = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy)) return;
+    goTo(dx < 0 ? current + 1 : current - 1, true);
+    restart();
+  }, { passive: true });
+
+  if (reduceMotion.addEventListener) {
+    reduceMotion.addEventListener('change', function () { reduceMotion.matches ? stop() : start(); });
+  }
+  window.addEventListener('hashchange', function () {
+    var i = linkedIndex();
+    if (i !== -1) { goTo(i, true); restart(); }
+  });
+
+  var initial = linkedIndex();
+  if (initial !== -1) current = initial;
+  paint(false);
+  start();
+})();
+</script>
 
 <script>
 (function () {
