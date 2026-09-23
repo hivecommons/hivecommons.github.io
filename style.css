@@ -14,7 +14,7 @@
   --line-soft: #26201414;
   --focus: #e0a33a;
 
-  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-wordmark: "Fraunces", Georgia, "Times New Roman", serif;
   --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
 
   --wrap: 68rem;
@@ -60,9 +60,9 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
   outline-offset: 3px;
   border-radius: 2px;
 }
-h1, h2, h3 { font-family: var(--font-display); font-weight: 560; margin: 0; line-height: 1.15; text-wrap: balance; }
-h2 { font-size: clamp(1.9rem, 3.6vw, 2.6rem); letter-spacing: -.01em; }
-h3 { font-size: 1.3rem; }
+h1, h2, h3 { font-family: var(--font-body); font-weight: 600; margin: 0; line-height: 1.12; letter-spacing: -.01em; text-wrap: balance; }
+h2 { font-size: clamp(1.85rem, 3.4vw, 2.45rem); }
+h3 { font-size: 1.25rem; }
 p { margin: 0; }
 .wrap { width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; }
 
@@ -77,10 +77,10 @@ p { margin: 0; }
 /* ---------- header ---------- */
 .top { border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 5; }
 .top-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.75rem; flex-wrap: wrap; padding-block: .5rem; }
-.brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; font-family: var(--font-display); font-weight: 560; font-size: 1.15rem; }
+.brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; font-family: var(--font-wordmark); font-weight: 560; font-size: 1.15rem; }
 .brand-mark { width: 1.6rem; height: 1.6rem; color: var(--honey); flex: none; }
 .top-nav { display: flex; gap: clamp(.9rem, 2.5vw, 1.6rem); flex-wrap: wrap; }
-.top-nav a { text-decoration: none; color: var(--ink-2); font-size: .95rem; padding-block: .25rem; border-bottom: 1px solid transparent; }
+.top-nav a { text-decoration: none; color: var(--ink-2); font-size: .95rem; font-weight: 600; letter-spacing: -.01em; padding-block: .25rem; border-bottom: 1px solid transparent; }
 .top-nav a:hover { color: var(--ink); border-bottom-color: var(--honey-deep); }
 
 /* ---------- hero carousel ---------- */
@@ -144,10 +144,8 @@ p { margin: 0; }
 .no-js .hero-controls { display: none; }
 .kicker { color: var(--honey); font-weight: 500; font-size: 1rem; margin-bottom: 1rem; }
 h1 {
-  font-size: clamp(2.3rem, 5.2vw, 3.9rem);
-  font-weight: 640;
-  letter-spacing: -.015em;
-  font-variation-settings: "opsz" 144;
+  font-size: clamp(2.25rem, 5vw, 3.65rem);
+  font-weight: 600;
   max-width: 18ch;
 }
 .lede { margin-top: 1.4rem; font-size: clamp(1.05rem, 1.6vw, 1.2rem); color: var(--ink-2); max-width: 48ch; }
@@ -231,9 +229,8 @@ h1 {
 .pitch { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg-2); padding-block: clamp(2.5rem, 5vw, 4rem); }
 .pitch-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: start; }
 .pitch-lead {
-  font-family: var(--font-display); font-style: italic; font-weight: 400;
-  font-size: clamp(1.7rem, 3vw, 2.3rem); line-height: 1.2; color: var(--honey);
-  font-variation-settings: "opsz" 72;
+  font-family: var(--font-body); font-style: italic; font-weight: 600;
+  font-size: clamp(1.55rem, 2.8vw, 2.1rem); line-height: 1.2; color: var(--honey); letter-spacing: -.01em;
   max-width: 14ch;
 }
 .pitch-body { display: grid; gap: 1rem; color: var(--ink); max-width: 62ch; }
@@ -257,7 +254,7 @@ h1 {
 .proof { margin-top: clamp(2.5rem, 5vw, 4rem); padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); }
 .stats { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .stats div { display: flex; flex-direction: column-reverse; gap: .1rem; }
-.stats dd { margin: 0; font-family: var(--font-display); font-size: clamp(1.9rem, 3.5vw, 2.6rem); font-weight: 560; line-height: 1.05; color: var(--honey); font-variant-numeric: tabular-nums; }
+.stats dd { margin: 0; font-family: var(--font-body); font-size: clamp(1.85rem, 3.3vw, 2.45rem); font-weight: 600; line-height: 1.05; color: var(--honey); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
 .stats dt { color: var(--ink-2); font-size: .92rem; }
 .proof-note { margin-top: .9rem; color: var(--ink-3); font-size: .88rem; }
 /* adopters logo strip */
@@ -424,7 +421,7 @@ h1 {
 .fit-glyph { width: 2rem; height: 2rem; fill: none; stroke: var(--honey); stroke-width: 1.5; stroke-linejoin: round; }
 .fit-col h3 { margin-top: .9rem; }
 .fit-col p { margin-top: .6rem; color: var(--ink-2); font-size: .98rem; }
-.fit-artifacts { padding-left: .9rem; border-left: 2px solid var(--honey-deep); color: var(--ink); font-style: italic; font-family: var(--font-display); font-size: 1.05rem; }
+.fit-artifacts { padding-left: .9rem; border-left: 2px solid var(--honey-deep); color: var(--ink); font-style: italic; font-family: var(--font-body); font-size: 1.02rem; font-weight: 500; }
 .fit-join { color: var(--honey-deep); align-self: center; width: 4rem; }
 .fit-join svg { width: 100%; }
 
@@ -443,9 +440,9 @@ h1 {
 /* ---------- footer ---------- */
 .foot { border-top: 1px solid var(--line); padding-block: 2.5rem calc(2.5rem + env(safe-area-inset-bottom, 0px)); }
 .foot-row { display: grid; grid-template-columns: auto 1fr; gap: 1rem 2.5rem; align-items: center; }
-.foot-brand { display: inline-flex; align-items: center; gap: .6rem; font-family: var(--font-display); font-weight: 560; }
+.foot-brand { display: inline-flex; align-items: center; gap: .6rem; font-family: var(--font-wordmark); font-weight: 560; }
 .foot-nav { display: flex; flex-wrap: wrap; gap: 1.2rem; justify-self: end; }
-.foot-nav a { text-decoration: none; color: var(--ink-2); font-size: .92rem; }
+.foot-nav a { text-decoration: none; color: var(--ink-2); font-size: .92rem; font-weight: 600; letter-spacing: -.01em; }
 .foot-nav a:hover { color: var(--honey); }
 .foot-legal { grid-column: 1 / -1; color: var(--ink-3); font-size: .85rem; }
 
