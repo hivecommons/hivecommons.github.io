@@ -2,135 +2,459 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hive Commons</title>
-<meta name="description" content="Hive Commons — governed, audited AI-agent fleet orchestration. Coming soon.">
+<meta name="description" content="Hive Commons is the open source community behind Hive, a control layer for running governed, audited fleets of AI coding agents against real repositories, and the tools that make agent-assisted development trustworthy: Spektacular, hotshot, pluk, promptargs, rationguard, and dibs.">
 <link rel="canonical" href="https://hivecommons.dev/">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#14110b">
+<meta name="color-scheme" content="dark light">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hive Commons">
 <meta property="og:title" content="Hive Commons">
-<meta property="og:description" content="Hive Commons — governed, audited AI-agent fleet orchestration.">
+<meta property="og:description" content="The open source community behind Hive, governed and audited fleets of AI coding agents, and the tooling family around it.">
 <meta property="og:url" content="https://hivecommons.dev/">
 <meta property="og:image" content="https://hivecommons.dev/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Hive Commons">
-<meta name="twitter:description" content="Hive Commons — governed, audited AI-agent fleet orchestration.">
+<meta name="twitter:description" content="The open source community behind Hive, governed and audited fleets of AI coding agents, and the tooling family around it.">
 <meta name="twitter:image" content="https://hivecommons.dev/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap">
-<style>
-  :root{
-    --bg:#14110b; --bg-2:#1b170f; --ink:#efe7d7; --ink-2:#b9ad93; --ink-3:#7d7460;
-    --honey:#e0a33a; --honey-deep:#b8791a; --line:#332c1e;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
-    display:grid; place-items:center; padding:2rem;
-    background-image:radial-gradient(1100px 600px at 70% -10%, #241d10 0%, transparent 60%);
-  }
-  main{max-width:40rem; width:100%; display:flex; flex-direction:column; gap:1.6rem}
-  .mark{width:140px; height:140px; display:block}
-  h1{
-    font-family:"Fraunces",Georgia,serif; font-weight:640; font-size:clamp(2.4rem,7vw,3.4rem);
-    line-height:1.05; margin:0; letter-spacing:-.01em; text-wrap:balance;
-  }
-  h1 .amp{color:var(--honey)}
-  .tag{
-    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.8rem; letter-spacing:.14em;
-    text-transform:uppercase; color:var(--honey); margin:0;
-  }
-  p.lede{margin:0; font-size:1.05rem; line-height:1.65; color:var(--ink-2); max-width:30rem}
-  .cells{display:flex; gap:.5rem; align-items:center}
-  .cells span{width:11px;height:12px;background:var(--line);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
-  .cells span:nth-child(1){background:var(--honey)}
-  .cells span:nth-child(2){background:var(--honey-deep)}
-  .links{display:flex; gap:1.4rem; flex-wrap:wrap; align-items:center; border-top:1px solid var(--line); padding-top:1.4rem}
-  a{color:var(--ink); text-decoration:none; font-size:.95rem; border-bottom:1px solid var(--honey-deep); padding-bottom:1px}
-  a:hover{color:var(--honey)}
-  a:focus-visible{outline:2px solid var(--honey); outline-offset:3px; border-bottom-color:transparent}
-  .foot{color:var(--ink-3); font-size:.8rem}
-  h2{
-    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.8rem; letter-spacing:.14em;
-    text-transform:uppercase; color:var(--honey); margin:0; font-weight:400;
-  }
-  .projects{
-    display:grid; grid-template-columns:repeat(auto-fill,minmax(15rem,1fr)); gap:.75rem;
-    list-style:none; margin:0; padding:0;
-  }
-  .projects a{
-    display:flex; gap:.8rem; align-items:flex-start; height:100%;
-    padding:.9rem 1rem; border:1px solid var(--line); border-radius:.6rem; background:var(--bg-2);
-    text-decoration:none; border-bottom:1px solid var(--line); color:inherit;
-    transition:border-color .15s ease, transform .15s ease;
-  }
-  .projects a:hover{border-color:var(--honey-deep); transform:translateY(-1px); color:inherit}
-  .projects svg{flex:none; width:26px; height:26px; margin-top:.1rem; color:var(--honey)}
-  .projects b{display:block; font-weight:500; color:var(--ink); font-size:.95rem}
-  .projects small{display:block; color:var(--ink-2); font-size:.82rem; line-height:1.45; margin-top:.15rem}
-  @media (prefers-reduced-motion:no-preference){
-    main{animation:rise .6s ease-out both}
-    @keyframes rise{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:none}}
-  }
-</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,560;0,9..144,640;1,9..144,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<main>
-  <img class="mark" src="/logo.png" width="140" height="140" alt="Hive Commons" decoding="async">
-  <div>
-    <p class="tag">hivecommons.dev</p>
-    <h1>Hive Commons</h1>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="/" aria-label="Hive Commons home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 2l12 7v14l-12 7L4 23V9z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M16 9l6 3.5v7L16 23l-6-3.5v-7z" fill="currentColor"/>
+      </svg>
+      <span>Hive Commons</span>
+    </a>
+    <nav class="top-nav" aria-label="Site">
+      <a href="#hive">Hive</a>
+      <a href="#projects">Projects</a>
+      <a href="#fit">How it fits</a>
+      <a href="#community">Community</a>
+      <a href="https://docs.hivecommons.dev">Docs</a>
+      <a href="https://github.com/hivecommons">GitHub</a>
+    </nav>
   </div>
-  <p class="lede">An open community for governed, audited AI-agent fleet orchestration — agent swarms that ship real software under accountable human maintainers.</p>
-  <div class="cells" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-  <p class="lede">The full site is on its way. The documentation and code are already live — pick a project below to jump straight to its repo.</p>
-  <div class="links">
-    <a href="https://docs.hivecommons.dev">docs.hivecommons.dev</a>
-    <a href="https://github.com/hivecommons">github.com/hivecommons</a>
+</header>
+
+<main id="main">
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="kicker">The umbrella community for Hive</p>
+      <h1>Fleets of coding agents, governed and audited, doing real work on your repositories.</h1>
+      <p class="lede">Hive Commons is the open source community behind Hive, AI-agent fleet orchestration with governed, audited agent swarms, and the family of tools that make agent-assisted development trustworthy.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://hive.hivecommons.dev">Open the Hive Hub</a>
+        <a class="btn btn-quiet" href="https://docs.hivecommons.dev">Read the docs</a>
+        <a class="btn btn-quiet" href="https://github.com/hivecommons">Browse on GitHub</a>
+      </div>
+      <p class="hero-note">Everything is Apache 2.0 on GitHub under the hivecommons organization.</p>
+    </div>
+
+    <figure class="hero-art">
+      <!-- Hub and spokes drawn as a honeycomb -->
+      <svg class="comb" viewBox="0 0 520 480" aria-hidden="true">
+        <defs>
+          <linearGradient id="honeyFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#e0a33a"/>
+            <stop offset="1" stop-color="#b8791a"/>
+          </linearGradient>
+        </defs>
+        <g class="spoke-lines" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5">
+          <line x1="260" y1="240" x2="260" y2="96"/>
+          <line x1="260" y1="240" x2="385" y2="168"/>
+          <line x1="260" y1="240" x2="385" y2="312"/>
+          <line x1="260" y1="240" x2="260" y2="384"/>
+          <line x1="260" y1="240" x2="135" y2="312"/>
+          <line x1="260" y1="240" x2="135" y2="168"/>
+        </g>
+        <g class="spokes" font-family="'IBM Plex Sans', system-ui, sans-serif" font-size="13" text-anchor="middle">
+          <g class="cell" style="--i:1"><path d="M260 48l42 24v48l-42 24-42-24V72z"/><text x="260" y="101">spoke</text></g>
+          <g class="cell" style="--i:2"><path d="M385 120l42 24v48l-42 24-42-24v-48z"/><text x="385" y="173">spoke</text></g>
+          <g class="cell" style="--i:3"><path d="M385 264l42 24v48l-42 24-42-24v-48z"/><text x="385" y="317">spoke</text></g>
+          <g class="cell" style="--i:4"><path d="M260 336l42 24v48l-42 24-42-24v-48z"/><text x="260" y="389">spoke</text></g>
+          <g class="cell" style="--i:5"><path d="M135 264l42 24v48l-42 24-42-24v-48z"/><text x="135" y="317">spoke</text></g>
+          <g class="cell" style="--i:6"><path d="M135 120l42 24v48l-42 24-42-24v-48z"/><text x="135" y="173">spoke</text></g>
+        </g>
+        <g class="hub" font-family="'Fraunces', Georgia, serif" font-size="22" text-anchor="middle">
+          <path d="M260 178l54 31v62l-54 31-54-31v-62z" fill="url(#honeyFill)"/>
+          <text x="260" y="248" fill="#14110b">hub</text>
+        </g>
+      </svg>
+      <figcaption>One hub coordinates many self-hosted spoke hives. Every agent action is audited.</figcaption>
+    </figure>
   </div>
-  <h2>Projects</h2>
-  <ul class="projects">
-    <li><a href="https://github.com/hivecommons/hive">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9z"/><path d="M12 2v18M4 6.5l8 4.5 8-4.5"/></svg>
-      <span><b>hive</b><small>Governed, audited orchestration of AI-agent fleets that triage, fix, review, and ship — under accountable human maintainers.</small></span></a></li>
-    <li><a href="https://spektacular.dev">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M14 3v6h6"/><path d="M9 15l2 2 4-4"/></svg>
-      <span><b>spektacular</b><small>Spec-driven development for AI coding agents — spec, plan, implement, with every step reviewable.</small></span></a></li>
-    <li><a href="https://github.com/hivecommons/hotshot">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 8a2 2 0 012-2h2l2-2h6l2 2h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>
-      <span><b>hotshot</b><small>Take a screenshot and it lands in your terminal — straight into Claude Code, Copilot CLI, and friends.</small></span></a></li>
-    <li><a href="https://github.com/hivecommons/pluk">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg>
-      <span><b>pluk</b><small>Lightweight pub-sub event streaming for tmux sessions running AI coding agents.</small></span></a></li>
-    <li><a href="https://github.com/hivecommons/promptargs">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 4H6a2 2 0 00-2 2v4a2 2 0 01-2 2 2 2 0 012 2v4a2 2 0 002 2h2M16 4h2a2 2 0 012 2v4a2 2 0 002 2 2 2 0 00-2 2v4a2 2 0 01-2 2h-2"/></svg>
-      <span><b>promptargs</b><small>Template expansion for AI prompts — variable substitution for Claude Code, Copilot, Goose, Bob, and more.</small></span></a></li>
-    <li><a href="https://github.com/hivecommons/rationguard">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 7.8-8 9-4.6-1.2-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
-      <span><b>rationguard</b><small>Detect and rebut rationalization patterns in AI-agent output before they reach your codebase.</small></span></a></li>
-    <li><a href="https://github.com/hivecommons/dibs">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 13h6M9 17h6"/></svg>
-      <span><b>dibs</b><small>Your idea, your credit, their code — the missing contributor layer for the AI-agent era.</small></span></a></li>
-    <li><a href="https://github.com/hivecommons/docs">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 5a2 2 0 012-2h5v18H6a2 2 0 01-2-2zM13 3h5a2 2 0 012 2v14a2 2 0 01-2 2h-5z"/></svg>
-      <span><b>docs</b><small>Source for docs.hivecommons.dev — guides and reference for every project here.</small></span></a></li>
-  </ul>
-  <p class="lede">Community — biweekly meeting, Thursdays 10:00 AM ET:</p>
-  <div class="links">
-    <a href="/join">join the mailing list</a>
-    <a href="/meet">meeting invite</a>
-    <a href="/agenda">agenda &amp; notes</a>
-    <a href="/calendar">calendar</a>
-    <a href="/tv">youtube</a>
+</section>
+
+<!-- ============ ELEVATOR PITCH ============ -->
+<section class="pitch" aria-labelledby="pitch-lead">
+  <div class="wrap pitch-grid">
+    <p class="pitch-lead" id="pitch-lead">Human judgment is the scarce resource.</p>
+    <div class="pitch-body">
+      <p>Hive Commons is an open source organization focused on one problem: making software teams more productive now that AI coding agents can do real work. Every tool here exists to move mechanical work off people and onto agents, without giving up governance, auditability, or accountability.</p>
+      <p>Hive is the flagship, a control layer for running governed fleets of AI coding agents against real repositories. Spektacular gives an agent a spec, a plan, and a reviewable implementation. Around them, hotshot, pluk, promptargs, rationguard, and dibs each remove a specific piece of friction from working with agents.</p>
+    </div>
   </div>
-  <p class="foot">© 2026 Hive Commons maintainers · Apache-2.0</p>
+</section>
+
+<!-- ============ WHAT HIVE DOES ============ -->
+<section class="band" id="hive">
+  <div class="wrap">
+    <div class="band-head">
+      <h2>What Hive does</h2>
+      <p class="band-lede">Hive is a control layer for running governed fleets of AI coding agents against real repositories. Agents pick up issues, open pull requests, review code, repair CI, and answer contributors, under a six-level maturity model that decides exactly what they may do and enforces it in code rather than prompts.</p>
+    </div>
+
+    <div class="pillars">
+      <article class="pillar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 4v8l-7 4-7-4V7z"/><path d="M12 8l3 1.7v3.6L12 15l-3-1.7V9.7z"/></svg>
+        <h3>Hub and spokes</h3>
+        <p>Hive ships as a single Go binary that runs as a standard Kubernetes workload, a Docker Compose stack, or Podman Quadlet units. An optional hub coordinates many self-hosted spoke hives, with a public registry and cross-hive leaderboards.</p>
+      </article>
+      <article class="pillar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V10M10 20V6M14 20V12M18 20V4"/></svg>
+        <h3>Governance enforced in code</h3>
+        <p>Trust is dialed up one capability at a time through ACMM, the AI-native Capability Maturity Model. Its six levels scope what an agent may do, from advisory only through to merging on green CI, with matching least-privilege GitHub token scopes.</p>
+      </article>
+      <article class="pillar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        <h3>Audited and accountable</h3>
+        <p>Every action is audited, every agent identity belongs to a named human, and humans keep all approval authority. A deterministic pipeline handles filtering, classification, and merge-gating before any LLM sees the work, so agents only handle judgment calls.</p>
+      </article>
+    </div>
+
+    <div class="proof">
+      <dl class="stats" aria-label="Figures from Hive's own repository">
+        <div><dt>merged pull requests</dt><dd>5,600+</dd></div>
+        <div><dt>median issue close time</dt><dd>3 hours</dd></div>
+        <div><dt>counting since</dt><dd>April 2026</dd></div>
+      </dl>
+      <p class="proof-note">Hive maintains its own repository. These are its figures.</p>
+    </div>
+
+    <div class="adopters" aria-labelledby="adopters-title">
+      <h3 id="adopters-title" class="adopters-title">Adopted by</h3>
+      <ul class="logo-strip">
+        <li><a href="https://github.com/kubestellar/console"><img src="/assets/adopters/kubestellar.png" width="48" height="48" alt="KubeStellar Console"><span>KubeStellar Console</span></a></li>
+        <li><a href="https://tunaos.org"><img src="/assets/adopters/tuna-os.png" width="48" height="48" alt="tunaos.org"><span>tunaos.org</span></a></li>
+        <li><a href="https://github.com/projectbluefin"><img src="/assets/adopters/projectbluefin.png" width="48" height="48" alt="Project Bluefin"><span>Project Bluefin</span></a></li>
+        <li><a href="https://github.com/frostyard"><img src="/assets/adopters/frostyard.png" width="48" height="48" alt="Frostyard"><span>Frostyard</span></a></li>
+        <li><a href="https://github.com/open-horizon"><img src="/assets/adopters/open-horizon.png" width="48" height="48" alt="Open Horizon"><span>Open Horizon</span></a></li>
+        <li><a href="https://github.com/open-horizon-services"><img src="/assets/adopters/open-horizon-services.png" width="48" height="48" alt="Open Horizon Services"><span>Open Horizon Services</span></a></li>
+        <li><a href="https://github.com/Danathar"><img src="/assets/adopters/danathar.jpg" width="48" height="48" alt="Danathar"><span>Danathar</span></a></li>
+      </ul>
+      <p class="adopters-note">KubeStellar Console, tunaos.org, and Project Bluefin run Hive in production. The others are pre-production. Listed in <a href="https://github.com/hivecommons/hive/blob/v5/ADOPTERS.md">ADOPTERS.md</a>.</p>
+    </div>
+
+    <div class="acmm">
+      <h3 class="acmm-title">Six ACMM levels, from advisory to fully autonomous</h3>
+      <ol class="ladder" aria-label="ACMM levels">
+        <li style="--n:1"><span class="hex"></span><b>L1 Inception</b><small>Interactive advisor and project inception. Advisory only.</small></li>
+        <li style="--n:2"><span class="hex"></span><b>L2 Advisory</b><small>Observe and report findings. No GitHub interaction.</small></li>
+        <li style="--n:3"><span class="hex"></span><b>L3 Quality-Gated</b><small>Quality agent opens issues and hold-gated PRs.</small></li>
+        <li style="--n:4"><span class="hex"></span><b>L4 Security-Aware</b><small>All agents file issues. Quality, sec-check, and CI open hold-gated PRs.</small></li>
+        <li style="--n:5"><span class="hex"></span><b>L5 Semi-Autonomous</b><small>All agents open hold-gated PRs. Humans batch-review and approve.</small></li>
+        <li style="--n:6"><span class="hex"></span><b>L6 Fully Autonomous</b><small>Agents open PRs and auto-merge on green CI.</small></li>
+      </ol>
+    </div>
+
+    <p class="agents-line">Works with the coding agents your team already uses: <span>Claude Code</span> <span>GitHub Copilot</span> <span>Codex</span> <span>Gemini</span> <span>Goose</span> <span>Bob</span> and OpenAI-compatible self-hosted gateways.</p>
+  </div>
+</section>
+
+<!-- ============ PROJECT FAMILY (carousel) ============ -->
+<section class="band band-alt" id="projects">
+  <div class="wrap">
+    <div class="band-head band-head-row">
+      <div>
+        <h2>The project family</h2>
+        <p class="band-lede">Hive is the orchestration system and the delivery surface for the family. Each tool beside it removes a specific piece of friction from working with agents, and each is useful on its own.</p>
+      </div>
+      <div class="car-controls" data-carousel-controls hidden>
+        <button type="button" class="car-btn" data-car-prev aria-label="Previous project">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button type="button" class="car-btn" data-car-next aria-label="Next project">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="carousel" data-carousel>
+    <ul class="track" data-car-track aria-label="Projects" tabindex="0">
+      <li class="slide" data-slide>
+        <div class="card card-flagship">
+          <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9z"/><path d="M12 2v18M4 6.5l8 4.5 8-4.5"/></svg>
+          <h3>Hive <span class="tag">flagship</span></h3>
+          <p>A control layer for running governed fleets of AI coding agents against real repositories.</p>
+          <div class="card-actions">
+            <a class="btn btn-primary btn-sm" href="https://hive.hivecommons.dev/get-started">Request a hive</a>
+            <a class="card-link" href="https://github.com/hivecommons/hive">Source</a>
+          </div>
+        </div>
+      </li>
+      <li class="slide" data-slide>
+        <a class="card" href="https://spektacular.dev">
+          <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M14 3v6h6"/><path d="M9 15l2 2 4-4"/></svg>
+          <h3>Spektacular <span class="tag tag-new">newest member</span></h3>
+          <p>Spec-driven development for AI coding agents. A markdown spec becomes a reviewed plan and an agent-driven implementation.</p>
+          <span class="card-link">spektacular.dev</span>
+        </a>
+      </li>
+      <li class="slide" data-slide>
+        <a class="card" href="https://github.com/hivecommons/hotshot">
+          <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a2 2 0 012-2h2l2-2h6l2 2h2a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <h3>hotshot</h3>
+          <p>Screenshots that land directly in an AI coding assistant's terminal.</p>
+          <span class="card-link">github.com/hivecommons/hotshot</span>
+        </a>
+      </li>
+      <li class="slide" data-slide>
+        <a class="card" href="https://github.com/hivecommons/pluk">
+          <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg>
+          <h3>pluk</h3>
+          <p>Structured event streaming for tmux sessions running AI coding agents.</p>
+          <span class="card-link">github.com/hivecommons/pluk</span>
+        </a>
+      </li>
+      <li class="slide" data-slide>
+        <a class="card" href="https://github.com/hivecommons/promptargs">
+          <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H6a2 2 0 00-2 2v4a2 2 0 01-2 2 2 2 0 012 2v4a2 2 0 002 2h2M16 4h2a2 2 0 012 2v4a2 2 0 002 2 2 2 0 00-2 2v4a2 2 0 01-2 2h-2"/></svg>
+          <h3>promptargs</h3>
+          <p>Template expansion for prompts across Claude Code, Copilot, Goose, Bob, and others.</p>
+          <span class="card-link">github.com/hivecommons/promptargs</span>
+        </a>
+      </li>
+      <li class="slide" data-slide>
+        <a class="card" href="https://github.com/hivecommons/rationguard">
+          <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 7.8-8 9-4.6-1.2-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+          <h3>rationguard</h3>
+          <p>Detects and rebuts rationalization patterns in agent output.</p>
+          <span class="card-link">github.com/hivecommons/rationguard</span>
+        </a>
+      </li>
+      <li class="slide" data-slide>
+        <a class="card" href="https://github.com/hivecommons/dibs">
+          <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 13h6M9 17h6"/></svg>
+          <h3>dibs</h3>
+          <p>A contributor attribution layer for the AI-agent era. Your idea, your credit, their code.</p>
+          <span class="card-link">github.com/hivecommons/dibs</span>
+        </a>
+      </li>
+    </ul>
+    <div class="dots" data-car-dots role="tablist" aria-label="Choose a project" hidden></div>
+  </div>
+
+  <div class="wrap">
+    <p class="family-note">Documentation for every project is single-sourced from its repository to <a href="https://docs.hivecommons.dev">docs.hivecommons.dev</a>.</p>
+  </div>
+</section>
+
+<!-- ============ HOW THE PIECES FIT ============ -->
+<section class="band" id="fit">
+  <div class="wrap">
+    <div class="band-head">
+      <h2>How the pieces fit</h2>
+      <p class="band-lede">Spektacular handles one feature at a time. Hive is where that work is scaled up.</p>
+    </div>
+
+    <div class="fit">
+      <div class="fit-col">
+        <svg class="fit-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 4v8l-7 4-7-4V7z"/></svg>
+        <h3>One feature: a Spektacular workflow</h3>
+        <p>A markdown spec becomes a reviewed plan and an agent-driven implementation. Spec, plan, and implement each run as a resumable state machine, so you can stop, inspect, edit, and resume without losing work.</p>
+        <p class="fit-artifacts">Its artifacts are the spec, the plan, and the changelog record.</p>
+      </div>
+      <div class="fit-join" aria-hidden="true">
+        <svg viewBox="0 0 80 24"><path d="M2 12h60M56 5l8 7-8 7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </div>
+      <div class="fit-col">
+        <svg class="fit-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l4.5 2.6v5.2L12 12.4 7.5 9.8V4.6z"/><path d="M6 11.5l4.5 2.6v5.2L6 21.9l-4.5-2.6v-5.2zM18 11.5l4.5 2.6v5.2L18 21.9l-4.5-2.6v-5.2z"/></svg>
+        <h3>A fleet: Hive schedules it and keeps the record</h3>
+        <p>Hive orchestrates fleets of coding agents across repositories, with the governance and audit trail that running agents at that scale demands. A Spektacular workflow is the unit of work a fleet orchestrator schedules.</p>
+        <p class="fit-artifacts">Those same artifacts are the audit trail that makes an agent's output reviewable rather than merely plausible.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMMUNITY ============ -->
+<section class="band band-alt" id="community">
+  <div class="wrap community-grid">
+    <div class="community-copy">
+      <h2>An open community</h2>
+      <p>Every repository in the organization is Apache 2.0 licensed, requires DCO sign-off on every commit, and follows the CNCF Code of Conduct. Hive is maintained by a three-member Maintainer Committee spanning three organizations, with a documented contributor ladder and explicit governance for AI-agent contributions.</p>
+      <p>Hive was incubated inside KubeStellar, a CNCF Sandbox project. Hive Commons has applied to the CNCF Sandbox as a project of its own, and the application is in progress.</p>
+      <a class="inline-link" href="https://github.com/cncf/sandbox/issues/516">Follow the CNCF Sandbox application</a>
+    </div>
+
+    <div class="community-links">
+      <h3>Join in</h3>
+      <ul>
+        <li><a href="/join"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3z"/><path d="M3 7l9 6 9-6"/></svg>Join the mailing list</a></li>
+        <li><a href="/discord"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10h.01M12 10h.01M16 10h.01"/><path d="M4 5h16v11H9l-5 4z"/></svg>Chat on Discord</a></li>
+        <li><a href="/meet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4z"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>Biweekly meeting, Thursdays 10:00 AM ET</a></li>
+        <li><a href="/agenda"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Agenda and notes</a></li>
+        <li><a href="/tv"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3z"/><path d="M10 9l5 3-5 3z"/></svg>Meeting recordings</a></li>
+        <li><a href="https://docs.hivecommons.dev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 012-2h5v18H6a2 2 0 01-2-2zM13 3h5a2 2 0 012 2v14a2 2 0 01-2 2h-5z"/></svg>Documentation</a></li>
+        <li><a href="https://github.com/hivecommons/.github/blob/main/GOVERNANCE.md"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 7.8-8 9-4.6-1.2-8-4.5-8-9V6z"/></svg>Governance, maintainers, and security policy</a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 </main>
+
+<footer class="foot">
+  <div class="wrap foot-row">
+    <div class="foot-brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 2l12 7v14l-12 7L4 23V9z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M16 9l6 3.5v7L16 23l-6-3.5v-7z" fill="currentColor"/>
+      </svg>
+      <span>Hive Commons</span>
+    </div>
+    <nav class="foot-nav" aria-label="Footer">
+      <a href="https://github.com/hivecommons">GitHub</a>
+      <a href="https://docs.hivecommons.dev">Docs</a>
+      <a href="https://hive.hivecommons.dev">Hive Hub</a>
+      <a href="https://spektacular.dev">Spektacular</a>
+      <a href="https://github.com/hivecommons/.github/blob/main/CODE_OF_CONDUCT.md">Code of conduct</a>
+    </nav>
+    <p class="foot-legal">&copy; 2026 Hive Commons maintainers. Code is licensed under Apache 2.0. Security contact: security@hivecommons.dev</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  var root = document.querySelector('[data-carousel]');
+  if (!root) return;
+  var track = root.querySelector('[data-car-track]');
+  var slides = Array.prototype.slice.call(root.querySelectorAll('[data-slide]'));
+  var dotsWrap = root.querySelector('[data-car-dots]');
+  var controls = document.querySelector('[data-carousel-controls]');
+  if (!track || slides.length < 2) return;
+
+  var AUTO_ADVANCE_MS = 6000;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var current = 0;
+  var timer = null;
+  var paused = false;
+
+  // Dot indicators
+  var dots = slides.map(function (slide, i) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'dot';
+    b.setAttribute('role', 'tab');
+    var name = slide.querySelector('h3');
+    b.setAttribute('aria-label', name ? name.textContent.trim() : 'Project ' + (i + 1));
+    b.addEventListener('click', function () { goTo(i, true); });
+    dotsWrap.appendChild(b);
+    return b;
+  });
+  dotsWrap.hidden = false;
+  if (controls) controls.hidden = false;
+
+  function scrollBehavior() { return reduceMotion.matches ? 'auto' : 'smooth'; }
+
+  function goTo(i, focusCard) {
+    current = (i + slides.length) % slides.length;
+    var slide = slides[current];
+    var left = slide.offsetLeft - track.offsetLeft;
+    track.scrollTo({ left: left, behavior: scrollBehavior() });
+    paint();
+    if (focusCard) {
+      var card = slide.querySelector('a');
+      if (card) card.focus({ preventScroll: true });
+    }
+  }
+
+  function paint() {
+    dots.forEach(function (d, i) {
+      var on = i === current;
+      d.setAttribute('aria-selected', on ? 'true' : 'false');
+      d.tabIndex = on ? 0 : -1;
+    });
+  }
+
+  // Keep `current` in sync with manual scrolling and snap
+  var syncTimer = null;
+  track.addEventListener('scroll', function () {
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(function () {
+      var best = 0, bestDist = Infinity;
+      slides.forEach(function (s, i) {
+        var d = Math.abs((s.offsetLeft - track.offsetLeft) - track.scrollLeft);
+        if (d < bestDist) { bestDist = d; best = i; }
+      });
+      current = best;
+      paint();
+    }, 80);
+  }, { passive: true });
+
+  var prev = document.querySelector('[data-car-prev]');
+  var next = document.querySelector('[data-car-next]');
+  if (prev) prev.addEventListener('click', function () { goTo(current - 1, false); restart(); });
+  if (next) next.addEventListener('click', function () { goTo(current + 1, false); restart(); });
+
+  // Arrow keys move between slides when focus is inside the track or on a dot
+  function onKey(e) {
+    if (e.key === 'ArrowRight') { e.preventDefault(); goTo(current + 1, true); restart(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1, true); restart(); }
+    else if (e.key === 'Home') { e.preventDefault(); goTo(0, true); restart(); }
+    else if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1, true); restart(); }
+  }
+  track.addEventListener('keydown', onKey);
+  dotsWrap.addEventListener('keydown', onKey);
+
+  // Tabbing to a card brings it into view
+  track.addEventListener('focusin', function (e) {
+    var li = e.target.closest('[data-slide]');
+    if (!li) return;
+    var i = slides.indexOf(li);
+    if (i !== -1 && i !== current) goTo(i, false);
+  });
+
+  // Gentle auto-advance; pauses on hover and focus, off under reduced motion
+  function tick() { if (!paused && !document.hidden) goTo(current + 1, false); }
+  function start() {
+    if (reduceMotion.matches || timer) return;
+    timer = setInterval(tick, AUTO_ADVANCE_MS);
+  }
+  function stop() { clearInterval(timer); timer = null; }
+  function restart() { stop(); start(); }
+  root.addEventListener('mouseenter', function () { paused = true; });
+  root.addEventListener('mouseleave', function () { paused = false; });
+  root.addEventListener('focusin', function () { paused = true; });
+  root.addEventListener('focusout', function (e) {
+    if (!root.contains(e.relatedTarget)) paused = false;
+  });
+  if (reduceMotion.addEventListener) {
+    reduceMotion.addEventListener('change', function () { reduceMotion.matches ? stop() : start(); });
+  }
+  paint();
+  start();
+})();
+</script>
 </body>
 </html>
