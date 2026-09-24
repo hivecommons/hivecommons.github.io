@@ -541,6 +541,18 @@ h1 {
 .community-links a:hover { color: var(--honey); }
 .community-links svg { width: 1.25rem; height: 1.25rem; flex: none; fill: none; stroke: var(--honey); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 
+/* ---------- infrastructure thanks ---------- */
+.infra-thanks { border-top: 1px solid var(--line); padding-block: clamp(2.5rem, 6vw, 4.5rem); }
+.infra-thanks-card { display: grid; gap: 1.25rem; justify-items: center; text-align: center; }
+.infra-thanks-card p { max-width: 48rem; color: var(--ink-2); }
+.infra-thanks-card a { color: var(--ink); }
+.infra-thanks-card a:hover { color: var(--honey); }
+.infra-logo-row { display: flex; flex-wrap: wrap; justify-content: center; gap: .85rem; }
+.infra-thanks-card .infra-logo-chip { display: inline-flex; align-items: center; gap: .7rem; min-height: 3.25rem; padding: .55rem 1rem; border: 1px solid color-mix(in srgb, var(--line) 65%, transparent); border-radius: .85rem; background: #fff; color: #1c1710; text-decoration: none; box-shadow: 0 1px 2px color-mix(in srgb, #000 14%, transparent); }
+.infra-thanks-card .infra-logo-chip:hover { border-color: var(--honey); color: #1c1710; }
+.infra-logo-chip img { display: block; width: auto; height: 2rem; max-width: 11rem; }
+.infra-logo-label { font-size: .86rem; font-weight: 700; white-space: nowrap; }
+
 /* ---------- footer ---------- */
 .foot { border-top: 1px solid var(--line); padding-block: 2.5rem calc(2.5rem + env(safe-area-inset-bottom, 0px)); }
 .foot-row { display: grid; grid-template-columns: auto 1fr; gap: 1rem 2.5rem; align-items: center; }
