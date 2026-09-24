@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hive Commons</title>
-<meta name="description" content="Hive Commons is the open source community behind Hive, a control layer for running governed, audited fleets of AI coding agents against real repositories, and the tools that make agent-assisted development trustworthy: Spektacular, hotshot, pluk, promptargs, rationguard, and dibs.">
+<meta name="description" content="Hive Commons supports Hive with Claude Code, GitHub Copilot CLI, Codex, Gemini, vLLM, LiteLLM, llm-d, watsonx.ai and more.">
 <link rel="canonical" href="https://hivecommons.dev/">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -13,20 +13,21 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hive Commons">
 <meta property="og:title" content="Hive Commons">
-<meta property="og:description" content="The open source community behind Hive, governed and audited fleets of AI coding agents, and the tooling family around it.">
+<meta property="og:description" content="Hive Commons supports Hive with Claude Code, GitHub Copilot CLI, Codex, Gemini, vLLM, LiteLLM, llm-d, watsonx.ai and more.">
 <meta property="og:url" content="https://hivecommons.dev/">
 <meta property="og:image" content="https://hivecommons.dev/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Hive Commons">
-<meta name="twitter:description" content="The open source community behind Hive, governed and audited fleets of AI coding agents, and the tooling family around it.">
+<meta name="twitter:description" content="Hive Commons supports Hive with Claude Code, GitHub Copilot CLI, Codex, Gemini, vLLM, LiteLLM, llm-d, watsonx.ai and more.">
 <meta name="twitter:image" content="https://hivecommons.dev/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <script>document.documentElement.classList.replace('no-js', 'js');</script>
 <link rel="stylesheet" href="/style.css">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"Organization","name":"Hive Commons","url":"https://hivecommons.dev/","sameAs":["https://github.com/hivecommons","https://docs.hivecommons.dev/"],"sponsor":[{"@type":"Organization","name":"Akamai","url":"https://www.linode.com/"},{"@type":"Organization","name":"Oracle Cloud","url":"https://www.oracle.com/cloud/cloud-native/kubernetes-engine/"},{"@type":"Organization","name":"Cloudflare","url":"https://www.cloudflare.com/"},{"@type":"Organization","name":"GitHub Copilot","url":"https://github.com/features/copilot"},{"@type":"Organization","name":"Bluehost","url":"https://www.bluehost.com/"}],"funder":[{"@type":"Organization","name":"Akamai","url":"https://www.linode.com/"},{"@type":"Organization","name":"Oracle Cloud","url":"https://www.oracle.com/cloud/cloud-native/kubernetes-engine/"},{"@type":"Organization","name":"Cloudflare","url":"https://www.cloudflare.com/"},{"@type":"Organization","name":"GitHub Copilot","url":"https://github.com/features/copilot"},{"@type":"Organization","name":"Bluehost","url":"https://www.bluehost.com/"}]},{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Hive","applicationCategory":"DeveloperApplication","operatingSystem":"Linux, macOS","license":"https://www.apache.org/licenses/LICENSE-2.0","codeRepository":"https://github.com/hivecommons/hive","url":"https://hive.hivecommons.dev/","keywords":"Claude Code, GitHub Copilot CLI, Goose, OpenAI Codex CLI, Pi, IBM Bob, Aider, Gemini CLI, Google Antigravity CLI, OpenCode, Kilo Code, Muse Code, Oh My Pi, vLLM, llm-d, LiteLLM, IBM watsonx.ai, OpenRouter, Anthropic, OpenAI, DeepSeek"}]</script>
 </head>
 <body>
 
@@ -528,21 +529,84 @@
 </section>
 
 
+<!-- ============ SUPPORTED INTEGRATIONS ============ -->
+<section class="integrations-band" aria-labelledby="integrations-title">
+  <div class="wrap integrations-card">
+    <div class="band-head-row">
+      <div>
+        <p class="kicker">Supported integrations</p>
+        <h2 id="integrations-title">Works with the agents and inference engines you already use</h2>
+      </div>
+      <a class="inline-link" href="https://docs.hivecommons.dev/docs/hive/integrations">See all integrations →</a>
+    </div>
+    <p>Hive supports these agent CLIs, inference engines and model gateways by backend ID. This list describes supported software integrations and does not imply endorsement or partnership.</p>
+    <div class="integration-groups">
+      <section aria-labelledby="agent-cli-title">
+        <h3 id="agent-cli-title">Agent CLIs</h3>
+        <ul class="integration-list">
+          <li><a href="https://www.anthropic.com/claude-code"><span class="integration-chip">Claude Code</span><span>Anthropic · backend: claude</span></a></li>
+          <li><a href="https://docs.github.com/copilot/reference/copilot-cli-reference"><span class="integration-chip">GitHub Copilot CLI</span><span>GitHub · backend: copilot</span></a></li>
+          <li><a href="https://block.github.io/goose/"><span class="integration-chip">Goose</span><span>Block · backend: goose</span></a></li>
+          <li><a href="https://github.com/openai/codex"><span class="integration-chip">OpenAI Codex CLI</span><span>OpenAI · backend: codex</span></a></li>
+          <li><a href="https://pi.dev/"><span class="integration-chip">Pi</span><span>Earendil Works · backend: pi</span></a></li>
+          <li><a href="https://www.ibm.com/products/watsonx-code-assistant"><span class="integration-chip">IBM Bob</span><span>IBM · backend: bob</span></a></li>
+          <li><a href="https://aider.chat/"><span class="integration-chip">Aider</span><span>Open source · backend: aider</span></a></li>
+          <li><a href="https://github.com/google-gemini/gemini-cli"><span class="integration-chip">Gemini CLI</span><span>Google · backend: gemini</span></a></li>
+          <li><a href="https://github.com/google-antigravity/antigravity-cli"><span class="integration-chip">Google Antigravity CLI</span><span>Google · backend: agy</span></a></li>
+          <li><a href="https://opencode.ai/docs/"><span class="integration-chip">OpenCode</span><span>OpenCode · backend: opencode</span></a></li>
+          <li><a href="https://kilo.ai/cli"><span class="integration-chip">Kilo Code</span><span>Kilo · backend: kilo</span></a></li>
+          <li><a href="https://musecodes.io/docs/"><span class="integration-chip">Muse Code</span><span>Meta · backend: muse</span></a></li>
+          <li><a href="https://github.com/can1357/oh-my-pi"><span class="integration-chip">Oh My Pi</span><span>can1357 · backend: omp</span></a></li>
+        </ul>
+      </section>
+      <section aria-labelledby="inference-title">
+        <h3 id="inference-title">Inference engines</h3>
+        <ul class="integration-list">
+          <li><a href="https://www.vllm.ai/"><span class="integration-chip">vLLM</span><span>vLLM project · backend: vllm</span></a></li>
+          <li><a href="https://llm-d.ai/"><span class="integration-chip">llm-d</span><span>llm-d project · backend: llm-d</span></a></li>
+          <li><a href="https://www.litellm.ai/"><span class="integration-chip">LiteLLM</span><span>BerriAI · backend: litellm</span></a></li>
+          <li><a href="https://www.ibm.com/products/watsonx-ai"><span class="integration-chip">IBM watsonx.ai</span><span>IBM · backend: watsonx</span></a></li>
+        </ul>
+      </section>
+      <section aria-labelledby="gateway-title">
+        <h3 id="gateway-title">Model gateways and providers</h3>
+        <ul class="integration-list">
+          <li><a href="https://openrouter.ai/"><span class="integration-chip">OpenRouter</span><span>backend: openrouter</span></a></li>
+          <li><a href="https://www.anthropic.com/"><span class="integration-chip">Anthropic</span><span>backend: anthropic</span></a></li>
+          <li><a href="https://openai.com/"><span class="integration-chip">OpenAI</span><span>backend: openai</span></a></li>
+          <li><a href="https://www.deepseek.com/"><span class="integration-chip">DeepSeek</span><span>backend: deepseek</span></a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</section>
+
 <!-- ============ INFRASTRUCTURE THANKS ============ -->
 <section class="infra-thanks" aria-labelledby="infra-thanks-title">
   <div class="wrap infra-thanks-card">
-    <h2 id="infra-thanks-title">Infrastructure thanks</h2>
-    <p>Hive runs on infrastructure donated through the <a href="https://www.cncf.io/">CNCF</a> by Akamai (Linode) and Oracle Cloud Infrastructure (OKE). Thank you!</p>
-    <div class="infra-logo-row" aria-label="Infrastructure partners">
-      <a class="infra-logo-chip" href="https://www.linode.com/" aria-label="Akamai (Linode)">
+    <h2 id="infra-thanks-title">Thanks to the organizations that power Hive Commons</h2>
+    <ul class="infra-logo-row" aria-label="Organizations that power Hive Commons">
+      <li><a class="infra-logo-chip" href="https://www.linode.com/" aria-label="Akamai Linode: Kubernetes infrastructure donated through the CNCF">
         <img src="/assets/infra/akamai.svg" alt="Akamai logo" loading="lazy" decoding="async">
-        <span class="infra-logo-label">Akamai (Linode)</span>
-      </a>
-      <a class="infra-logo-chip" href="https://www.oracle.com/cloud/cloud-native/kubernetes-engine/" aria-label="Oracle Cloud Infrastructure OKE">
+        <span><span class="infra-logo-label">Akamai (Linode)</span><span class="infra-logo-note">Kubernetes infrastructure donated through the CNCF</span></span>
+      </a></li>
+      <li><a class="infra-logo-chip" href="https://www.oracle.com/cloud/cloud-native/kubernetes-engine/" aria-label="Oracle Cloud OKE: Kubernetes infrastructure donated through the CNCF">
         <img src="/assets/infra/oracle.svg" alt="Oracle logo" loading="lazy" decoding="async">
-        <span class="infra-logo-label">Oracle Cloud (OKE)</span>
-      </a>
-    </div>
+        <span><span class="infra-logo-label">Oracle Cloud (OKE)</span><span class="infra-logo-note">Kubernetes infrastructure donated through the CNCF</span></span>
+      </a></li>
+      <li><a class="infra-logo-chip" href="https://www.cloudflare.com/" aria-label="Cloudflare: DNS, edge and tunnels">
+        <img src="/assets/infra/cloudflare.svg" alt="Cloudflare logo" loading="lazy" decoding="async">
+        <span><span class="infra-logo-label">Cloudflare</span><span class="infra-logo-note">DNS, edge and tunnels</span></span>
+      </a></li>
+      <li><a class="infra-logo-chip" href="https://github.com/features/copilot" aria-label="GitHub Copilot: AI inference donated to CNCF projects through the CNCF">
+        <img src="/assets/infra/github-copilot.svg" alt="GitHub Copilot logo" loading="lazy" decoding="async">
+        <span><span class="infra-logo-label">GitHub Copilot</span><span class="infra-logo-note">AI inference donated to CNCF projects through the CNCF</span></span>
+      </a></li>
+      <li><a class="infra-logo-chip" href="https://www.bluehost.com/" aria-label="Bluehost: domain hosting">
+        <img src="/assets/infra/bluehost.svg" alt="Bluehost logo" loading="lazy" decoding="async">
+        <span><span class="infra-logo-label">Bluehost</span><span class="infra-logo-note">domain hosting</span></span>
+      </a></li>
+    </ul>
   </div>
 </section>
 

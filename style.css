@@ -541,17 +541,29 @@ h1 {
 .community-links a:hover { color: var(--honey); }
 .community-links svg { width: 1.25rem; height: 1.25rem; flex: none; fill: none; stroke: var(--honey); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 
+/* ---------- supported integrations ---------- */
+.integrations-band, .infra-thanks { border-top: 1px solid var(--line); padding-block: clamp(2.5rem, 6vw, 4.5rem); }
+.integrations-card { display: grid; gap: 1.25rem; }
+.integrations-card > p { max-width: 62rem; color: var(--ink-2); }
+.integration-groups { display: grid; gap: 1rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.integration-groups h3 { margin-bottom: .7rem; font-size: 1.05rem; }
+.integration-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.integration-list a { display: flex; align-items: center; justify-content: space-between; gap: .8rem; min-height: 3rem; padding: .65rem .75rem; border: 1px solid color-mix(in srgb, var(--line) 75%, transparent); border-radius: .85rem; color: var(--ink); background: color-mix(in srgb, var(--panel) 92%, transparent); text-decoration: none; }
+.integration-list a:hover { border-color: var(--honey); color: var(--honey); }
+.integration-chip { flex: none; padding: .22rem .5rem; border-radius: 999px; background: color-mix(in srgb, var(--honey) 18%, transparent); color: var(--ink); font-weight: 700; font-size: .88rem; }
+.integration-list span:last-child { color: var(--ink-2); font-size: .82rem; text-align: right; }
+
 /* ---------- infrastructure thanks ---------- */
-.infra-thanks { border-top: 1px solid var(--line); padding-block: clamp(2.5rem, 6vw, 4.5rem); }
 .infra-thanks-card { display: grid; gap: 1.25rem; justify-items: center; text-align: center; }
-.infra-thanks-card p { max-width: 48rem; color: var(--ink-2); }
 .infra-thanks-card a { color: var(--ink); }
 .infra-thanks-card a:hover { color: var(--honey); }
-.infra-logo-row { display: flex; flex-wrap: wrap; justify-content: center; gap: .85rem; }
-.infra-thanks-card .infra-logo-chip { display: inline-flex; align-items: center; gap: .7rem; min-height: 3.25rem; padding: .55rem 1rem; border: 1px solid color-mix(in srgb, var(--line) 65%, transparent); border-radius: .85rem; background: #fff; color: #1c1710; text-decoration: none; box-shadow: 0 1px 2px color-mix(in srgb, #000 14%, transparent); }
+.infra-logo-row { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: .85rem; }
+.infra-thanks-card .infra-logo-chip { display: inline-flex; align-items: center; gap: .8rem; min-height: 4.25rem; max-width: 24rem; padding: .65rem 1rem; border: 1px solid color-mix(in srgb, var(--line) 65%, transparent); border-radius: .85rem; background: #fff; color: #1c1710; text-align: left; text-decoration: none; box-shadow: 0 1px 2px color-mix(in srgb, #000 14%, transparent); }
 .infra-thanks-card .infra-logo-chip:hover { border-color: var(--honey); color: #1c1710; }
-.infra-logo-chip img { display: block; width: auto; height: 2rem; max-width: 11rem; }
-.infra-logo-label { font-size: .86rem; font-weight: 700; white-space: nowrap; }
+.infra-logo-chip img { display: block; flex: none; width: auto; height: 2rem; max-width: 9rem; }
+.infra-logo-label, .infra-logo-note { display: block; }
+.infra-logo-label { font-size: .9rem; font-weight: 700; white-space: nowrap; }
+.infra-logo-note { margin-top: .12rem; color: #4b3f31; font-size: .78rem; line-height: 1.25; }
 
 /* ---------- footer ---------- */
 .foot { border-top: 1px solid var(--line); padding-block: 2.5rem calc(2.5rem + env(safe-area-inset-bottom, 0px)); }
@@ -571,7 +583,7 @@ h1 {
   .hero-slide { grid-template-columns: 1fr; align-content: center; }
   .hero-art { order: -1; }
   .hero-visual { max-width: 20rem; }
-  .pitch-grid, .community-grid { grid-template-columns: 1fr; }
+  .pitch-grid, .community-grid, .integration-groups { grid-template-columns: 1fr; }
   .pitch-lead { max-width: none; }
   .pillars { grid-template-columns: 1fr; }
   .fit { grid-template-columns: 1fr; }
