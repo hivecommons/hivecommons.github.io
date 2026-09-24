@@ -560,12 +560,13 @@ h1 {
 .infra-thanks-card { display: grid; gap: 1.25rem; justify-items: center; text-align: center; }
 .infra-thanks-card a { color: var(--ink); }
 .infra-thanks-card a:hover { color: var(--honey); }
-.infra-logo-row { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: .85rem; }
-.infra-thanks-card .infra-logo-chip { display: inline-flex; align-items: center; gap: .8rem; min-height: 4.25rem; max-width: 24rem; padding: .65rem 1rem; border: 1px solid color-mix(in srgb, var(--line) 65%, transparent); border-radius: .85rem; background: #fff; color: #1c1710; text-align: left; text-decoration: none; box-shadow: 0 1px 2px color-mix(in srgb, #000 14%, transparent); }
+.infra-logo-row { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)); gap: .85rem; }
+.infra-logo-row li { display: flex; }
+.infra-thanks-card .infra-logo-chip { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: .75rem; width: 100%; min-height: 10.5rem; padding: 1.1rem 1rem; border: 1px solid color-mix(in srgb, var(--line) 65%, transparent); border-radius: .85rem; background: #fff; color: #1c1710; text-align: center; text-decoration: none; box-shadow: 0 1px 2px color-mix(in srgb, #000 14%, transparent); }
 .infra-thanks-card .infra-logo-chip:hover { border-color: var(--honey); color: #1c1710; }
-.infra-logo-chip img { display: block; flex: none; width: auto; height: 2rem; max-width: 9rem; }
+.infra-logo-chip img { display: block; flex: none; width: 9rem; height: 2.75rem; object-fit: contain; }
 .infra-logo-label, .infra-logo-note { display: block; }
-.infra-logo-label { font-size: .9rem; font-weight: 700; white-space: nowrap; }
+.infra-logo-label { font-size: .9rem; font-weight: 700; }
 .infra-logo-note { margin-top: .12rem; color: #4b3f31; font-size: .78rem; line-height: 1.25; }
 
 /* ---------- footer ---------- */
