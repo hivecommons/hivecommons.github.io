@@ -18,6 +18,8 @@ declare -A MAP=(
   [joinus]="https://groups.google.com/g/hivecommons-dev|the hivecommons-dev Google Group"
   [join_us]="https://groups.google.com/g/hivecommons-dev|the hivecommons-dev Google Group"
   [join]="https://groups.google.com/g/hivecommons-dev|the hivecommons-dev Google Group"
+  [agenda]="https://docs.google.com/document/d/1eVJnPR4zua5ZhOqg-vVT-ndBpwXbPOdXar7AZqlqky0/edit?usp=sharing|the meeting agenda & notes"
+  [calendar]="https://calendar.google.com/calendar/embed?src=b43dc28a888d316aa1fe4a47bf3038cd1bca7bbb2b5cdbf5e7ecb9cc10672a95%40group.calendar.google.com|the community calendar"
   [meet]="https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MGU0cmRlbjZvbXZpZTljZTRqZWg5ZTJlbmNfMjAyNjA5MTBUMTQwMDAwWiBiNDNkYzI4YTg4OGQzMTZhYTFmZTRhNDdiZjMwMzhjZDFiY2E3YmJiMmI1Y2RiZjVlN2VjYjljYzEwNjcyYTk1QGc&tmsrc=b43dc28a888d316aa1fe4a47bf3038cd1bca7bbb2b5cdbf5e7ecb9cc10672a95%40group.calendar.google.com&scp=ALL|the meeting invite"
 )
 for path in "${!MAP[@]}"; do
