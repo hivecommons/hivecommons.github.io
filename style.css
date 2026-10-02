@@ -10,6 +10,9 @@
   --honey: #e0a33a;
   --honey-deep: #b8791a;
   --honey-ink: #14110b;
+  --cta-accent: #3dd6c6;
+  --cta-accent-deep: #20aa9d;
+  --cta-accent-ink: #07110f;
   --line: #332c1e;
   --line-soft: #26201414;
   --focus: #e0a33a;
@@ -35,6 +38,9 @@
     --honey: #b8791a;
     --honey-deep: #8f5c10;
     --honey-ink: #fff8e8;
+    --cta-accent: #006876;
+    --cta-accent-deep: #005e69;
+    --cta-accent-ink: #f7fffd;
     --line: #d8cbae;
     color-scheme: light;
   }
@@ -159,6 +165,8 @@ h1 {
 }
 .btn-primary { background: var(--honey); color: var(--honey-ink); border-color: var(--honey); }
 .btn-primary:hover { background: var(--honey-deep); border-color: var(--honey-deep); }
+.btn-story { background: var(--cta-accent); color: var(--cta-accent-ink); border-color: var(--cta-accent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--cta-accent) 28%, transparent); }
+.btn-story:hover { background: var(--cta-accent-deep); border-color: var(--cta-accent-deep); color: var(--cta-accent-ink); }
 .btn-quiet { color: var(--ink); background: transparent; }
 .btn-quiet:hover { border-color: var(--honey-deep); color: var(--honey); }
 .hero-note { margin-top: 1.4rem; color: var(--ink-3); font-size: .9rem; }
