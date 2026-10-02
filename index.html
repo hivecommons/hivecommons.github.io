@@ -65,7 +65,7 @@
         <div class="hero-copy">
           <p class="kicker">The umbrella community for Hive</p>
           <h1>Human judgment is the scarce resource.</h1>
-          <p class="lede">Hive Commons is the umbrella community for Hive, an AI-agent fleet orchestration system that runs governed swarms of coding agents against real repositories.</p>
+          <p class="lede">Hive Commons is the umbrella community for Hive, an AI-agent fleet orchestration system that runs governed swarms of coding agents against real projects and connected work sources.</p>
           <div class="cta-row">
             <a class="btn btn-primary" href="https://hive.hivecommons.dev/get-started">Request a Hive →</a>
             <a class="btn btn-quiet" href="/join">Join the community</a>
@@ -101,7 +101,7 @@
             <a class="btn btn-primary" href="https://hive.hivecommons.dev/get-started">Request a Hive →</a>
             <a class="btn btn-quiet" href="https://github.com/hivecommons/hive">View Hive source</a>
           </div>
-          <p class="hero-note">A single Go binary enumerates GitHub issues and PRs plus configured work sources such as GitHub Projects, Linear, Jira Cloud, and Jira Data Center / Server, then dispatches governed work to AI agents.</p>
+          <p class="hero-note">A single Go binary enumerates issues and pull/merge requests from configured work sources such as GitHub Issues, GitHub Projects, Linear, Jira Cloud, and Jira Data Center / Server, then dispatches governed work to AI agents.</p>
         </div>
         <figure class="hero-art">
           <svg class="hero-visual" width="520" height="480" viewBox="0 0 520 480" role="img" aria-labelledby="hero-hive-title">
@@ -220,7 +220,7 @@
     <p class="pitch-lead" id="pitch-lead">Human judgment is the scarce resource.</p>
     <div class="pitch-body">
       <p>Hive Commons is an open source organization focused on one problem: making software teams more productive now that AI coding agents can do real work. Every tool here exists to move mechanical work off people and onto agents, without giving up governance, auditability, or accountability.</p>
-      <p>Hive is the flagship, a control layer for running governed fleets of AI coding agents against real repositories. Spektacular (Spek) gives an agent a spek, a plan, and a reviewable implementation. Around them, hotshot, pluk, promptargs, rationguard, and dibs each remove a specific piece of friction from working with agents.</p>
+      <p>Hive is the flagship, a control layer for running governed fleets of AI coding agents against real projects. Spektacular (Spek) gives an agent a spek, a plan, and a reviewable implementation. Around them, hotshot, pluk, promptargs, rationguard, and dibs each remove a specific piece of friction from working with agents.</p>
     </div>
   </div>
 </section>
@@ -230,7 +230,7 @@
   <div class="wrap">
     <div class="band-head">
       <h2>What Hive does</h2>
-      <p class="band-lede">Hive is a control layer for running governed fleets of AI coding agents against real repositories. Agents pick up issues, open pull requests, review code, repair CI, and answer contributors, under a six-level maturity model that decides exactly what they may do and enforces it in code rather than prompts.</p>
+      <p class="band-lede">Hive is a control layer for running governed fleets of AI coding agents against real projects. Agents pick up issues, open pull requests, review code, repair CI, and answer contributors, under a six-level maturity model that decides exactly what they may do and enforces it in code rather than prompts.</p>
     </div>
 
     <div class="pillars">
@@ -242,7 +242,7 @@
       <article class="pillar">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V10M10 20V6M14 20V12M18 20V4"/></svg>
         <h3>Governance enforced in code</h3>
-        <p>Trust is dialed up one capability at a time through ACMM, the AI-native Capability Maturity Model. Its six levels scope what an agent may do, from advisory only through to merging on green CI; below L6, hive-owned PRs are gated with the hive-specific hive-pause label.</p>
+        <p>Trust is dialed up one capability at a time through ACMM, the AI-native Capability Maturity Model. Its six levels scope what an agent may do, from advisory only through to merging when checks pass; below L6, hive-owned PRs are gated with the hive-specific hive-pause label.</p>
       </article>
       <article class="pillar">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
@@ -259,13 +259,13 @@
       </div>
     </div>
 
-    <div class="proof" role="group" aria-label="Figures from Hive's own repository">
+    <div class="proof" role="group" aria-label="Figures from Hive's own project">
       <dl class="stats">
         <div><dt>merged pull requests</dt><dd>5,600+</dd></div>
         <div><dt>median issue close time</dt><dd>3 hours</dd></div>
         <div><dt>counting since</dt><dd>April 2026</dd></div>
       </dl>
-      <p class="proof-note">Hive maintains its own repository. These are its figures.</p>
+      <p class="proof-note">Hive maintains its own project. These are its figures.</p>
     </div>
 
     <div class="adopters" role="group" aria-labelledby="adopters-title">
@@ -317,14 +317,14 @@
           <button type="button" class="acmm-card" id="acmm-tab-5" role="tab" aria-selected="false" aria-controls="acmm-panel-5" data-acmm-tab>
             <span class="hex" aria-hidden="true"></span>
             <b>L5 Semi-Autonomous</b>
-            <small>All agents open hold-gated PRs. Reviewer checks work before humans batch-review.</small>
+            <small>All agents open hold-gated pull requests. Reviewer checks work before humans batch-review.</small>
           </button>
         </li>
         <li class="acmm-level" style="--n:6" data-acmm-level>
           <button type="button" class="acmm-card" id="acmm-tab-6" role="tab" aria-selected="false" aria-controls="acmm-panel-6" data-acmm-tab>
             <span class="hex" aria-hidden="true"></span>
             <b>L6 Fully Autonomous</b>
-            <small>Agents open PRs and auto-merge on green CI with reviewer as the gate.</small>
+            <small>Agents open pull requests and auto-merge when checks pass with reviewer as the gate.</small>
           </button>
         </li>
       </ol>
@@ -382,10 +382,10 @@
         <article class="level-detail" id="acmm-panel-6" role="tabpanel" aria-labelledby="acmm-tab-6" data-acmm-panel>
           <span class="level-kicker">L6 · #6</span>
           <h4>L6 Fully Autonomous</h4>
-          <p>Agents open pull requests and auto-merge on green CI. The reviewer agent is the gate: verdicts that require human attention pull a pull request out of the auto-merge lane.</p>
+          <p>Agents open pull requests and auto-merge when checks pass. The reviewer agent is the gate: verdicts that require human attention pull a pull request out of the auto-merge lane.</p>
           <ul>
             <li><strong>Who acts:</strong> Agents open work and reviewer gates it.</li>
-            <li><strong>What opens:</strong> Pull requests that auto-merge after green CI.</li>
+            <li><strong>What opens:</strong> Pull requests that auto-merge after checks pass.</li>
             <li><strong>Human role:</strong> Handle exceptions and reviewer escalations.</li>
           </ul>
         </article>
@@ -421,7 +421,7 @@
         <div class="card card-flagship">
           <svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9z"/><path d="M12 2v18M4 6.5l8 4.5 8-4.5"/></svg>
           <h3>Hive <span class="tag">flagship</span></h3>
-          <p>A control layer for running governed fleets of AI coding agents against real repositories.</p>
+          <p>A control layer for running governed fleets of AI coding agents against real projects.</p>
           <div class="card-actions">
             <a class="btn btn-primary btn-sm" href="https://hive.hivecommons.dev/get-started">Request a Hive →</a>
             <a class="card-link" href="https://github.com/hivecommons/hive">Source</a>
@@ -506,7 +506,7 @@
       <div class="fit-col">
         <svg class="fit-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l4.5 2.6v5.2L12 12.4 7.5 9.8V4.6z"/><path d="M6 11.5l4.5 2.6v5.2L6 21.9l-4.5-2.6v-5.2zM18 11.5l4.5 2.6v5.2L18 21.9l-4.5-2.6v-5.2z"/></svg>
         <h3>A fleet: Hive schedules it and keeps the record</h3>
-        <p>Hive orchestrates fleets of coding agents across repositories, with the governance and audit trail that running agents at that scale demands. A Spek workflow is the unit of work a fleet orchestrator schedules.</p>
+        <p>Hive orchestrates fleets of coding agents across projects, with the governance and audit trail that running agents at that scale demands. A Spek workflow is the unit of work a fleet orchestrator schedules.</p>
         <p class="fit-artifacts">Those same artifacts are the audit trail that makes an agent's output reviewable rather than merely plausible.</p>
       </div>
     </div>
@@ -518,7 +518,7 @@
   <div class="wrap community-grid">
     <div class="community-copy">
       <h2>An open community</h2>
-      <p>Every repository in the organization is Apache 2.0 licensed, requires DCO sign-off on every commit, and follows the CNCF Code of Conduct. Hive is maintained by a three-member Maintainer Committee spanning three organizations, with a documented contributor ladder and explicit governance for AI-agent contributions.</p>
+      <p>Every source repository in the organization is Apache 2.0 licensed, requires DCO sign-off on every commit, and follows the CNCF Code of Conduct. Hive is maintained by a three-member Maintainer Committee spanning three organizations, with a documented contributor ladder and explicit governance for AI-agent contributions.</p>
       <p>Hive was incubated inside KubeStellar, a CNCF Sandbox project. Hive Commons has applied to the CNCF Sandbox as a project of its own, and the application is in progress.</p>
       <a class="inline-link" href="https://github.com/cncf/sandbox/issues/516">Follow the CNCF Sandbox application</a>
     </div>
