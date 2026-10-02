@@ -671,9 +671,6 @@ h1 {
 
 /* ---------- contributor story modal ---------- */
 button.btn { cursor: pointer; font-family: inherit; }
-.story-link-button { display: inline; padding: 0; border: 0; background: none; color: var(--honey); font: inherit; font-weight: 600; cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
-.story-link-button:hover { color: var(--ink); }
-.story-submit-card { border-color: color-mix(in srgb, var(--honey) 55%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--honey) 12%, var(--bg-2)), var(--bg-2)); }
 .story-dialog:not([open]) { display: none; }
 .story-dialog[open] { display: block; }
 .story-dialog { width: min(100% - 2rem, 42rem); max-height: min(90vh, 58rem); padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--ink); box-shadow: 0 1.5rem 5rem color-mix(in srgb, #000 55%, transparent); }
