@@ -269,9 +269,8 @@ What changed for you afterward?"></textarea>
       <p class="story-helper">Opens a prefilled GitHub issue in a new tab.</p>
       <p class="story-status" id="story-status" role="status" aria-live="polite"></p>
       <div class="story-fallback" id="story-fallback" hidden>
-        <p>Popup blocked? Copy this Markdown into a new <a href="https://github.com/hivecommons/hive/issues/new?labels=contributor-story">contributor story issue</a>.</p>
-        <textarea id="story-markdown" rows="7" readonly></textarea>
-        <button class="btn btn-quiet" type="button" id="story-copy">Copy Markdown</button>
+        <p>Browser blocked the new tab — <a id="story-fallback-link" href="https://github.com/hivecommons/hive/issues/new?labels=contributor-story" target="_blank" rel="noopener">open the prefilled issue</a>.</p>
+        <button class="btn btn-quiet" type="button" id="story-copy">Copy issue text</button>
       </div>
       <p class="story-publish-note">Issues labelled <code>contributor-story</code> are reviewed by maintainers and promoted to this page after public links are verified. Not signed in to GitHub? <a href="/join">Email us</a> or <a href="https://hivecommons.dev/discord">join Discord</a>.</p>
     </form>
@@ -313,10 +312,11 @@ What changed for you afterward?"></textarea>
   var closers = dialog.querySelectorAll("[data-story-close]");
   var status = document.getElementById("story-status");
   var fallback = document.getElementById("story-fallback");
-  var markdownBox = document.getElementById("story-markdown");
+  var fallbackLink = document.getElementById("story-fallback-link");
   var storyText = document.getElementById("story-text");
   var storyCount = document.getElementById("story-count");
   var copyButton = document.getElementById("story-copy");
+  var issueText = "";
   var lastFocus = null;
   var focusableSelector = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
 
@@ -423,7 +423,8 @@ What changed for you afterward?"></textarea>
     lastFocus = document.activeElement;
     status.textContent = "";
     fallback.hidden = true;
-    markdownBox.value = "";
+    fallbackLink.removeAttribute("href");
+    issueText = "";
     if (typeof dialog.showModal === "function") {
       dialog.showModal();
     } else {
@@ -486,25 +487,23 @@ What changed for you afterward?"></textarea>
     if (!validate()) return;
     var data = collectData();
     var issueUrl = buildIssue(data);
-    var draft = markdown(data);
-    var opened = window.open(issueUrl, "_blank", "noopener,noreferrer");
+    issueText = markdown(data);
+    var opened = window.open("", "_blank");
+    if (!opened) {
+      fallbackLink.href = issueUrl;
+      fallback.hidden = false;
+      return;
+    }
+    opened.opener = null;
+    opened.location = issueUrl;
     var note = "Thanks — your story opened as a draft issue in a new tab. Hit Submit new issue there to finish. Not signed in to GitHub? Email us or use the Discord link below.";
     if (data.story_truncated) note = "Your story was trimmed to 1500 characters for the GitHub form. " + note;
-    if (!opened) {
-      markdownBox.value = draft;
-      fallback.hidden = false;
-      note = "Popup blocked. Copy the Markdown below into a new contributor story issue.";
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(draft).catch(function () {});
-      }
-    }
     status.textContent = note;
   });
 
   copyButton.addEventListener("click", function () {
-    markdownBox.select();
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(markdownBox.value).then(function () {
+      navigator.clipboard.writeText(issueText).then(function () {
         status.textContent = "Copied. Paste it into the contributor story issue form to finish.";
       });
     }
