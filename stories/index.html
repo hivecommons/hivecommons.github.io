@@ -223,9 +223,9 @@
         </select>
       </div>
 
-      <div class="story-field">
+      <div class="story-field story-field-wide">
         <label for="story-text">Your story <span aria-hidden="true">*</span></label>
-        <textarea id="story-text" name="story" rows="8" maxlength="2200" required placeholder="What did you try to do?
+        <textarea id="story-text" name="story" rows="6" maxlength="2200" required placeholder="What did you try to do?
 What did Hive or the relay do?
 What changed for you afterward?"></textarea>
         <div class="story-count-row">
@@ -252,7 +252,7 @@ What changed for you afterward?"></textarea>
       <p class="story-helper">Opens a prefilled GitHub issue in a new tab.</p>
       <p class="story-status" id="story-status" role="status" aria-live="polite"></p>
       <div class="story-fallback" id="story-fallback" hidden>
-        <p>Popup blocked? Copy this Markdown into a new <a href="https://github.com/hivecommons/hive/issues/new?template=contributor-story.yml">contributor story issue</a>.</p>
+        <p>Popup blocked? Copy this Markdown into a new <a href="https://github.com/hivecommons/hive/issues/new?labels=contributor-story">contributor story issue</a>.</p>
         <textarea id="story-markdown" rows="7" readonly></textarea>
         <button class="btn btn-quiet" type="button" id="story-copy">Copy Markdown</button>
       </div>
@@ -381,16 +381,9 @@ What changed for you afterward?"></textarea>
 
   function buildIssue(data) {
     var params = [
-      ["template", "contributor-story.yml"],
       ["title", "Contributor story: " + data.name + " on " + data.project],
       ["labels", "contributor-story"],
-      ["name", data.name],
-      ["profile", data.profile],
-      ["project", data.project],
-      ["role", data.role],
-      ["story", data.story],
-      ["quote_ok", data.quote_ok ? "Yes" : ""],
-      ["link", data.link]
+      ["body", markdown(data)]
     ];
     return ISSUE_URL + "?" + buildQuery(params);
   }
