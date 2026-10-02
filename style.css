@@ -691,15 +691,16 @@ button.btn { cursor: pointer; font-family: inherit; }
 .story-close { flex: none; width: 2.25rem; height: 2.25rem; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-2); color: var(--ink); font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .story-close:hover { border-color: var(--honey); color: var(--honey); }
 .story-dialog-copy, .story-publish-note, .story-helper, .story-status, .story-fallback p { color: var(--ink-2); font-size: .95rem; }
-.story-field { display: grid; gap: .3rem; }
-.story-field label { font-weight: 600; }
-.story-field input, .story-field select, .story-field textarea, .story-fallback textarea { width: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); color: var(--ink); font: inherit; padding: .58rem .7rem; }
+.story-field { display: grid; gap: .3rem; align-content: start; }
+.story-field > label, .story-field-label { display: flex; align-items: flex-end; min-height: 2.8rem; margin: 0; font-weight: 600; line-height: 1.25; }
+.story-field input, .story-field select, .story-field textarea, .story-fallback textarea { width: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); color: var(--ink); font: inherit; font-size: 1rem; padding: .58rem .7rem; }
+.story-field input, .story-field select { height: 48px; }
 .story-field textarea, .story-fallback textarea { resize: vertical; }
 .story-field input:focus, .story-field select:focus, .story-field textarea:focus, .story-fallback textarea:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
 .story-field [aria-invalid="true"] { border-color: #e56b5d; }
 .field-error { min-height: 1.05em; color: #f19a8f; font-size: .84rem; }
-.story-check { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: .6rem; }
-.story-check input { width: 1.1rem; height: 1.1rem; accent-color: var(--honey); }
+.story-check-control { display: flex; align-items: center; gap: .6rem; min-height: 48px; color: var(--ink); font-weight: 500; }
+.story-check-control input { flex: none; width: 1.1rem; height: 1.1rem; accent-color: var(--honey); }
 .story-count-row { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
 .story-counter { color: var(--ink-3); font-size: .88rem; white-space: nowrap; }
 .story-counter.is-over { color: #f19a8f; }
@@ -714,5 +715,6 @@ button.btn { cursor: pointer; font-family: inherit; }
 }
 @media (max-width: 36rem) {
   .story-dialog { width: calc(100% - 1rem); max-height: 94vh; }
+  .story-field > label, .story-field-label { min-height: auto; }
   .story-count-row, .story-dialog-head { flex-direction: column; }
 }

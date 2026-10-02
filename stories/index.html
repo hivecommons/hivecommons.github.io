@@ -196,19 +196,33 @@
 
       <div class="story-field">
         <label for="story-project">Project / hive you contributed to <span aria-hidden="true">*</span></label>
-        <input id="story-project" name="project" type="text" list="known-hives" required>
-        <datalist id="known-hives">
+        <input id="story-project" name="project" type="text" list="story-projects" value="Hive" required>
+        <datalist id="story-projects">
           <option value="Hive">
-          <option value="Hive Commons">
+          <option value="Dibs">
+          <option value="Pluk">
+          <option value="RationGuard">
+          <option value="promptargs">
+          <option value="Flue">
+          <option value="Spektacular">
+          <option value="Clanker">
+          <option value="docs">
+          <option value="website">
+          <option value="CNCF End Users">
+          <option value="CNCF Prow">
+          <option value="IBM docling">
           <option value="KubeStellar Console">
           <option value="Project Bluefin">
-          <option value="tunaos.org">
-          <option value="Spektacular">
-          <option value="Hotshot">
-          <option value="Pluk">
-          <option value="Promptargs">
-          <option value="RationGuard">
-          <option value="Dibs">
+          <option value="awesome-tuis">
+          <option value="context-forge">
+          <option value="drools">
+          <option value="GNOME">
+          <option value="hacktoberfest">
+          <option value="HashiCorp">
+          <option value="llm-d fma">
+          <option value="llm-d wva">
+          <option value="Open Horizon">
+          <option value="Saiku">
         </datalist>
         <p class="field-error" id="story-project-error"></p>
       </div>
@@ -234,9 +248,12 @@ What changed for you afterward?"></textarea>
         </div>
       </div>
 
-      <div class="story-field story-check">
-        <input id="story-quote" name="quote_ok" type="checkbox">
-        <label for="story-quote">Can we quote you by name?</label>
+      <div class="story-field story-check-field">
+        <span class="story-field-label">Can we quote you by name?</span>
+        <label class="story-check-control">
+          <input id="story-quote" name="quote_ok" type="checkbox">
+          <span>Yes</span>
+        </label>
       </div>
 
       <div class="story-field">
