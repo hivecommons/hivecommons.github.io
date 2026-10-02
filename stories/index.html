@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contributor Stories — Hive Commons</title>
+<meta name="description" content="Real Hive Commons contributor progression stories and public Contributor Relay metrics for event organisers, mentors, and contributors.">
+<link rel="canonical" href="https://hivecommons.dev/stories/">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#14110b">
+<meta name="color-scheme" content="dark light">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hive Commons">
+<meta property="og:title" content="Contributor Stories — Hive Commons">
+<meta property="og:description" content="First contributions in minutes, learning by contributing, with Hive agents handling scaffolding and relay work.">
+<meta property="og:url" content="https://hivecommons.dev/stories/">
+<meta property="og:image" content="https://hivecommons.dev/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Contributor Stories — Hive Commons">
+<meta name="twitter:description" content="First contributions in minutes, learning by contributing, with Hive agents handling scaffolding and relay work.">
+<meta name="twitter:image" content="https://hivecommons.dev/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<script>document.documentElement.classList.replace('no-js', 'js');</script>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="/" aria-label="Hive Commons home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 2l12 7v14l-12 7L4 23V9z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M16 9l6 3.5v7L16 23l-6-3.5v-7z" fill="currentColor"/>
+      </svg>
+      <span>Hive Commons</span>
+    </a>
+    <nav class="top-nav" aria-label="Site">
+      <a href="/#hive">Hive</a>
+      <a href="/#projects">Projects</a>
+      <a href="/#fit">How it fits</a>
+      <a href="/stories/" aria-current="page">Stories</a>
+      <a href="/#community">Community</a>
+      <a href="https://docs.hivecommons.dev">Docs</a>
+      <a href="https://github.com/hivecommons">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="page-hero" aria-labelledby="stories-title">
+    <div class="wrap page-hero-grid">
+      <div>
+        <p class="kicker">Contributor Relay in practice</p>
+        <h1 id="stories-title">Contributor Stories</h1>
+        <p class="lede">Hive turns first contribution into a minutes-long path: sign in, pick a task, let the relay and your agent scaffold the work, then learn the codebase by reviewing and merging real pull requests.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://hive.hivecommons.dev/contribute">See the live contributor portal</a>
+          <a class="btn btn-quiet" href="https://docs.hivecommons.dev/docs/hive/operations/contributor-relay">Read the relay docs</a>
+        </div>
+      </div>
+      <figure class="hero-art story-art">
+        <svg class="hero-visual" width="520" height="420" viewBox="0 0 520 420" role="img" aria-labelledby="story-art-title">
+          <title id="story-art-title">Contributor relay path from task to pull request</title>
+          <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M78 164l62-36 62 36v72l-62 36-62-36z"/>
+            <path d="M230 124l62-36 62 36v72l-62 36-62-36z" fill="#221c11" stroke="#e0a33a"/>
+            <path d="M382 164l62-36 62 36v72l-62 36-62-36z"/>
+            <path d="M202 200h24M354 160h24" stroke="#e0a33a"/>
+            <path d="M218 192l10 8-10 8M370 152l10 8-10 8" stroke="#e0a33a"/>
+          </g>
+          <g class="workflow-labels" font-family="'IBM Plex Sans', system-ui, sans-serif" font-size="15" text-anchor="middle">
+            <text x="140" y="205">task</text>
+            <text x="292" y="165">relay</text>
+            <text x="444" y="205">PR</text>
+          </g>
+        </svg>
+        <figcaption>A contributor keeps their own CLI and model; the hive supplies the queue, guardrails, and audit trail.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="band band-alt" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="band-head">
+        <p class="kicker">How it works in 5 minutes</p>
+        <h2 id="how-title">From sign-in to reviewed code</h2>
+        <p class="band-lede">The relay is documented as a contributor-owned process that connects over WebSocket, receives one task at a time, drives the selected local CLI, and reports completion or PR metadata back to the hive.</p>
+      </div>
+      <ol class="story-steps">
+        <li><a href="https://docs.hivecommons.dev/docs/hive/operations/contributor-relay#basic-setup">Sign in at a hive contributor portal</a><span>Each hive serves <code>/contribute</code> with live queue stats and setup commands.</span></li>
+        <li><a href="https://docs.hivecommons.dev/docs/hive/operations/contributor-relay#how-it-fits-together">Pick eligible work from the queue</a><span>The hub applies repository, label, assignment, dependency, cooldown, and trust-tier gates before work is offered.</span></li>
+        <li><a href="https://docs.hivecommons.dev/docs/hive/operations/contributor-relay#basic-setup">Run the relay with your CLI</a><span><code>just contribute-hive</code> starts the relay and agent locally or in the reference container path.</span></li>
+        <li><a href="https://docs.hivecommons.dev/docs/hive/operations/contributor-relay#how-it-fits-together">Review, submit, and merge through project rules</a><span>The hub injects short-lived GitHub credentials, receives PR metadata, and keeps the normal maintainer review path.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="real-stories-title">
+    <div class="wrap">
+      <div class="band-head">
+        <p class="kicker">Evidenced progressions</p>
+        <h2 id="real-stories-title">Stories we can link today</h2>
+        <p class="band-lede">These cards only include public GitHub evidence: first merged pull request dates and the OWNERS commit that added maintainers.</p>
+      </div>
+      <div class="story-grid">
+        <article class="story-card card-flagship">
+          <p class="story-handle"><a href="https://github.com/hanthor">@hanthor</a></p>
+          <h3>Contributor to Hive maintainer</h3>
+          <p>First merged Hive PR: <a href="https://github.com/hivecommons/hive/pull/1492">#1492</a>, merged June 12, 2026. Added to <code>OWNERS</code> as an approver and reviewer on August 28, 2026.</p>
+          <a class="inline-link" href="https://github.com/hivecommons/hive/commit/2cbc0b1ce3eb2d779d1687cf53a341d6248e7e1d">View maintainer grant evidence</a>
+        </article>
+        <article class="story-card card-flagship">
+          <p class="story-handle"><a href="https://github.com/Danathar">@Danathar</a></p>
+          <h3>Contributor to Hive maintainer</h3>
+          <p>First merged Hive PR: <a href="https://github.com/hivecommons/hive/pull/3871">#3871</a>, merged August 20, 2026. Added to <code>OWNERS</code> as an approver and reviewer on August 28, 2026.</p>
+          <a class="inline-link" href="https://github.com/hivecommons/hive/commit/2cbc0b1ce3eb2d779d1687cf53a341d6248e7e1d">View maintainer grant evidence</a>
+        </article>
+        <article class="story-card story-card-muted">
+          <p class="story-handle">Your story here</p>
+          <h3>Tell us what changed</h3>
+          <p>If the relay helped you learn a project, mentor someone, or move from newcomer to regular contributor, share links we can verify.</p>
+          <a class="inline-link" href="/discord">Tell us in Discord</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="band band-alt" aria-labelledby="numbers-title">
+    <div class="wrap">
+      <div class="band-head">
+        <p class="kicker">By the numbers</p>
+        <h2 id="numbers-title">Public data, as of October 1, 2026</h2>
+        <p class="band-lede">Numbers below come from GitHub pull requests and public Hive hub endpoints; the live leaderboard is the source of truth for current contributor activity.</p>
+      </div>
+      <dl class="stats story-stats">
+        <!-- Query: GraphQL search issueCount for repo:hivecommons/{hive,docs,pluk,hotshot,promptargs,rationguard,dibs} is:pr is:merged merged:>=2026-07-01; REST pulls author breakdown excluding Bot users, dependabot[bot], github-actions[bot], hivecommons-hive[bot]. -->
+        <div><dt>human PR authors across 7 Hive Commons repos since 2026-07-01</dt><dd>22</dd></div>
+        <div><dt>human PR authors in hivecommons/hive since 2026-07-01</dt><dd>20</dd></div>
+        <div><dt>merged PRs in those 7 repos since 2026-07-01, including agent-authored work</dt><dd>5,619</dd></div>
+        <!-- Query: curl -s https://hive.hivecommons.dev/api/hub/stats on 2026-10-01T16:56Z. -->
+        <div><dt>public hives online from the hub stats endpoint</dt><dd>26</dd></div>
+        <div><dt>agents reported by the public hub stats endpoint</dt><dd>99</dd></div>
+        <div><dt>PRs reported by the public hub stats endpoint</dt><dd>466</dd></div>
+      </dl>
+      <p class="proof-note">Repo human contributor counts since 2026-07-01: hive 20, docs 1, pluk 3, hotshot 1, promptargs 1, rationguard 2, dibs 1. <a href="https://hive.hivecommons.dev/contribute">Open the live contributor portal</a> or <a href="https://hive.hivecommons.dev/api/hub/leaderboard">view the public leaderboard JSON</a>.</p>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="share-title">
+    <div class="wrap community-grid">
+      <div class="community-copy">
+        <p class="kicker">Share yours</p>
+        <h2 id="share-title">Help us keep the story page honest</h2>
+        <p>We do not publish unverifiable quotes or private details. Send public links to the PRs, issues, or maintainer records that show your progression.</p>
+        <p>Speaking / stage requests: use the Hive Commons mailing list so organisers reach the maintainers in public.</p>
+      </div>
+      <div class="community-links">
+        <h3>Contact paths</h3>
+        <ul>
+          <li><a href="https://github.com/hivecommons/.github/issues/new"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 8v5M12 16h.01"/></svg>Open a community issue</a></li>
+          <li><a href="/discord"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10h.01M12 10h.01M16 10h.01"/><path d="M4 5h16v11H9l-5 4z"/></svg>Tell us in Discord</a></li>
+          <li><a href="/join"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3z"/><path d="M3 7l9 6 9-6"/></svg>Join the mailing list</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-row">
+    <div class="foot-brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 2l12 7v14l-12 7L4 23V9z" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M16 9l6 3.5v7L16 23l-6-3.5v-7z" fill="currentColor"/>
+      </svg>
+      <span>Hive Commons</span>
+    </div>
+    <nav class="foot-nav" aria-label="Footer">
+      <a href="/stories/">Contributor Stories</a>
+      <a href="https://github.com/hivecommons">GitHub</a>
+      <a href="https://docs.hivecommons.dev">Docs</a>
+      <a href="https://hive.hivecommons.dev">Hive Hub</a>
+      <a href="https://spektacular.dev">Spektacular (Spek)</a>
+      <a href="https://github.com/hivecommons/.github/blob/main/CODE_OF_CONDUCT.md">Code of conduct</a>
+    </nav>
+    <p class="foot-legal">&copy; 2026 Hive Commons maintainers. Code is licensed under Apache 2.0. Security contact: security@hivecommons.dev</p>
+  </div>
+</footer>
+
+</body>
+</html>
