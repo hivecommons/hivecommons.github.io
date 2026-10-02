@@ -682,7 +682,7 @@ button.btn { cursor: pointer; font-family: inherit; }
 .story-dialog-head .kicker { margin-bottom: .35rem; }
 .story-close { flex: none; width: 2.25rem; height: 2.25rem; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-2); color: var(--ink); font-size: 1.4rem; line-height: 1; cursor: pointer; }
 .story-close:hover { border-color: var(--honey); color: var(--honey); }
-.story-dialog-copy, .story-publish-note, .story-status, .story-fallback p { color: var(--ink-2); font-size: .95rem; }
+.story-dialog-copy, .story-publish-note, .story-helper, .story-status, .story-fallback p { color: var(--ink-2); font-size: .95rem; }
 .story-field { display: grid; gap: .4rem; }
 .story-field label { font-weight: 600; }
 .story-field input, .story-field select, .story-field textarea, .story-fallback textarea { width: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); color: var(--ink); font: inherit; padding: .7rem .8rem; }
@@ -698,6 +698,7 @@ button.btn { cursor: pointer; font-family: inherit; }
 .story-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .35rem; }
 .story-status:not(:empty) { padding: .8rem; border: 1px solid color-mix(in srgb, var(--honey) 45%, var(--line)); border-radius: var(--radius); background: color-mix(in srgb, var(--honey) 10%, var(--bg-2)); color: var(--ink); }
 .story-fallback { display: grid; gap: .75rem; padding: .9rem; border: 1px dashed var(--line); border-radius: var(--radius); background: var(--bg-2); }
+.story-fallback[hidden] { display: none; }
 .story-publish-note code { color: var(--ink); }
 @media (max-width: 36rem) {
   .story-dialog { width: calc(100% - 1rem); max-height: 94vh; }

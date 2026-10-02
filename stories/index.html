@@ -246,9 +246,10 @@ What changed for you afterward?"></textarea>
       </div>
 
       <div class="story-actions">
-        <button class="btn btn-primary" type="submit">Open draft issue</button>
+        <button class="btn btn-primary" type="submit">Submit</button>
         <button class="btn btn-quiet" type="button" data-story-close>Cancel</button>
       </div>
+      <p class="story-helper">Opens a prefilled GitHub issue in a new tab.</p>
       <p class="story-status" id="story-status" role="status" aria-live="polite"></p>
       <div class="story-fallback" id="story-fallback" hidden>
         <p>Popup blocked? Copy this Markdown into a new <a href="https://github.com/hivecommons/hive/issues/new?template=contributor-story.yml">contributor story issue</a>.</p>
@@ -372,19 +373,26 @@ What changed for you afterward?"></textarea>
     ].join("\n");
   }
 
+  function buildQuery(params) {
+    return params.map(function (pair) {
+      return encodeURIComponent(pair[0]) + "=" + encodeURIComponent(pair[1]);
+    }).join("&");
+  }
+
   function buildIssue(data) {
-    var params = new URLSearchParams();
-    params.set("template", "contributor-story.yml");
-    params.set("labels", "contributor-story,docs");
-    params.set("title", "Contributor story: " + data.name + " on " + data.project);
-    params.set("name", data.name);
-    if (data.profile) params.set("profile", data.profile);
-    params.set("project", data.project);
-    params.set("role", data.role);
-    params.set("story", data.story);
-    if (data.quote_ok) params.set("quote_ok", "Yes");
-    if (data.link) params.set("link", data.link);
-    return ISSUE_URL + "?" + params.toString();
+    var params = [
+      ["template", "contributor-story.yml"],
+      ["title", "Contributor story: " + data.name + " on " + data.project],
+      ["labels", "contributor-story"],
+      ["name", data.name],
+      ["profile", data.profile],
+      ["project", data.project],
+      ["role", data.role],
+      ["story", data.story],
+      ["quote_ok", data.quote_ok ? "Yes" : ""],
+      ["link", data.link]
+    ];
+    return ISSUE_URL + "?" + buildQuery(params);
   }
 
   function collectData() {
@@ -405,6 +413,7 @@ What changed for you afterward?"></textarea>
     lastFocus = document.activeElement;
     status.textContent = "";
     fallback.hidden = true;
+    markdownBox.value = "";
     if (typeof dialog.showModal === "function") {
       dialog.showModal();
     } else {
@@ -468,11 +477,11 @@ What changed for you afterward?"></textarea>
     var data = collectData();
     var issueUrl = buildIssue(data);
     var draft = markdown(data);
-    markdownBox.value = draft;
     var opened = window.open(issueUrl, "_blank", "noopener,noreferrer");
     var note = "Thanks — your story opened as a draft issue in a new tab. Hit Submit new issue there to finish. Not signed in to GitHub? Email us or use the Discord link below.";
     if (data.story_truncated) note = "Your story was trimmed to 1500 characters for the GitHub form. " + note;
     if (!opened) {
+      markdownBox.value = draft;
       fallback.hidden = false;
       note = "Popup blocked. Copy the Markdown below into a new contributor story issue.";
       if (navigator.clipboard && navigator.clipboard.writeText) {
