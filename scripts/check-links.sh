@@ -71,7 +71,7 @@ extract_html_links() {
 extract_redirect_targets() {
   local redirects="$ROOT/make-redirects.sh"
   [[ -f "$redirects" ]] || return 0
-  awk -F'"' '/^[[:space:]]*\[[^]]+\]="/ { print "make-redirects.sh\t" $2 }' "$redirects"
+  awk -F'"' '/^[[:space:]]*\[[^]]+\]="/ { split($2, parts, "|"); print "make-redirects.sh\t" parts[1] }' "$redirects"
 }
 
 find "$ROOT" -name '*.html' -not -path "$WORK_DIR/*" -print | sort |
