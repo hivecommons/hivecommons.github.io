@@ -24,3 +24,7 @@ entry has no committed page, or a committed page differs from what the script em
 - `scripts/check-links.test.sh` — fixture-based self-test of the link checker; runs
   offline (fake `curl`).
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
+
+## Code of Conduct
+
+Hive Commons website contributors are expected to follow the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
