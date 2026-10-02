@@ -60,6 +60,7 @@
         <p class="lede">Hive turns first contribution into a minutes-long path: sign in, pick a task, let the relay and your agent scaffold the work, then learn the codebase by reviewing and merging real pull requests.</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="https://hive.hivecommons.dev/get-started#contribute">See the live contributor portal</a>
+          <button class="btn btn-primary" type="button" data-story-open>Share your story</button>
           <a class="btn btn-primary" href="/discord">Join our Discord</a>
           <a class="btn btn-quiet" href="https://docs.hivecommons.dev/docs/hive/contributor-relay">Read the relay docs</a>
         </div>
@@ -103,10 +104,13 @@
 
   <section class="band" aria-labelledby="real-stories-title">
     <div class="wrap">
-      <div class="band-head">
-        <p class="kicker">Evidenced progressions</p>
-        <h2 id="real-stories-title">Stories we can link today</h2>
-        <p class="band-lede">These cards only include public GitHub evidence: first merged pull request dates and the OWNERS commit that added maintainers.</p>
+      <div class="band-head band-head-row">
+        <div>
+          <p class="kicker">Evidenced progressions</p>
+          <h2 id="real-stories-title">Stories we can link today</h2>
+          <p class="band-lede">These cards only include public GitHub evidence: first merged pull request dates and the OWNERS commit that added maintainers.</p>
+        </div>
+        <button class="btn btn-primary" type="button" data-story-open>Share your story</button>
       </div>
       <div class="story-grid">
         <article class="story-card card-flagship">
@@ -120,12 +124,6 @@
           <h3>Contributor to Hive maintainer</h3>
           <p>First merged Hive PR: <a href="https://github.com/hivecommons/hive/pull/3871">#3871</a>, merged August 20, 2026. Added to <code>OWNERS</code> as an approver and reviewer on August 28, 2026.</p>
           <a class="inline-link" href="https://github.com/hivecommons/hive/commit/2cbc0b1ce3eb2d779d1687cf53a341d6248e7e1d">View maintainer grant evidence</a>
-        </article>
-        <article class="story-card story-card-muted">
-          <p class="story-handle">Your story here</p>
-          <h3>Tell us what changed</h3>
-          <p>If the relay helped you learn a project, mentor someone, or move from newcomer to regular contributor, share links we can verify.</p>
-          <a class="inline-link" href="/discord">Tell us in Discord</a>
         </article>
       </div>
     </div>
@@ -158,6 +156,7 @@
         <p class="kicker">Share yours</p>
         <h2 id="share-title">Help us keep the story page honest</h2>
         <p>We do not publish unverifiable quotes or private details. Send public links to the PRs, issues, or maintainer records that show your progression.</p>
+        <p>How stories get published: issues labelled <code>contributor-story</code> in <a href="https://github.com/hivecommons/hive/issues?q=label%3Acontributor-story">hivecommons/hive</a> are reviewed by maintainers and promoted to this page when the public evidence is ready.</p>
         <p>Speaking / stage requests: use the Hive Commons mailing list so organisers reach the maintainers in public.</p>
       </div>
       <div class="community-links">
@@ -170,6 +169,96 @@
       </div>
     </div>
   </section>
+
+
+  <dialog class="story-dialog" id="story-dialog" aria-labelledby="story-dialog-title">
+    <form class="story-form" id="story-form" novalidate>
+      <div class="story-dialog-head">
+        <div>
+          <p class="kicker">Share yours</p>
+          <h2 id="story-dialog-title">Open a contributor story draft</h2>
+        </div>
+        <button class="story-close" type="button" aria-label="Close share your story dialog" data-story-close>&times;</button>
+      </div>
+      <p class="story-dialog-copy">This static site opens a prefilled GitHub issue in <a href="https://github.com/hivecommons/hive">hivecommons/hive</a>, where docs maintainers can review and promote verified stories.</p>
+
+      <div class="story-field">
+        <label for="story-name">Name or handle <span aria-hidden="true">*</span></label>
+        <input id="story-name" name="name" type="text" autocomplete="name" required>
+        <p class="field-error" id="story-name-error"></p>
+      </div>
+
+      <div class="story-field">
+        <label for="story-profile">GitHub, GitLab, or other profile URL</label>
+        <input id="story-profile" name="profile" type="url" inputmode="url" placeholder="https://github.com/your-handle">
+        <p class="field-error" id="story-profile-error"></p>
+      </div>
+
+      <div class="story-field">
+        <label for="story-project">Project / hive you contributed to <span aria-hidden="true">*</span></label>
+        <input id="story-project" name="project" type="text" list="known-hives" required>
+        <datalist id="known-hives">
+          <option value="Hive">
+          <option value="Hive Commons">
+          <option value="KubeStellar Console">
+          <option value="Project Bluefin">
+          <option value="tunaos.org">
+          <option value="Spektacular">
+          <option value="Hotshot">
+          <option value="Pluk">
+          <option value="Promptargs">
+          <option value="RationGuard">
+          <option value="Dibs">
+        </datalist>
+        <p class="field-error" id="story-project-error"></p>
+      </div>
+
+      <div class="story-field">
+        <label for="story-role">Role</label>
+        <select id="story-role" name="role">
+          <option value="first-time contributor">first-time contributor</option>
+          <option value="returning contributor">returning contributor</option>
+          <option value="maintainer">maintainer</option>
+          <option value="operator">operator</option>
+        </select>
+      </div>
+
+      <div class="story-field">
+        <label for="story-text">Your story <span aria-hidden="true">*</span></label>
+        <textarea id="story-text" name="story" rows="8" maxlength="2200" required placeholder="What did you try to do?
+What did Hive or the relay do?
+What changed for you afterward?"></textarea>
+        <div class="story-count-row">
+          <p class="field-error" id="story-text-error"></p>
+          <p class="story-counter"><span id="story-count">0</span>/1500 soft max</p>
+        </div>
+      </div>
+
+      <div class="story-field story-check">
+        <input id="story-quote" name="quote_ok" type="checkbox">
+        <label for="story-quote">Can we quote you by name?</label>
+      </div>
+
+      <div class="story-field">
+        <label for="story-link">Link to the PR/issue</label>
+        <input id="story-link" name="link" type="url" inputmode="url" placeholder="https://github.com/hivecommons/hive/pull/1492">
+        <p class="field-error" id="story-link-error"></p>
+      </div>
+
+      <div class="story-actions">
+        <button class="btn btn-primary" type="submit">Open draft issue</button>
+        <button class="btn btn-quiet" type="button" data-story-close>Cancel</button>
+      </div>
+      <p class="story-status" id="story-status" role="status" aria-live="polite"></p>
+      <div class="story-fallback" id="story-fallback" hidden>
+        <p>Popup blocked? Copy this Markdown into a new <a href="https://github.com/hivecommons/hive/issues/new?template=contributor-story.yml">contributor story issue</a>.</p>
+        <textarea id="story-markdown" rows="7" readonly></textarea>
+        <button class="btn btn-quiet" type="button" id="story-copy">Copy Markdown</button>
+      </div>
+      <p class="story-publish-note">Issues labelled <code>contributor-story</code> are reviewed by maintainers and promoted to this page after public links are verified. Not signed in to GitHub? <a href="/join">Email us</a> or <a href="https://hivecommons.dev/discord">join Discord</a>.</p>
+    </form>
+  </dialog>
+
 </main>
 
 <footer class="foot">
@@ -187,11 +276,222 @@
       <a href="https://docs.hivecommons.dev">Docs</a>
       <a href="https://hive.hivecommons.dev">Hive Hub</a>
       <a href="https://spektacular.dev">Spektacular (Spek)</a>
-      <a href="https://github.com/hivecommons/.github/blob/main/CODE_OF_CONDUCT.md">Code of conduct</a>
+      <a href="https://github.com/hivecommons/.github?tab=coc-ov-file">Code of conduct</a>
     </nav>
     <p class="foot-legal">&copy; 2026 Hive Commons maintainers. Code is licensed under Apache 2.0. Security contact: security@hivecommons.dev</p>
   </div>
 </footer>
+
+
+<script>
+(function () {
+  var STORY_MAX = 1500;
+  var ISSUE_URL = "https://github.com/hivecommons/hive/issues/new";
+  var dialog = document.getElementById("story-dialog");
+  var form = document.getElementById("story-form");
+  if (!dialog || !form) return;
+
+  var openers = document.querySelectorAll("[data-story-open]");
+  var closers = dialog.querySelectorAll("[data-story-close]");
+  var status = document.getElementById("story-status");
+  var fallback = document.getElementById("story-fallback");
+  var markdownBox = document.getElementById("story-markdown");
+  var storyText = document.getElementById("story-text");
+  var storyCount = document.getElementById("story-count");
+  var copyButton = document.getElementById("story-copy");
+  var lastFocus = null;
+  var focusableSelector = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+
+  function setError(id, message) {
+    var field = document.getElementById(id);
+    var error = document.getElementById(id + "-error");
+    if (!field || !error) return;
+    field.setAttribute("aria-invalid", message ? "true" : "false");
+    field.setAttribute("aria-describedby", error.id);
+    error.textContent = message || "";
+  }
+
+  function getValue(id) {
+    return (document.getElementById(id).value || "").trim();
+  }
+
+  function validUrl(value) {
+    if (!value) return true;
+    try {
+      var url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function updateCount() {
+    var length = storyText.value.length;
+    storyCount.textContent = String(Math.min(length, STORY_MAX));
+    storyCount.parentElement.classList.toggle("is-over", length > STORY_MAX);
+  }
+
+  function validate() {
+    var ok = true;
+    var name = getValue("story-name");
+    var project = getValue("story-project");
+    var story = getValue("story-text");
+    var profile = getValue("story-profile");
+    var link = getValue("story-link");
+    setError("story-name", name ? "" : "Name or handle is required.");
+    setError("story-project", project ? "" : "Project or hive is required.");
+    setError("story-text", story ? "" : "Your story is required.");
+    setError("story-profile", validUrl(profile) ? "" : "Use a full http:// or https:// URL.");
+    setError("story-link", validUrl(link) ? "" : "Use a full http:// or https:// URL.");
+    ok = Boolean(name && project && story && validUrl(profile) && validUrl(link));
+    if (!ok) {
+      var firstInvalid = form.querySelector("[aria-invalid='true']");
+      if (firstInvalid) firstInvalid.focus();
+    }
+    return ok;
+  }
+
+  function truncateStory(story) {
+    if (story.length <= STORY_MAX) return { text: story, truncated: false };
+    return { text: story.slice(0, STORY_MAX).trimEnd(), truncated: true };
+  }
+
+  function markdown(data) {
+    return [
+      "## Contributor story",
+      "",
+      "**Name or handle:** " + data.name,
+      "**Profile:** " + (data.profile || "Not provided"),
+      "**Project / hive:** " + data.project,
+      "**Role:** " + data.role,
+      "**Can quote by name:** " + (data.quote_ok ? "Yes" : "No"),
+      "**PR / issue:** " + (data.link || "Not provided"),
+      "",
+      "### Story",
+      data.story
+    ].join("\n");
+  }
+
+  function buildIssue(data) {
+    var params = new URLSearchParams();
+    params.set("template", "contributor-story.yml");
+    params.set("labels", "contributor-story,docs");
+    params.set("title", "Contributor story: " + data.name + " on " + data.project);
+    params.set("name", data.name);
+    if (data.profile) params.set("profile", data.profile);
+    params.set("project", data.project);
+    params.set("role", data.role);
+    params.set("story", data.story);
+    if (data.quote_ok) params.set("quote_ok", "Yes");
+    if (data.link) params.set("link", data.link);
+    return ISSUE_URL + "?" + params.toString();
+  }
+
+  function collectData() {
+    var trimmed = truncateStory(getValue("story-text"));
+    return {
+      name: getValue("story-name"),
+      profile: getValue("story-profile"),
+      project: getValue("story-project"),
+      role: document.getElementById("story-role").value,
+      story: trimmed.text,
+      story_truncated: trimmed.truncated,
+      quote_ok: document.getElementById("story-quote").checked,
+      link: getValue("story-link")
+    };
+  }
+
+  function openDialog() {
+    lastFocus = document.activeElement;
+    status.textContent = "";
+    fallback.hidden = true;
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      dialog.setAttribute("open", "");
+      dialog.classList.add("is-fallback-open");
+      document.body.classList.add("story-modal-open");
+    }
+    setTimeout(function () { document.getElementById("story-name").focus(); }, 0);
+  }
+
+  function closeDialog() {
+    if (typeof dialog.close === "function" && dialog.open) {
+      dialog.close();
+    } else {
+      dialog.removeAttribute("open");
+    }
+    dialog.classList.remove("is-fallback-open");
+    document.body.classList.remove("story-modal-open");
+    if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
+  }
+
+  function trapFocus(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeDialog();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    var items = Array.prototype.slice.call(dialog.querySelectorAll(focusableSelector)).filter(function (item) {
+      return item.offsetParent !== null || item === document.activeElement;
+    });
+    if (!items.length) return;
+    var first = items[0];
+    var last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  openers.forEach(function (button) { button.addEventListener("click", openDialog); });
+  closers.forEach(function (button) { button.addEventListener("click", closeDialog); });
+  dialog.addEventListener("cancel", function (event) { event.preventDefault(); closeDialog(); });
+  dialog.addEventListener("keydown", trapFocus);
+  dialog.addEventListener("click", function (event) {
+    var rect = dialog.getBoundingClientRect();
+    var outside = event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom;
+    if (event.target === dialog && outside) closeDialog();
+  });
+  storyText.addEventListener("input", updateCount);
+  updateCount();
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    status.textContent = "";
+    fallback.hidden = true;
+    if (!validate()) return;
+    var data = collectData();
+    var issueUrl = buildIssue(data);
+    var draft = markdown(data);
+    markdownBox.value = draft;
+    var opened = window.open(issueUrl, "_blank", "noopener,noreferrer");
+    var note = "Thanks — your story opened as a draft issue in a new tab. Hit Submit new issue there to finish. Not signed in to GitHub? Email us or use the Discord link below.";
+    if (data.story_truncated) note = "Your story was trimmed to 1500 characters for the GitHub form. " + note;
+    if (!opened) {
+      fallback.hidden = false;
+      note = "Popup blocked. Copy the Markdown below into a new contributor story issue.";
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(draft).catch(function () {});
+      }
+    }
+    status.textContent = note;
+  });
+
+  copyButton.addEventListener("click", function () {
+    markdownBox.select();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(markdownBox.value).then(function () {
+        status.textContent = "Copied. Paste it into the contributor story issue form to finish.";
+      });
+    }
+  });
+})();
+</script>
 
 </body>
 </html>
