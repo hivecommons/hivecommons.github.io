@@ -30,6 +30,25 @@ entry has no committed page, or a committed page differs from what the script em
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
 
+## Availability monitoring
+
+The **Link check** workflow runs every Monday at 09:17 UTC and can also be run
+manually from the Actions tab. On those runs, its separate `availability` job
+requests the live homepage and `/stories/` over HTTPS and fails unless both
+return HTTP 200. Connection/TLS errors and timeouts also fail the job. Requests
+have bounded retries for transient failures. PR runs only check the checkout;
+they do not probe the production site.
+
+Review failed runs in Actions and configure GitHub Actions notifications for the
+workflow if you operate the site. See [the rollback runbook](runbooks/release-rollback.md)
+for investigation and recovery. This weekly probe is a basic availability signal,
+not continuous uptime monitoring or a check after every deployment. External link
+failures remain warnings in the separate `links` job.
+
+Traffic analytics and shortcut usage tracking are not configured. Adding them
+requires an operator to choose a backend/property and settle privacy and consent
+requirements first (see [issue #73](https://github.com/hivecommons/hivecommons.github.io/issues/73)).
+
 ## Code of Conduct
 
 Hive Commons website contributors are expected to follow the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
