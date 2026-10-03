@@ -26,6 +26,14 @@ entry has no committed page, or a committed page differs from what the script em
 - `node --test scripts/story-dialog.test.mjs` — runs the Share-your-story dialog script
   from `stories/index.html` against a stub DOM and checks the prefilled-issue URL,
   validation, 1500-char trim, and popup-blocked fallback. Zero dependencies.
+- `node --test scripts/acmm-levels.test.mjs` — runs the ACMM levels tablist script from
+  `index.html` against a stub DOM with deterministic timers and checks tab activation,
+  roving tabindex, arrow/Home/End keys, auto-rotation, and every pause condition
+  (hover, focus, hidden tab, reduced motion, out of view). Zero dependencies.
+- `node --test scripts/page-scripts.test.mjs` — static gate over every committed HTML
+  page: each inline `<script>` parses, each JSON-LD block is valid schema.org JSON, no
+  external `<script src>` is introduced, and `sitemap.xml` lists exactly the canonical
+  top-level pages (redirect shortcuts excluded, new pages required). Zero dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
