@@ -618,7 +618,8 @@ h1 {
 .story-card h3 { margin-top: .35rem; }
 .story-card p:not(.story-handle) { margin-top: .8rem; color: var(--ink-2); font-size: .96rem; }
 .story-card a { text-underline-offset: 3px; }
-.story-handle { color: var(--honey); font-weight: 600; }
+.story-handle { display: flex; align-items: center; gap: .65rem; color: var(--honey); font-weight: 600; }
+.story-avatar { display: block; width: 2.75rem; height: 2.75rem; flex: none; border-radius: 50%; object-fit: cover; background: var(--bg-2); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
 .story-card-muted { background: var(--bg-2); }
 .story-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (prefers-color-scheme: light) {
