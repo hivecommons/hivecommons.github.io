@@ -26,8 +26,7 @@ broken HTML/CSS to every visitor, so treat any of these as user-impacting.
 - `curl -sI https://hivecommons.dev/` — confirm a `200` and that the response
   isn't GitHub's default Pages "there isn't a GitHub Pages site here" error.
 - `curl -sI https://hivecommons.dev/<redirect>` for each shortcut in
-  `make-redirects.sh`'s `MAP` (plus the hand-written `/join` exception called
-  out in `README.md`) to confirm each still meta-refreshes correctly.
+  `make-redirects.sh`'s `MAP` to confirm each still meta-refreshes correctly.
 - Compare the live `CNAME` file content against `hivecommons.dev` — a missing
   or altered `CNAME` drops the custom domain back to the default
   `*.github.io` host.
