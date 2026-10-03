@@ -30,6 +30,12 @@ entry has no committed page, or a committed page differs from what the script em
   `index.html` against a stub DOM with deterministic timers and checks tab activation,
   roving tabindex, arrow/Home/End keys, auto-rotation, and every pause condition
   (hover, focus, hidden tab, reduced motion, out of view). Zero dependencies.
+- `node --test scripts/carousels.test.mjs` — runs the hero carousel and projects carousel
+  scripts from `index.html` against a stub DOM with deterministic timers and checks dot
+  generation, slide/`aria-current` state, live-region announcements, keyboard/swipe/hash
+  navigation, auto-rotate and every pause condition, hero height measurement (clones,
+  resize debounce), and projects scroll-sync (debounced scroll, `scrollend`,
+  IntersectionObserver). Zero dependencies.
 - `node --test scripts/page-scripts.test.mjs` — static gate over every committed HTML
   page: each inline `<script>` parses, each JSON-LD block is valid schema.org JSON, no
   external `<script src>` is introduced, and `sitemap.xml` lists exactly the canonical
