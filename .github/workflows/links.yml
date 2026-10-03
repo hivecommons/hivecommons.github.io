@@ -50,8 +50,8 @@ jobs:
         run: scripts/check-links.test.sh
       - name: Self-test check-redirects
         run: scripts/check-redirects.test.sh
-      - name: Self-test story dialog
-        run: node --test scripts/story-dialog.test.mjs
+      - name: Self-test page scripts
+        run: node --test scripts/story-dialog.test.mjs scripts/acmm-levels.test.mjs scripts/page-scripts.test.mjs
 
   redirects:
     runs-on: ubuntu-latest
