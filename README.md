@@ -24,6 +24,8 @@ entry has no committed page, or a committed page differs from what the script em
 - `scripts/check-links.test.sh` — fixture-based self-test of the link checker; runs
   offline (fake `curl`).
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
+- `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
+  offline against throwaway sites with a two-entry generator.
 
 ## Code of Conduct
 
