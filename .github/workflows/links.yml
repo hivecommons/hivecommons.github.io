@@ -51,7 +51,7 @@ jobs:
       - name: Self-test check-redirects
         run: scripts/check-redirects.test.sh
       - name: Self-test page scripts
-        run: node --test scripts/story-dialog.test.mjs scripts/acmm-levels.test.mjs scripts/page-scripts.test.mjs
+        run: node --test scripts/story-dialog.test.mjs scripts/acmm-levels.test.mjs scripts/carousels.test.mjs scripts/page-scripts.test.mjs
 
   redirects:
     runs-on: ubuntu-latest
