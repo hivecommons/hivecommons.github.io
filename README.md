@@ -23,6 +23,9 @@ entry has no committed page, or a committed page differs from what the script em
   probes external URLs (CI runs it with `--external-warn`).
 - `scripts/check-links.test.sh` — fixture-based self-test of the link checker; runs
   offline (fake `curl`).
+- `node --test scripts/story-dialog.test.mjs` — runs the Share-your-story dialog script
+  from `stories/index.html` against a stub DOM and checks the prefilled-issue URL,
+  validation, 1500-char trim, and popup-blocked fallback. Zero dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
