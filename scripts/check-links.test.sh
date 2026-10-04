@@ -193,6 +193,20 @@ run_checker "$root"
 expect_rc 0 "dedup site passes"
 expect_out 'Checked 1 unique links\.' "three identical links counted once"
 
+echo "case: result does not depend on the caller's cwd"
+root="$(new_site other-cwd)"
+echo '<a href="/nope">x</a>' > "$root/index.html"
+OUT="$(cd "$TMP" && PATH="$TMP/bin:$PATH" bash "$root/scripts/check-links.sh" 2>&1)"; RC=$?
+expect_rc 1 "broken link still fails when run from another directory"
+expect_out 'ERROR internal target missing: index\.html -> /nope' "page links are extracted from outside the root"
+expect_no_out 'No such file' "no grep path errors"
+
+echo "case: a site with no links to check fails closed"
+root="$(new_site empty)"
+run_checker "$root"
+expect_rc 1 "no pages/links is an error, not a pass"
+expect_out 'no links found' "explains why"
+
 echo
 echo "check-links self-test: $passes passed, $failures failed"
 (( failures == 0 ))
