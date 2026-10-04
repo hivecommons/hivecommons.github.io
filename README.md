@@ -47,6 +47,14 @@ entry has no committed page, or a committed page differs from what the script em
   their ARIA pair, and every `[data-*]` selector an inline script queries exists in the
   markup (so a dropped attribute cannot make a carousel silently no-op). Each rule has a
   fixture self-test. Zero dependencies.
+- `node --test scripts/style-contract.test.mjs` — static gate over `style.css` (every local
+  stylesheet the pages link) and the pages' inline `<style>` blocks: comments, strings,
+  braces and parens balance and every declaration is `name: value`; every `var(--x)`
+  without a fallback names a custom property defined somewhere (stylesheet, inline
+  `style=`, or a script `setProperty`); every `[data-*]` selector in CSS matches an element
+  on some page; every class an inline script adds/toggles is styled by a rule (or read back
+  by the script); and every custom property a script sets (`--hero-h`) is read by CSS. Each
+  rule has a fixture self-test. Zero dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
