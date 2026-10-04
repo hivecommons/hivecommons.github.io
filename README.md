@@ -40,6 +40,13 @@ entry has no committed page, or a committed page differs from what the script em
   page: each inline `<script>` parses, each JSON-LD block is valid schema.org JSON, no
   external `<script src>` is introduced, and `sitemap.xml` lists exactly the canonical
   top-level pages (redirect shortcuts excluded, new pages required). Zero dependencies.
+- `node --test scripts/page-markup.test.mjs` — static markup gate over every committed
+  non-redirect HTML page: `id`s are unique, every ARIA idref (`aria-controls`,
+  `aria-labelledby`, `aria-describedby`, …) and `label for` resolves to an `id` on the
+  page, every `<img>` has `alt`, `<html>` declares `lang`, `role="tab"`/`"tabpanel"` carry
+  their ARIA pair, and every `[data-*]` selector an inline script queries exists in the
+  markup (so a dropped attribute cannot make a carousel silently no-op). Each rule has a
+  fixture self-test. Zero dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
