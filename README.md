@@ -58,8 +58,10 @@ red PR job against.
   without a fallback names a custom property defined somewhere (stylesheet, inline
   `style=`, or a script `setProperty`); every `[data-*]` selector in CSS matches an element
   on some page; every class an inline script adds/toggles is styled by a rule (or read back
-  by the script); and every custom property a script sets (`--hero-h`) is read by CSS. Each
-  rule has a fixture self-test. Zero dependencies.
+  by the script); every custom property a script sets (`--hero-h`) is read by CSS; every
+  local `url()` (self-hosted `@font-face` files, images) names a committed file whose magic
+  bytes match its `format()` hint or extension; and every font file under `assets/fonts/`
+  is referenced by some `url()`. Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/page-meta.test.mjs` — static gate over every page's `<head>` and the
   Markdown/`llms.txt` documents: each canonical page has exactly one `<title>`, a
   description, `charset`/`viewport`, a `canonical` that matches the path the page is served
