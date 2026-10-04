@@ -2,6 +2,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT" || exit 1
 WORK_DIR="$ROOT/.linkcheck-work"
 USER_AGENT="hivecommons-link-checker/1.0 (+https://hivecommons.dev)"
 EXTERNAL_WARN=0
@@ -82,6 +83,11 @@ find "$ROOT" -name '*.html' -not -path "$WORK_DIR/*" -print | sort |
 extract_redirect_targets >> "$WORK_DIR/links.tsv"
 
 sort -u "$WORK_DIR/links.tsv" > "$WORK_DIR/links.dedup.tsv"
+
+if [[ ! -s "$WORK_DIR/links.dedup.tsv" ]]; then
+  echo "ERROR no links found under $ROOT; refusing to pass without checking anything"
+  exit 1
+fi
 
 internal_errors=0
 external_errors=0
