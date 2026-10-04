@@ -55,6 +55,15 @@ entry has no committed page, or a committed page differs from what the script em
   on some page; every class an inline script adds/toggles is styled by a rule (or read back
   by the script); and every custom property a script sets (`--hero-h`) is read by CSS. Each
   rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/page-meta.test.mjs` — static gate over every page's `<head>` and the
+  Markdown/`llms.txt` documents: each canonical page has exactly one `<title>`, a
+  description, `charset`/`viewport`, a `canonical` that matches the path the page is served
+  at, `og:url` equal to it, the full Open Graph + Twitter card set with `og:*`/`twitter:*`
+  pairs in agreement, no duplicated meta, no `noindex`; `og:image` is a committed file
+  whose PNG header matches any declared `og:image:width`/`height`; each redirect page is
+  `noindex` with a `canonical` equal to its refresh target; and every relative Markdown link
+  and `hivecommons.dev` URL in `README.md`, `runbooks/*.md` and `llms.txt` resolves to a
+  committed file. Each rule has a fixture self-test. Zero dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
