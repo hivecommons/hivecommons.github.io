@@ -1,6 +1,8 @@
 name: Link check
 
 on:
+  push:
+    branches: [main]
   pull_request:
   schedule:
     - cron: "17 9 * * 1"

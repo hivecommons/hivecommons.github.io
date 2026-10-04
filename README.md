@@ -19,6 +19,11 @@ entry has no committed page, or a committed page differs from what the script em
 
 ## Checks
 
+The **Link check** workflow (`.github/workflows/links.yml`) runs its `links`, `test` and
+`redirects` jobs on every pull request and on every push to `main`, so commits pushed
+straight to `main` are checked too and `main` carries a same-named baseline to compare a
+red PR job against.
+
 - `scripts/check-links.sh [--external-warn]` — resolves every internal link/anchor and
   probes external URLs (CI runs it with `--external-warn`).
 - `scripts/check-links.test.sh` — fixture-based self-test of the link checker; runs
@@ -74,8 +79,8 @@ The **Link check** workflow runs every Monday at 09:17 UTC and can also be run
 manually from the Actions tab. On those runs, its separate `availability` job
 requests the live homepage and `/stories/` over HTTPS and fails unless both
 return HTTP 200. Connection/TLS errors and timeouts also fail the job. Requests
-have bounded retries for transient failures. PR runs only check the checkout;
-they do not probe the production site.
+have bounded retries for transient failures. PR and push-to-`main` runs only check
+the checkout; they do not probe the production site.
 
 Review failed runs in Actions and configure GitHub Actions notifications for the
 workflow if you operate the site. See [the rollback runbook](runbooks/release-rollback.md)
