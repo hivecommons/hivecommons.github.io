@@ -5,9 +5,11 @@
 // drifts: a stray brace that drops every rule after it, a `var(--x)` whose
 // custom property nobody defines (the declaration is then invalid at
 // computed-value time and the browser silently uses the initial value), a
-// state class the script toggles that no rule styles any more, or a
-// `--hero-h` the script measures that CSS stopped reading. This file checks
-// those contracts. Zero dependencies.
+// state class the script toggles that no rule styles any more, a
+// `--hero-h` the script measures that CSS stopped reading, or a url() whose
+// font or image file was renamed, truncated or never committed (the browser
+// just keeps the fallback font). This file checks those contracts. Zero
+// dependencies.
 // Usage: node --test scripts/style-contract.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -294,6 +296,112 @@ export function missingCssDataSelectors(css, markups, label = "css") {
 }
 
 // ---------------------------------------------------------------------------
+// Asset references. A url() that names a missing file fails silently in the
+// browser: a @font-face with font-display: swap just keeps the fallback font
+// and a background-image is simply absent, with nothing in CI to notice. The
+// link checker only reads href/src in HTML, so these checks resolve every
+// local url() in the stylesheet and inline <style> blocks against the
+// checkout and confirm the file's magic bytes agree with its format() hint
+// (or extension), so a renamed, truncated or mis-typed asset cannot ship.
+// ---------------------------------------------------------------------------
+
+// Local url() references with their line, optional format() hint and the
+// property they appear in. data:, fragment and external (scheme or //) URLs
+// are skipped; query/hash suffixes are dropped.
+export function cssUrlReferences(css) {
+  const clean = stripComments(css);
+  const out = [];
+  const re = /\burl\(\s*(?:"([^"]*)"|'([^']*)'|([^)"'\s]*))\s*\)(?:\s*format\(\s*["']([^"']+)["']\s*\))?/g;
+  for (const m of clean.matchAll(re)) {
+    const raw = (m[1] ?? m[2] ?? m[3] ?? "").trim();
+    if (raw === "" || /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(raw)) continue;
+    out.push({ url: raw.split(/[?#]/)[0], line: lineOf(clean, m.index), format: m[4] ? m[4].toLowerCase() : null });
+  }
+  return out;
+}
+
+// Resolve a url() against the site root (leading /) or the referencing file's directory.
+export function resolveAssetPath(url, fromFile) {
+  return url.startsWith("/") ? join(ROOT, url) : resolve(dirname(fromFile), url);
+}
+
+const SIGNATURES = {
+  woff2: [Buffer.from("wOF2")],
+  woff: [Buffer.from("wOFF")],
+  truetype: [Buffer.from([0x00, 0x01, 0x00, 0x00]), Buffer.from("true")],
+  opentype: [Buffer.from("OTTO"), Buffer.from([0x00, 0x01, 0x00, 0x00])],
+  png: [Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])],
+  jpg: [Buffer.from([0xff, 0xd8, 0xff])],
+  gif: [Buffer.from("GIF87a"), Buffer.from("GIF89a")],
+  webp: [Buffer.from("RIFF")],
+  ico: [Buffer.from([0x00, 0x00, 0x01, 0x00])],
+};
+const EXT_KIND = { woff2: "woff2", woff: "woff", ttf: "truetype", otf: "opentype", png: "png", jpg: "jpg", jpeg: "jpg", gif: "gif", webp: "webp", ico: "ico", svg: "svg" };
+const FORMAT_KIND = { woff2: "woff2", woff: "woff", truetype: "truetype", opentype: "opentype", "truetype-variations": "truetype", "opentype-variations": "opentype", "woff2-variations": "woff2", "woff-variations": "woff" };
+
+// The kind a reference claims to be: the format() hint wins over the extension.
+export function expectedAssetKind(url, format) {
+  if (format && FORMAT_KIND[format]) return FORMAT_KIND[format];
+  const ext = /\.([a-z0-9]+)$/i.exec(url);
+  return ext ? EXT_KIND[ext[1].toLowerCase()] ?? null : null;
+}
+
+// Whether a file's leading bytes match the kind. SVG is text: optional BOM/whitespace then "<".
+export function bytesMatchKind(bytes, kind) {
+  if (!kind) return true;
+  if (kind === "svg") return /^\uFEFF?\s*</.test(bytes.subarray(0, 64).toString("utf8"));
+  const sigs = SIGNATURES[kind];
+  return sigs.some((sig) => bytes.length >= sig.length && bytes.subarray(0, sig.length).equals(sig));
+}
+
+// Problems for every local url() in `css` (which lives at `fromFile`), using
+// `readAsset(path)` -> Buffer | null so fixtures can supply an in-memory tree.
+export function missingCssAssets(css, fromFile, readAsset, label = "css") {
+  const problems = [];
+  const seen = new Set();
+  for (const { url, line, format } of cssUrlReferences(css)) {
+    const path = resolveAssetPath(url, fromFile);
+    const key = `${path}|${format}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const bytes = readAsset(path);
+    if (bytes === null) { problems.push(`${label} line ${line}: url(${url}) names no committed file`); continue; }
+    if (bytes.length === 0) { problems.push(`${label} line ${line}: url(${url}) is an empty file`); continue; }
+    const kind = expectedAssetKind(url, format);
+    if (format && !FORMAT_KIND[format]) problems.push(`${label} line ${line}: url(${url}) has unknown format("${format}")`);
+    else if (!bytesMatchKind(bytes, kind)) problems.push(`${label} line ${line}: url(${url}) does not start with the ${kind} signature${format ? ` its format("${format}") promises` : ""}`);
+  }
+  return problems;
+}
+
+// Committed font files nothing references are dead weight that drifts
+// silently (e.g. a weight dropped from @font-face but left on disk).
+export function unreferencedFontFiles(fontFiles, referenced) {
+  const used = new Set(referenced);
+  return [...fontFiles].filter((f) => !used.has(f)).sort().map((f) => `${f} is committed but no url() in any stylesheet or inline <style> references it`);
+}
+
+function readAssetFromDisk(path) {
+  try {
+    if (!statSync(path).isFile()) return null;
+    return readFileSync(path);
+  } catch {
+    return null;
+  }
+}
+
+function fontFilesUnder(dir) {
+  if (!existsSync(dir)) return [];
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) out.push(...fontFilesUnder(full));
+    else if (/\.(?:woff2?|ttf|otf)$/i.test(name)) out.push(relative(ROOT, full));
+  }
+  return out.sort();
+}
+
+// ---------------------------------------------------------------------------
 // Fixture self-tests: prove every rule both passes clean input and fires.
 // ---------------------------------------------------------------------------
 
@@ -436,6 +544,75 @@ test("fixture: only local stylesheet hrefs are collected", () => {
   assert.deepEqual(localStylesheetHrefs(html), ["/style.css", "theme.css"]);
 });
 
+test("fixture: url() references skip data:, external, fragment and empty URLs and keep format() hints", () => {
+  const css = `@font-face { src: url(/assets/fonts/A.woff2) format('woff2'), url("/assets/fonts/A.woff") format("woff"); }
+.a { background: url(data:image/png;base64,AAA=), url('https://cdn.example/x.png'), url(//cdn.example/y.png), url(#grad), url(); }
+.b { background-image: url( "img/bee.svg?v=2#frag" ); cursor: url(../cur.png) 4 4, auto; }
+/* url(/commented-out.png) */`;
+  assert.deepEqual(cssUrlReferences(css), [
+    { url: "/assets/fonts/A.woff2", line: 1, format: "woff2" },
+    { url: "/assets/fonts/A.woff", line: 1, format: "woff" },
+    { url: "img/bee.svg", line: 3, format: null },
+    { url: "../cur.png", line: 3, format: null },
+  ]);
+  assert.equal(resolveAssetPath("/assets/x.png", join(ROOT, "a", "b.css")), join(ROOT, "assets", "x.png"));
+  assert.equal(resolveAssetPath("../x.png", join(ROOT, "a", "b.css")), join(ROOT, "x.png"));
+});
+
+test("fixture: the expected kind comes from format() first, then the extension", () => {
+  assert.equal(expectedAssetKind("/f.woff2", null), "woff2");
+  assert.equal(expectedAssetKind("/f.bin", "woff2"), "woff2");
+  assert.equal(expectedAssetKind("/f.woff2", "truetype-variations"), "truetype");
+  assert.equal(expectedAssetKind("/f.JPEG", null), "jpg");
+  assert.equal(expectedAssetKind("/f.svg", null), "svg");
+  assert.equal(expectedAssetKind("/f.unknownext", null), null);
+  assert.ok(bytesMatchKind(Buffer.from("wOF2\u0000rest"), "woff2"));
+  assert.ok(!bytesMatchKind(Buffer.from("wOFF\u0000rest"), "woff2"));
+  assert.ok(bytesMatchKind(Buffer.from("\uFEFF  <svg xmlns='x'/>"), "svg"));
+  assert.ok(!bytesMatchKind(Buffer.from("PK\u0003\u0004"), "svg"));
+  assert.ok(bytesMatchKind(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1]), "png"));
+  assert.ok(bytesMatchKind(Buffer.from("anything"), null));
+});
+
+test("fixture: clean asset references pass and every failure mode is reported once with its line", () => {
+  const tree = new Map([
+    [join(ROOT, "assets", "fonts", "ok.woff2"), Buffer.from("wOF2\u0000\u0001")],
+    [join(ROOT, "assets", "fonts", "wrong.woff2"), Buffer.from("wOFF\u0000\u0001")],
+    [join(ROOT, "assets", "fonts", "empty.woff2"), Buffer.alloc(0)],
+    [join(ROOT, "img", "bee.svg"), Buffer.from("<svg/>")],
+    [join(ROOT, "img", "not-really.png"), Buffer.from("<html>404</html>")],
+  ]);
+  const readAsset = (p) => (tree.has(p) ? tree.get(p) : null);
+  const from = join(ROOT, "style.css");
+  assert.deepEqual(missingCssAssets(`@font-face { src: url(/assets/fonts/ok.woff2) format('woff2'); }\n.a { background: url(img/bee.svg); }`, from, readAsset), []);
+  const bad = `@font-face { src: url(/assets/fonts/wrong.woff2) format('woff2'); }
+@font-face { src: url(/assets/fonts/gone.woff2) format('woff2'); }
+@font-face { src: url(/assets/fonts/empty.woff2) format('woff2'); }
+@font-face { src: url(/assets/fonts/ok.woff2) format('eot'); }
+.a { background: url(img/not-really.png); }
+.b { background: url(/assets/fonts/gone.woff2) format('woff2'); }`;
+  assert.deepEqual(missingCssAssets(bad, from, readAsset, "style.css"), [
+    'style.css line 1: url(/assets/fonts/wrong.woff2) does not start with the woff2 signature its format("woff2") promises',
+    "style.css line 2: url(/assets/fonts/gone.woff2) names no committed file",
+    "style.css line 3: url(/assets/fonts/empty.woff2) is an empty file",
+    'style.css line 4: url(/assets/fonts/ok.woff2) has unknown format("eot")',
+    "style.css line 5: url(img/not-really.png) does not start with the png signature",
+  ]);
+  // A relative url() inside a page's inline <style> resolves against that page's directory.
+  const pageTree = new Map([[join(ROOT, "stories", "img", "x.svg"), Buffer.from("<svg/>")]]);
+  assert.deepEqual(missingCssAssets(`.a { background: url(img/x.svg); }`, join(ROOT, "stories", "index.html"), (p) => pageTree.get(p) ?? null), []);
+  assert.deepEqual(missingCssAssets(`.a { background: url(img/x.svg); }`, join(ROOT, "index.html"), (p) => pageTree.get(p) ?? null, "index.html:5"), [
+    "index.html:5 line 1: url(img/x.svg) names no committed file",
+  ]);
+});
+
+test("fixture: a committed font file no stylesheet references is reported", () => {
+  assert.deepEqual(unreferencedFontFiles(["assets/fonts/a.woff2", "assets/fonts/b.woff2"], ["assets/fonts/b.woff2"]), [
+    "assets/fonts/a.woff2 is committed but no url() in any stylesheet or inline <style> references it",
+  ]);
+  assert.deepEqual(unreferencedFontFiles(["assets/fonts/a.woff2"], ["assets/fonts/a.woff2"]), []);
+});
+
 // ---------------------------------------------------------------------------
 // Live gate over the committed site.
 // ---------------------------------------------------------------------------
@@ -506,6 +683,34 @@ for (const p of pages) {
     });
   }
 }
+
+// Every local url() in the stylesheet and in each page's inline <style> must
+// name a committed file whose bytes match what the reference claims it is.
+const referencedAssets = new Set();
+for (const [rel, { file }] of stylesheets) {
+  if (!existsSync(file)) continue;
+  const css = readFileSync(file, "utf8");
+  for (const { url } of cssUrlReferences(css)) referencedAssets.add(relative(ROOT, resolveAssetPath(url, file)));
+  test(`${rel}: every local url() names a committed file whose signature matches its format()/extension`, () => {
+    assert.deepEqual(missingCssAssets(css, file, readAssetFromDisk, rel), []);
+  });
+}
+for (const p of pages) {
+  for (const s of inlineStyles(p.html)) {
+    const refs = cssUrlReferences(s.css);
+    if (refs.length === 0) continue;
+    for (const { url } of refs) referencedAssets.add(relative(ROOT, resolveAssetPath(url, p.path)));
+    test(`${p.rel}: inline <style> at line ${s.line} references only committed assets`, () => {
+      assert.deepEqual(missingCssAssets(s.css, p.path, readAssetFromDisk, `${p.rel}:${s.line}`), []);
+    });
+  }
+}
+
+test("style.css: self-hosted @font-face files are committed and every committed font file is referenced", () => {
+  const fonts = fontFilesUnder(join(ROOT, "assets", "fonts"));
+  assert.ok(fonts.length > 0, "expected self-hosted fonts under assets/fonts/");
+  assert.deepEqual(unreferencedFontFiles(fonts, referencedAssets), []);
+});
 
 test("index.html: the carousel and ACMM state classes are the ones the stub-DOM tests exercise", () => {
   const index = contentPages.find((p) => p.rel === "index.html");
