@@ -71,6 +71,15 @@ red PR job against.
   `noindex` with a `canonical` equal to its refresh target; and every relative Markdown link
   and `hivecommons.dev` URL in `README.md`, `runbooks/*.md` and `llms.txt` resolves to a
   committed file. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/story-cards.test.mjs` — static gate over every
+  `<article class="story-card">` in `stories/index.html`, which are hand-copied per PR:
+  the avatar `src`, its `alt`, the handle link `href` and its text all name the same
+  GitHub handle; the avatar keeps `loading="lazy"`, `referrerpolicy="no-referrer"`,
+  width/height and the `onerror` hide; exactly one `<h3>`; at least one
+  `<a class="inline-link">` pointing at a GitHub pull/issue/commit; every link in the card
+  is `https://github.com/…` (the page promises public GitHub evidence only); every
+  `Month D, YYYY` is a real date; no handle has two cards. Each rule has a fixture
+  self-test. Zero dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
