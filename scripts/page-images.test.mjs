@@ -71,14 +71,13 @@ function isLocalUrl(url) {
 // string values inside <script type="application/ld+json"> blocks. Each carries the
 // tag's line, the declared width/height when both are present, and whether
 // it is an <img> (only <img> gets the aspect/viewBox/upscale rules).
-function jsonLdImageUrls(value, out = []) {
-  if (Array.isArray(value)) {
-    for (const v of value) jsonLdImageUrls(v, out);
+function jsonLdImageUrls(value, out = [], inImageKey = false) {
+  if (typeof value === "string") {
+    if (inImageKey) out.push(value);
+  } else if (Array.isArray(value)) {
+    for (const v of value) jsonLdImageUrls(v, out, inImageKey);
   } else if (value !== null && typeof value === "object") {
-    for (const [key, v] of Object.entries(value)) {
-      if ((key === "logo" || key === "image") && typeof v === "string") out.push(v);
-      else jsonLdImageUrls(v, out);
-    }
+    for (const [key, v] of Object.entries(value)) jsonLdImageUrls(v, out, key === "logo" || key === "image");
   }
   return out;
 }
