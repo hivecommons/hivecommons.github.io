@@ -63,6 +63,15 @@ red PR job against.
   local `url()` (self-hosted `@font-face` files, images) names a committed file whose magic
   bytes match its `format()` hint or extension; and every font file under `assets/fonts/`
   is referenced by some `url()`. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/page-images.test.mjs` — static gate over every local image the pages
+  embed (`<img src>`/`srcset`, icon and `preload as="image"` `<link>`s, `og:image`): each is
+  a committed, non-empty file whose magic bytes match its extension (a PNG re-exported as
+  SVG under the old `.png` name fails); every `<img>` with `width`/`height` declares the
+  file's intrinsic aspect ratio (PNG IHDR, JPEG SOF, GIF header, SVG `viewBox`) and is not
+  drawn larger than a raster's pixels; every `<img>` SVG has a root `viewBox` (reported as
+  `todo` until `assets/integrations/opencode.svg` gains one); and every image file under
+  `assets/` is referenced by some page or stylesheet `url()`. Each rule has a fixture
+  self-test. Zero dependencies.
 - `node --test scripts/page-meta.test.mjs` — static gate over every page's `<head>` and the
   Markdown/`llms.txt` documents: each canonical page has exactly one `<title>`, a
   description, `charset`/`viewport`, a `canonical` that matches the path the page is served
