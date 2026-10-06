@@ -2,7 +2,8 @@ Source for hivecommons.dev (GitHub Pages). Static site: `index.html`, `style.css
 `assets/` — no build step.
 
 Custom domain is pinned via `CNAME`. `llms.txt` carries a short machine-readable summary
-for LLM crawlers, and `sitemap.xml` lists the canonical top-level pages (not every
+for LLM crawlers (its integration and sponsor lists are gated against `index.html` by
+`scripts/llms-txt.test.mjs`), and `sitemap.xml` lists the canonical top-level pages (not every
 shortcut redirect) for `robots.txt`'s `Sitemap:` entry — when adding a new top-level
 page, add it to `sitemap.xml` too.
 
@@ -100,6 +101,13 @@ red PR job against.
   requires the meta to precede every `<script>`/`<link>` in `<head>`, and requires every
   external `<img>` origin to appear in `img-src`. Each rule has a fixture self-test. Zero
   dependencies.
+- `node --test scripts/llms-txt.test.mjs` — static gate keeping `llms.txt` in step with
+  `index.html`: the agent CLIs it names must equal the Agent CLIs chips, the inference
+  engines/gateways it names must equal the engine and gateway chips (classifier chips
+  excluded), and its infrastructure thanks must equal the infra-thanks logo labels — in
+  both directions, so adding, renaming or dropping a chip without updating `llms.txt`
+  fails CI. Also requires the "See all integrations" docs URL to appear in `llms.txt`.
+  Each rule has a fixture self-test. Zero dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
