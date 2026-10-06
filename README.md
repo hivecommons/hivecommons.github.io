@@ -68,8 +68,7 @@ red PR job against.
   a committed, non-empty file whose magic bytes match its extension (a PNG re-exported as
   SVG under the old `.png` name fails); every `<img>` with `width`/`height` declares the
   file's intrinsic aspect ratio (PNG IHDR, JPEG SOF, GIF header, SVG `viewBox`) and is not
-  drawn larger than a raster's pixels; every `<img>` SVG has a root `viewBox` (reported as
-  `todo` until `assets/integrations/opencode.svg` gains one); and every image file under
+  drawn larger than a raster's pixels; every `<img>` SVG has a root `viewBox`; and every image file under
   `assets/` is referenced by some page or stylesheet `url()`. Each rule has a fixture
   self-test. Zero dependencies.
 - `node --test scripts/page-meta.test.mjs` — static gate over every page's `<head>` and the
