@@ -1,8 +1,9 @@
 # Runbook: rolling back a bad hivecommons.dev deploy
 
-This repo has no build step and no deploy workflow (only
-`.github/workflows/close-linked-issues.yml` exists, and it does not touch
-Pages). GitHub Pages publishes directly from the configured branch on every
+This repo has no build step and no deploy workflow (the workflows under
+`.github/workflows/` — link check, scorecard, close-linked-issues — do not
+publish to Pages; the weekly link-check `availability` job only probes the
+live site). GitHub Pages publishes directly from the configured branch on every
 push to `main` — there is no test suite, staging environment, or review gate
 between a merged commit and the live `hivecommons.dev` domain. Treat any push
 to `main` as an immediate production deploy.
