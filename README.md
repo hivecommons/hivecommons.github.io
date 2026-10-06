@@ -90,6 +90,17 @@ red PR job against.
   is `https://github.com/…` (the page promises public GitHub evidence only); every
   `Month D, YYYY` is a real date; no handle has two cards. Each rule has a fixture
   self-test. Zero dependencies.
+- `node --test scripts/page-csp.test.mjs` — static gate over the
+  `<meta http-equiv="Content-Security-Policy">` on every non-redirect page. GitHub Pages
+  cannot send response headers, so the policy ships as a `<meta>` tag and inline scripts
+  are allow-listed by `sha256-` hash: the test recomputes the hash of every inline
+  `<script>` body and `on*=` handler and fails when the policy is missing one or carries a
+  stale one (a drifted hash silently disables that script in every browser — **after
+  editing any inline script, update its hash in the page's CSP meta**). It also requires
+  `default-src 'none'`, rejects `'unsafe-inline'`/`'unsafe-eval'` in `script-src`,
+  requires the meta to precede every `<script>`/`<link>` in `<head>`, and requires every
+  external `<img>` origin to appear in `img-src`. Each rule has a fixture self-test. Zero
+  dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
