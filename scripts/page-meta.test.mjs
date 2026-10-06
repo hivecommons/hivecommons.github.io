@@ -22,7 +22,8 @@ function htmlFiles(dir = ROOT) {
     const full = join(dir, name);
     if (statSync(full).isDirectory()) {
       if (!SKIP_DIRS.has(name)) out.push(...htmlFiles(full));
-    } else if (name.endsWith(".html")) {
+    } else if (name.endsWith(".html") && !(dir === ROOT && name === "404.html")) {
+      // 404.html is a noindex error page served for unknown paths, not a canonical page.
       out.push(full);
     }
   }
