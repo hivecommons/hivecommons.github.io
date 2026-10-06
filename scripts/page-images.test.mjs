@@ -67,9 +67,21 @@ function isLocalUrl(url) {
 
 // Every local image the page's markup embeds: <img src>, <img srcset>
 // candidates, <link rel="icon|apple-touch-icon|preload as=image" href> and
-// <meta property="og:image"|name="twitter:image" content>. Each carries the
+// <meta property="og:image"|name="twitter:image" content>, plus "logo"/"image"
+// string values inside <script type="application/ld+json"> blocks. Each carries the
 // tag's line, the declared width/height when both are present, and whether
 // it is an <img> (only <img> gets the aspect/viewBox/upscale rules).
+function jsonLdImageUrls(value, out = [], inImageKey = false) {
+  if (typeof value === "string") {
+    if (inImageKey) out.push(value);
+  } else if (Array.isArray(value)) {
+    for (const v of value) jsonLdImageUrls(v, out, inImageKey);
+  } else if (value !== null && typeof value === "object") {
+    for (const [key, v] of Object.entries(value)) jsonLdImageUrls(v, out, key === "logo" || key === "image");
+  }
+  return out;
+}
+
 export function imageReferences(html) {
   const markup = markupOnly(html);
   const out = [];
@@ -106,6 +118,19 @@ export function imageReferences(html) {
     if (content === null) continue;
     const url = content.trim().replace(/^https?:\/\/(?:www\.)?hivecommons\.dev(?=\/)/i, "");
     if (isLocalUrl(url)) out.push({ url: url.split(/[?#]/)[0], line: lineOf(markup, m.index), img: false, declared: null });
+  }
+  const stripped = html.replace(/<!--[\s\S]*?-->/g, blank);
+  for (const m of stripped.matchAll(/<script\b[^>]*\btype\s*=\s*["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi)) {
+    let data;
+    try {
+      data = JSON.parse(m[1]);
+    } catch {
+      continue; // malformed JSON-LD is page-meta's concern
+    }
+    for (const raw of jsonLdImageUrls(data)) {
+      const url = raw.trim().replace(/^https?:\/\/(?:www\.)?hivecommons\.dev(?=\/)/i, "");
+      if (isLocalUrl(url)) out.push({ url: url.split(/[?#]/)[0], line: lineOf(stripped, m.index), img: false, declared: null });
+    }
   }
   return out;
 }
@@ -259,7 +284,7 @@ export function cssImageUrls(css) {
 // but left on disk).
 export function unreferencedImageFiles(imageFiles, referenced) {
   const used = new Set(referenced);
-  return [...imageFiles].filter((f) => !used.has(f)).sort().map((f) => `${f} is committed under assets/ but no <img>, <link>, og:image or url() references it`);
+  return [...imageFiles].filter((f) => !used.has(f)).sort().map((f) => `${f} is committed under assets/ but no <img>, <link>, og:image, JSON-LD logo/image or url() references it`);
 }
 
 function readAssetFromDisk(path) {
@@ -379,6 +404,16 @@ test("fixture: image references are collected from <img>, srcset, icon <link> an
   assert.equal(refs[5].line, 2);
 });
 
+test("fixture: JSON-LD logo/image URLs count as non-<img> references and are byte-checked", () => {
+  const html = `<html><head><script type="application/ld+json">[{"@type":"Organization","logo":"https://hivecommons.dev/assets/a.png","sameAs":["https://github.com/x"]},{"image":["/assets/tiny.png","https://example.com/x.png"]}]</script></head><body></body></html>`;
+  const refs = imageReferences(html);
+  assert.deepEqual(refs.map((r) => [r.url, r.img, r.declared]), [["/assets/a.png", false, null], ["/assets/tiny.png", false, null]]);
+  const { problems, referenced } = imageProblems(html, FIXTURE_PAGE, readFixture, "index.html", FIXTURE_ROOT);
+  assert.deepEqual(problems, []);
+  assert.deepEqual([...referenced].sort(), ["/site/assets/a.png", "/site/assets/tiny.png"]);
+  assert.deepEqual(imageReferences(html.replace("/assets/a.png", "/assets/nope.png")).map((r) => r.url), ["/assets/nope.png", "/assets/tiny.png"]);
+});
+
 test("fixture: a clean page passes every rule and reports the files it referenced", () => {
   const { problems, referenced } = imageProblems(CLEAN_HTML, FIXTURE_PAGE, readFixture, "index.html", FIXTURE_ROOT);
   assert.deepEqual(problems, []);
@@ -483,7 +518,7 @@ test("fixture: bytesMatchKind accepts each signature, an SVG behind a prolog/com
 test("fixture: a committed image under assets/ that nothing references is reported; CSS url() and og:image count as references", () => {
   const files = ["assets/a.png", "assets/c.gif", "assets/orphan.png", "assets/sub/og.png"];
   const referenced = ["assets/a.png", ...cssImageUrls("body{background:url(/assets/c.gif) /* url(/assets/x.png) */}").map((u) => u.replace(/^\//, "")), "assets/sub/og.png"];
-  assert.deepEqual(unreferencedImageFiles(files, referenced), ["assets/orphan.png is committed under assets/ but no <img>, <link>, og:image or url() references it"]);
+  assert.deepEqual(unreferencedImageFiles(files, referenced), ["assets/orphan.png is committed under assets/ but no <img>, <link>, og:image, JSON-LD logo/image or url() references it"]);
   assert.deepEqual(cssImageUrls('a{background:url("data:image/png;base64,AA") url(https://x/y.png) url(#frag) url(/assets/q.png?v=1)}'), ["/assets/q.png"]);
 });
 
@@ -506,10 +541,7 @@ for (const p of contentPages) {
     for (const path of referenced) referencedAssets.add(relative(ROOT, path));
     assert.deepEqual(problems, []);
   });
-  // TODO: drop the `todo` option once assets/integrations/opencode.svg gains a
-  // root viewBox (its outer <svg> wrapper has only width/height, #108); until then
-  // the rule is reported but does not fail the run.
-  test(`${p.rel}: every <img> SVG has a root viewBox`, { todo: "assets/integrations/opencode.svg root <svg> lacks viewBox (#108); the rule is enforced once that asset is fixed" }, () => {
+  test(`${p.rel}: every <img> SVG has a root viewBox`, () => {
     assert.deepEqual(svgViewBoxProblems(p.html, p.path, readAssetFromDisk, p.rel), []);
   });
 }
