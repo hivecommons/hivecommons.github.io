@@ -117,6 +117,13 @@ red PR job against.
   both directions, so adding, renaming or dropping a chip without updating `llms.txt`
   fails CI. Also requires the "See all integrations" docs URL to appear in `llms.txt`.
   Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/availability-probes.test.mjs` — static gate over the URL list the
+  scheduled `availability` job in `links.yml` probes: every probed URL is `https`, under
+  `hivecommons.dev`, carries its trailing slash when it is a directory page (GitHub Pages
+  answers `301` for `/docs`, which `curl` without `-L` reports as a failure) and resolves
+  to a committed page; every canonical page in `sitemap.xml` and `/404.html` is probed; at
+  least one redirect shortcut is probed; no duplicates. Fixing a failure means editing the
+  workflow's probe list. Each rule has a fixture self-test. Zero dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
@@ -125,8 +132,10 @@ red PR job against.
 
 The **Link check** workflow runs every Monday at 09:17 UTC and can also be run
 manually from the Actions tab. On those runs, its separate `availability` job
-requests the live homepage and `/stories/` over HTTPS and fails unless both
-return HTTP 200. Connection/TLS errors and timeouts also fail the job. Requests
+requests the live homepage, `/stories/`, a sample of the shortcut redirects and
+`/404.html` over HTTPS and fails unless every one returns HTTP 200 (the list is
+kept in step with the committed pages by `scripts/availability-probes.test.mjs`).
+Connection/TLS errors and timeouts also fail the job. Requests
 have bounded retries for transient failures. PR and push-to-`main` runs only check
 the checkout; they do not probe the production site.
 
