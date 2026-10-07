@@ -144,6 +144,14 @@ red PR job against.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
+- `node --test scripts/ci-wiring.test.mjs` — static gate keeping `links.yml`, `scripts/` and
+  this list in step: every `scripts/*.sh` gate and `*.test.sh` self-test is run by an
+  unconditional `run:` step (they are listed by hand, unlike the `node --test
+  scripts/*.test.mjs` glob, which must itself be present and unconditional); every
+  `scripts/*.sh` gate has a sibling self-test; no `.mjs` that imports `node:test` sits
+  outside the glob's `*.test.mjs` name; the workflow runs on `pull_request` and on push
+  to `main`; every shell script is executable; and this `## Checks` section names every
+  gate and self-test. Each rule has a fixture self-test. Zero dependencies.
 
 ## Availability monitoring
 
