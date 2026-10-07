@@ -1,11 +1,9 @@
 # Runbook: rolling back a bad hivecommons.dev deploy
 
-This repo has no build step and no deploy workflow (only
-`.github/workflows/close-linked-issues.yml` exists, and it does not touch
-Pages). GitHub Pages publishes directly from the configured branch on every
-push to `main` — there is no test suite, staging environment, or review gate
-between a merged commit and the live `hivecommons.dev` domain. Treat any push
-to `main` as an immediate production deploy.
+GitHub Pages publishes directly from the configured branch on every push to
+`main` — there is no staging environment or review gate between a merged commit
+and the live `hivecommons.dev` domain. Treat any push to `main` as an immediate
+production deploy. However, the **Link check** workflow (`.github/workflows/links.yml`) runs on every PR and push to `main`, with jobs `availability`, `links`, `test`, and `redirects` that validate links, redirects, and page markup before any change reaches production.
 
 ## Who is affected
 
@@ -23,6 +21,14 @@ broken HTML/CSS to every visitor, so treat any of these as user-impacting.
 
 ## Detect
 
+- First, check the latest **Link check** run on `main`: visit the
+  [Actions](https://github.com/hivecommons/hivecommons.github.io/actions/workflows/links.yml)
+  tab, filter to `main` branch, or run
+  `gh run list --workflow links.yml --branch main --limit 1 --repo hivecommons/hivecommons.github.io`.
+  If the latest run failed, it already pinpointed the broken link, anchor, redirect, or
+  markup — use the error output to guide the fix. If it passed, the breakage is
+  likely a live-only issue (e.g. a content deploy race, CDN cache, or Pages build
+  delay).
 - `curl -sI https://hivecommons.dev/` — confirm a `200` and that the response
   isn't GitHub's default Pages "there isn't a GitHub Pages site here" error.
 - `curl -sI https://hivecommons.dev/<redirect>` for each shortcut in
@@ -36,9 +42,9 @@ broken HTML/CSS to every visitor, so treat any of these as user-impacting.
 
 ## Contain / fix forward
 
-Because there is no build step or gate, the fix is always a direct revert or
-forward-fix on `main` — there is no separate "bad artifact" to deprecate or
-unpublish:
+The fix is always a direct revert or forward-fix on `main` — there is no
+separate "bad artifact" to deprecate or unpublish. Your revert PR will also
+trigger the Link check workflow to validate the fix before it merges:
 
 1. Identify the breaking commit: `git log --oneline -- <affected path>`.
 2. Revert it directly: `git revert <sha>` and push to `main` (or push a
