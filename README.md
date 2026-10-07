@@ -153,6 +153,23 @@ red PR job against.
   to `main`; every shell script is executable; and this `## Checks` section names every
   gate and self-test. Each rule has a fixture self-test. Zero dependencies.
 
+## Local preview and running the checks
+
+Prerequisites: Python 3 (any recent version) for previewing, and Node.js (the `node --test`
+runner) for the gates; no `npm install` is needed.
+
+```sh
+python3 -m http.server 8000     # then open http://localhost:8000/
+node --test scripts/*.test.mjs  # every Node gate (what CI runs)
+scripts/check-links.test.sh     # link-checker self-test (offline)
+scripts/check-redirects.test.sh # redirect-gate self-test (offline)
+scripts/check-redirects.sh      # redirect-page drift gate
+```
+
+Run these from the repository root before opening a PR. The previewed pages are served
+from the checkout as-is, so root-absolute links (`/stories/`) resolve locally the same way
+they do on the live site. Each gate is described under [Checks](#checks).
+
 ## Availability monitoring
 
 The **Link check** workflow runs every Monday at 09:17 UTC and can also be run
