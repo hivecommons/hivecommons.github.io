@@ -81,6 +81,15 @@ red PR job against.
   `noindex` with a `canonical` equal to its refresh target; and every relative Markdown link
   and `hivecommons.dev` URL in `README.md`, `runbooks/*.md` and `llms.txt` resolves to a
   committed file. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/page-404.test.mjs` — static gate over the custom error page, which
+  `page-meta.test.mjs` deliberately skips. GitHub Pages serves `/404.html` for every unknown
+  path at any depth, so the page must live at the repository root and nowhere else, keep
+  exactly one `noindex` robots meta, carry no `canonical`/`og:*`/`twitter:*` identity and no
+  meta-refresh, use only root-absolute or external `href`/`src` (a relative `style.css`
+  breaks under `/some/deep/path`), link back to `/`, resolve every root-absolute reference to
+  a committed file, and keep body text that `scripts/check-links.sh`'s `SOFT_404_RE`
+  matches (so a misrouted URL serving the page with HTTP 200 is still flagged); no other
+  page may match that regex. Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/story-cards.test.mjs` — static gate over every
   `<article class="story-card">` in `stories/index.html`, which are hand-copied per PR:
   the avatar `src`, its `alt`, the handle link `href` and its text all name the same
