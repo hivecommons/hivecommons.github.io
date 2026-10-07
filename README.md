@@ -124,6 +124,14 @@ red PR job against.
   to a committed page; every canonical page in `sitemap.xml` and `/404.html` is probed; at
   least one redirect shortcut is probed; no duplicates. Fixing a failure means editing the
   workflow's probe list. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/site-origin.test.mjs` — static gate tying the site origin to `CNAME`,
+  the one file GitHub Pages actually reads for the host: `CNAME` must be a single bare
+  lowercase DNS host (no scheme, path, port, trailing dot, second line or CRLF); every
+  `SITE_ORIGIN` constant the other gates hardcode, every `sitemap.xml` `<loc>`, the
+  `robots.txt` `Sitemap:` URL and every canonical page's `<link rel="canonical">`/`og:url`
+  must be at `https://<CNAME>`; and no committed page, stylesheet or text asset may link
+  the `hivecommons.github.io` fallback host (which bypasses the custom domain). Each rule
+  has a fixture self-test. Zero dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
