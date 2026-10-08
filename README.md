@@ -148,13 +148,19 @@ red PR job against.
   has a fixture self-test. Zero dependencies.
 - `node --test scripts/redirect-targets.test.mjs` — static gate over what a browser makes
   of each shortcut-redirect page. `make-redirects.sh` interpolates every `MAP` url and
-  label into HTML unescaped, so the gate parses the `MAP`, rejects any url or label that
-  carries `"`, `<` or `>` or a label that decodes as a character reference, and then
-  decodes each committed page's refresh `url=`, canonical `href` and `<a href>` under HTML
-  attribute rules (legacy no-semicolon entities such as `&para`, `&reg`, `&copy` included)
-  and its `<title>`/link text under text rules, requiring each to resolve to exactly the
-  `MAP` url/label; any other ambiguous ampersand on the page is reported (`&amp;` is the
-  one accepted escape). Each rule has a fixture self-test. Zero dependencies.
+  label into HTML through its `html_escape()`, so the gate parses the `MAP`, rejects any
+  url or label that carries `"`, `<` or `>` or a label that decodes as a character
+  reference (defense in depth: nothing a shortcut target needs), and then decodes each
+  committed page's refresh `url=`, canonical `href` and `<a href>` under HTML attribute
+  rules (legacy no-semicolon entities such as `&para`, `&reg`, `&copy` included) and its
+  `<title>`/link text under text rules, requiring each to resolve to exactly the `MAP`
+  url/label; any other ambiguous ampersand on the page is reported (`&amp;`, `&lt;`,
+  `&gt;` and `&quot;` — what `html_escape()` emits — are the accepted escapes). It also
+  runs the real generator body against a hostile fixture `MAP` (raw `&` separators,
+  legacy/numeric references, `"`, `<`, `>` in url and label) in a scratch directory and
+  requires every emitted page to decode back to exactly its entry, so `html_escape()`
+  is exercised directly rather than only through the characters the committed `MAP`
+  happens to contain. Each rule has a fixture self-test. Zero dependencies.
 - `scripts/check-redirects.sh` — redirect-page drift gate described above.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
