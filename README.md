@@ -166,6 +166,15 @@ red PR job against.
   outside the glob's `*.test.mjs` name; the workflow runs on `pull_request` and on push
   to `main`; every shell script is executable; and this `## Checks` section names every
   gate and self-test. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/workflow-docs.test.mjs` — static gate keeping what this README and
+  `runbooks/*.md` say about `links.yml` true. The workflow is named as in its `name:`.
+  Every job the docs name exists in `jobs:`. A job the docs say runs on every PR/push
+  carries no `if:`; one described as weekly or manual-only is gated on
+  `schedule`/`workflow_dispatch`, both of which the workflow must declare. Every weekday
+  and `HH:MM UTC` the docs give for the run matches the `cron:`. The `--external-warn`
+  flag the docs describe is what CI passes to `check-links.sh` outside schedule/dispatch
+  and what the script reads. Every job is named somewhere in the docs. Each rule has a
+  fixture self-test. Zero dependencies.
 
 ## Local preview and running the checks
 
