@@ -22,10 +22,19 @@ declare -A MAP=(
   [calendar]="https://calendar.google.com/calendar/embed?src=b43dc28a888d316aa1fe4a47bf3038cd1bca7bbb2b5cdbf5e7ecb9cc10672a95%40group.calendar.google.com|the community calendar"
   [meet]="https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MGU0cmRlbjZvbXZpZTljZTRqZWg5ZTJlbmMgYjQzZGMyOGE4ODhkMzE2YWExZmU0YTQ3YmYzMDM4Y2QxYmNhN2JiYjJiNWNkYmY1ZTdlY2I5Y2MxMDY3MmE5NUBn&tmsrc=b43dc28a888d316aa1fe4a47bf3038cd1bca7bbb2b5cdbf5e7ecb9cc10672a95%40group.calendar.google.com&scp=ALL|the meeting invite"
 )
+html_escape() {
+  local s="$1"
+  s="${s//&/&amp;}"
+  s="${s//</&lt;}"
+  s="${s//>/&gt;}"
+  s="${s//\"/&quot;}"
+  printf '%s' "$s"
+}
 for path in "${!MAP[@]}"; do
   entry="${MAP[$path]}"
   url="${entry%%|*}"
-  label="${entry#*|}"
+  label="$(html_escape "${entry#*|}")"
+  url="$(html_escape "$url")"
   mkdir -p "$path"
   cat > "$path/index.html" <<HTML
 <!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -35,5 +44,5 @@ for path in "${!MAP[@]}"; do
 <style>body{font-family:system-ui;background:#14110b;color:#efe7d7;display:grid;place-items:center;height:100vh;margin:0}a{color:#e0a33a}</style>
 </head><body><p>Redirecting to <a href="$url">$label</a>…</p></body></html>
 HTML
-  echo "/$path -> $url"
+  echo "/$path -> ${entry%%|*}"
 done
