@@ -45,10 +45,20 @@ function markdownFiles(dir = ROOT) {
 
 // --- head parsing -----------------------------------------------------------
 
+const ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+
+// Attribute values are HTML-escaped on disk (`&amp;` in URLs); compare the decoded text.
+function decodeEntities(s) {
+  return s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, ent) => {
+    if (ent[0] === "#") return String.fromCodePoint(ent[1] === "x" || ent[1] === "X" ? parseInt(ent.slice(2), 16) : parseInt(ent.slice(1), 10));
+    return ENTITIES[ent.toLowerCase()] ?? whole;
+  });
+}
+
 function attrs(tag) {
   const out = {};
   for (const m of tag.matchAll(/([a-zA-Z:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
-    out[m[1].toLowerCase()] = m[2] ?? m[3];
+    out[m[1].toLowerCase()] = decodeEntities(m[2] ?? m[3]);
   }
   return out;
 }
@@ -285,6 +295,14 @@ test("fixture: a well-formed redirect page passes; missing noindex or canonical 
   assert.ok(redirectPageProblems(GOOD_REDIRECT.replace(/<meta name="robots"[^>]*>/, "")).some((x) => x.includes("noindex")));
   assert.ok(redirectPageProblems(GOOD_REDIRECT.replace('href="https://example.test/x"', 'href="https://example.test/y"')).some((x) => x.startsWith("canonical (")));
   assert.ok(redirectPageProblems(GOOD_REDIRECT.replace("<title>Redirect</title>", "")).some((x) => x.includes("<title>")));
+});
+
+test("fixture: an HTML-escaped query string in the refresh url and canonical compares on the decoded URL", () => {
+  const escaped = GOOD_REDIRECT.replaceAll("https://example.test/x", "https://example.test/x?a=1&amp;b=2");
+  assert.deepEqual(parseHead(escaped).refresh, ["https://example.test/x?a=1&b=2"]);
+  assert.deepEqual(redirectPageProblems(escaped), []);
+  const drift = escaped.replace('href="https://example.test/x?a=1&amp;b=2"', 'href="https://example.test/x?a=1&amp;b=3"');
+  assert.ok(redirectPageProblems(drift).some((x) => x.startsWith("canonical (")));
 });
 
 test("fixture: servedPath maps committed files to the path they are served at", () => {
