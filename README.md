@@ -54,6 +54,20 @@ red PR job against.
   their ARIA pair, and every `[data-*]` selector an inline script queries exists in the
   markup (so a dropped attribute cannot make a carousel silently no-op). Each rule has a
   fixture self-test. Zero dependencies.
+- `node --test scripts/page-structure.test.mjs` — static tree gate over every committed
+  HTML page (redirect shortcuts and `404.html` included). Browsers never reject malformed
+  HTML, they repair it silently, so the gate parses each page the way the HTML tokenizer
+  does (comments, raw-text `<script>`/`<style>`/`<textarea>`/`<title>` bodies, quoted
+  attributes, the spec's optional end tags for `<li>`/`<p>`/`<option>`/table parts, foreign
+  content for inline SVG) and fails on anything a browser would have to repair: a stray or
+  mismatched end tag, an element never closed, `</br>` or a self-closing `<div/>`, a block
+  element inside `<p>` (which leaves its `</p>` stray), an attribute repeated on one element
+  (the second is dropped), a raw `<`/`>` inside an attribute value (which truncates the tag
+  every sibling gate tokenizes with `[^>]*`), `<li>`/`<option>`/`<tr>`/`<figcaption>`/… outside
+  their required parent, interactive content nested inside `<a>`/`<button>`/`<label>`,
+  non-metadata content in `<head>`, and a page without exactly one `<html>`, `<head>` and
+  `<body>` (plus exactly one `<main>` on non-redirect pages). Each rule has a fixture
+  self-test. Zero dependencies.
 - `node --test scripts/style-contract.test.mjs` — static gate over `style.css` (every local
   stylesheet the pages link) and the pages' inline `<style>` blocks: comments, strings,
   braces and parens balance and every declaration is `name: value`; every `var(--x)`
