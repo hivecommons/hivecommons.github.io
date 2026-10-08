@@ -25,9 +25,9 @@ declare -A MAP=(
 html_escape() {
   local s="$1"
   s="${s//&/&amp;}"
-  s="${s//</&lt;}"
-  s="${s//>/&gt;}"
-  s="${s//\"/&quot;}"
+  s="${s//</"&lt;"}"
+  s="${s//>/"&gt;"}"
+  s="${s//\"/"&quot;"}"
   printf '%s' "$s"
 }
 for path in "${!MAP[@]}"; do
