@@ -166,6 +166,15 @@ red PR job against.
   outside the glob's `*.test.mjs` name; the workflow runs on `pull_request` and on push
   to `main`; every shell script is executable; and this `## Checks` section names every
   gate and self-test. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/workflow-docs.test.mjs` — static gate keeping the prose about
+  `links.yml` in step with it: in this README and `runbooks/*.md`, the workflow name must
+  match the workflow's `name:`; every job the docs name must exist under `jobs:`; jobs the
+  docs say run on every PR/push must be unconditional, and the ones they call
+  weekly-only or manual-only must carry an `if:` on `schedule` / `workflow_dispatch`
+  (which the workflow must declare); every weekday and `HH:MM UTC` must match the
+  `cron:` expression; and the `--external-warn` flag must be what the workflow passes
+  outside schedule/dispatch and what `scripts/check-links.sh` accepts. Each rule has a
+  fixture self-test. Zero dependencies.
 
 ## Local preview and running the checks
 
