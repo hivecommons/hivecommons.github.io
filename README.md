@@ -181,6 +181,18 @@ red PR job against.
   `cron:` expression; and the `--external-warn` flag must be what the workflow passes
   outside schedule/dispatch and what `scripts/check-links.sh` accepts. Each rule has a
   fixture self-test. Zero dependencies.
+- `node --test scripts/automation-docs.test.mjs` — static gate keeping the prose about
+  every workflow under `.github/workflows/` in step with it. Wherever this README or
+  `runbooks/*.md` introduces a workflow as `**<name>** … (`.github/workflows/<file>`)`,
+  the file must be committed and its `name:` must equal the bold text, and the
+  introducing paragraph's claims must match the triggers: "push to `main`" needs a
+  `push` trigger covering `main`; "every pull request" needs `pull_request`; "weekly"
+  needs a `schedule` with a plain weekly cron; a literal cron `` `M H * * D` `` must equal
+  the workflow's `cron:`; "manual dispatch" needs `workflow_dispatch`; back-ticked pull
+  request activity types (`closed`, …) must be exactly `pull_request.types`; and "code
+  scanning" needs a `github/codeql-action/upload-sarif` step. Every committed workflow
+  must be introduced that way in this README, so new automation cannot land undocumented.
+  Each rule has a fixture self-test. Zero dependencies.
 
 ## Local preview and running the checks
 
