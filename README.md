@@ -220,6 +220,14 @@ Traffic analytics and shortcut usage tracking are not configured. Adding them
 requires an operator to choose a backend/property and settle privacy and consent
 requirements first (see [issue #73](https://github.com/hivecommons/hivecommons.github.io/issues/73)).
 
+## Repository automation
+
+**OpenSSF Scorecard** (`.github/workflows/scorecard.yml`) — Runs OpenSSF security scorecard analysis on every push to `main`, weekly (cron `23 5 * * 1`), and on manual dispatch from the Actions tab. Results are published to GitHub's code scanning dashboard.
+
+**Close linked issues** (`.github/workflows/close-linked-issues.yml`) — Automatically closes issues linked to a closed pull request when a PR transitions to `closed`.
+
+**Incident response** — When a bad deploy or incident impacts visitors of `hivecommons.dev` (broken pages, dead redirects, domain issues), use the [postmortem template](runbooks/postmortem-template.md) to document it blamlessly and fact-based. Coordinate recovery using the [release-rollback runbook](runbooks/release-rollback.md).
+
 ## Code of Conduct
 
 Hive Commons website contributors are expected to follow the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
