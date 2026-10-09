@@ -222,7 +222,7 @@ requirements first (see [issue #73](https://github.com/hivecommons/hivecommons.g
 
 ## Repository automation
 
-**OpenSSF Scorecard** (`.github/workflows/scorecard.yml`) — Runs OpenSSF security scorecard analysis on every push to `main`, weekly on Mondays at 05:23 UTC, and on manual dispatch from the Actions tab. Results are published to GitHub's code scanning dashboard.
+**OpenSSF Scorecard** (`.github/workflows/scorecard.yml`) — Runs OpenSSF security scorecard analysis on every push to `main`, weekly (cron `23 5 * * 1`), and on manual dispatch from the Actions tab. Results are published to GitHub's code scanning dashboard.
 
 **Close linked issues** (`.github/workflows/close-linked-issues.yml`) — Automatically closes issues linked to a closed pull request when a PR transitions to `closed`.
 
