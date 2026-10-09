@@ -220,6 +220,20 @@ Traffic analytics and shortcut usage tracking are not configured. Adding them
 requires an operator to choose a backend/property and settle privacy and consent
 requirements first (see [issue #73](https://github.com/hivecommons/hivecommons.github.io/issues/73)).
 
+## Other workflows and runbooks
+
+Besides **Link check**, two more workflows live in `.github/workflows/`:
+
+- `scorecard.yml` (**OpenSSF Scorecard**) runs the Scorecard analysis on pushes to `main`,
+  on a weekly schedule, and on manual dispatch.
+- `close-linked-issues.yml` (**Close linked issues**) runs when a pull request is closed
+  and calls the reusable workflow from `hivecommons/infra` that closes the issues the
+  pull request links.
+
+Runbooks live in `runbooks/`: [`release-rollback.md`](runbooks/release-rollback.md) for
+recovering from a bad deploy, and [`postmortem-template.md`](runbooks/postmortem-template.md),
+a blameless template to fill in afterwards for any incident that reached visitors.
+
 ## Code of Conduct
 
 Hive Commons website contributors are expected to follow the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
