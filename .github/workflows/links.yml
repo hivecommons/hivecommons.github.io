@@ -49,7 +49,8 @@ jobs:
         # PR/push: external breakage is a warning (third-party outages must not block
         # contributors). Weekly schedule / manual dispatch: external breakage fails
         # the run so link rot is actually surfaced.
-        run: scripts/check-links.sh ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '' || '--external-warn' }}
+        # The non-empty value must be on the `&&` side: `''` is falsy in Actions expressions.
+        run: scripts/check-links.sh ${{ (github.event_name != 'schedule' && github.event_name != 'workflow_dispatch') && '--external-warn' || '' }}
 
   test:
     runs-on: ubuntu-latest

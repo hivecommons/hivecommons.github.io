@@ -58,12 +58,13 @@ export function parseWeeklyCron(cron) {
   return { minute: m[1].padStart(2, "0"), hour: m[2].padStart(2, "0"), day: DAYS[Number(m[3]) % 7] };
 }
 
-// The flag `links` passes only outside schedule/dispatch: `scripts/check-links.sh ${{ (<schedule/dispatch>) && '' || '--flag' }}`.
+// The flag `links` passes only outside schedule/dispatch: `scripts/check-links.sh ${{ (<not schedule/dispatch>) && '--flag' || '' }}`.
+// The broken `&& '' || '--flag'` shape always yields the flag (`''` is falsy), so it is rejected.
 export function conditionalFlag(body) {
   const run = /run:[ \t]*(scripts\/check-links\.sh\b.*)$/m.exec(body)?.[1];
   const expr = run && /\$\{\{([^}]*)\}\}/.exec(run)?.[1];
   if (!expr || !/schedule|workflow_dispatch/.test(expr)) return undefined;
-  return /&&\s*(?:''|"")\s*\|\|\s*'(--[\w-]+)'/.exec(expr)?.[1];
+  return /&&\s*'(--[\w-]+)'\s*\|\|\s*(?:''|"")\s*$/.exec(expr.trim())?.[1];
 }
 
 export function acceptedFlag(script) {
@@ -306,6 +307,8 @@ test("fixture: the --external-warn flag must be passed conditionally by `links` 
   assert.ok(renamed.some((x) => x.includes("passes `--warn-external` but scripts/check-links.sh accepts `--external-warn`")));
   const unconditional = problems({ yaml: YAML.replace(/\$\{\{.*\}\}/, "--external-warn") });
   assert.ok(unconditional.some((x) => x.includes("does not pass a flag to scripts/check-links.sh conditionally")), unconditional.join("\n"));
+  const broken = problems({ yaml: YAML.replace(/\$\{\{.*\}\}/, "${{ (github.event_name == 'schedule') && '' || '--external-warn' }}") });
+  assert.ok(broken.some((x) => x.includes("does not pass a flag to scripts/check-links.sh conditionally")), broken.join("\n"));
   const script = problems({ checkLinks: SCRIPT.replace("--external-warn", "--warn") });
   assert.deepEqual(script, ["the `links` job passes `--external-warn` but scripts/check-links.sh accepts `--warn`"]);
 });
