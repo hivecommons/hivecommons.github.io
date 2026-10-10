@@ -54,8 +54,15 @@ export function runCommands(body) {
   return out;
 }
 
+// A job is gated when its `if:` can skip a pull_request/push run. A top-level
+// `||` term that only excludes schedule/dispatch events (e.g.
+// `github.event_name != 'schedule'`) still selects every PR/push, so a job that
+// uses it to opt out of some cron entries is not gated. Mirrors
+// runsOnEveryPrOrPush in workflow-docs.test.mjs.
 export function isGatedByCondition(body) {
-  return /^\s{4}if:\s*\S/m.test(body);
+  const cond = /^\s{4}if:[ \t]*(\S.*)$/m.exec(body)?.[1].trim();
+  if (cond === undefined) return false;
+  return !cond.split(/\s*\|\|\s*/).some((t) => /^\(?\s*github\.event_name\s*!=\s*'(schedule|workflow_dispatch)'\s*\)?$/.test(t.trim()));
 }
 
 // Scripts under scripts/, classified.
@@ -225,6 +232,18 @@ test("fixture: a gate that runs only inside a conditional job is reported", () =
   const yaml = YAML.replace("  redirects:\n    runs-on", "  redirects:\n    if: github.event_name == 'schedule'\n    runs-on");
   const problems = wiringProblems(yaml, { scripts: SCRIPTS, nodeSources: SOURCES });
   assert.ok(problems.includes("scripts/check-redirects.sh runs only in conditional jobs (redirects)"), problems.join("\n"));
+});
+
+test("fixture: an `if:` that only opts out of some schedule runs does not count as gating", () => {
+  const SKIP_CRON = "github.event_name != 'schedule' || github.event.schedule == '17 9 * * 1'";
+  const yaml = YAML.replace("  redirects:\n    runs-on", `  redirects:\n    if: ${SKIP_CRON}\n    runs-on`)
+    .replace("  test:\n    runs-on", `  test:\n    if: ${SKIP_CRON}\n    runs-on`);
+  assert.deepEqual(wiringProblems(yaml, { scripts: SCRIPTS, nodeSources: SOURCES }), []);
+  assert.equal(isGatedByCondition("    if: github.event_name != 'schedule'\n"), false);
+  assert.equal(isGatedByCondition("    if: (github.event_name != 'workflow_dispatch') || github.ref == 'refs/heads/main'\n"), false);
+  assert.equal(isGatedByCondition("    if: github.event_name != 'pull_request'\n"), true);
+  assert.equal(isGatedByCondition("    if: github.event_name != 'schedule' && github.ref == 'refs/heads/main'\n"), true);
+  assert.equal(isGatedByCondition("    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'\n"), true);
 });
 
 test("fixture: the node glob step is required and must be unconditional", () => {

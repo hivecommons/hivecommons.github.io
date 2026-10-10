@@ -42,6 +42,15 @@ export function jobCondition(body) {
   return /^\s{4}if:[ \t]*(\S.*)$/m.exec(body)?.[1].trim();
 }
 
+// True when a job-level `if:` still selects every pull_request/push run: no
+// condition at all, or a top-level `||` disjunction with a term that only
+// excludes schedule/dispatch events (e.g. `github.event_name != 'schedule'`),
+// which is how a job opts out of some cron entries without gating PRs.
+export function runsOnEveryPrOrPush(cond) {
+  if (cond === undefined) return true;
+  return cond.split(/\s*\|\|\s*/).some((t) => /^\(?\s*github\.event_name\s*!=\s*'(schedule|workflow_dispatch)'\s*\)?$/.test(t.trim()));
+}
+
 export function triggers(yaml) {
   const on = /^on:\s*$([\s\S]*?)(?=^\S|(?![\s\S]))/m.exec(yaml)?.[1] ?? "";
   return {
@@ -128,7 +137,7 @@ export function docProblems(yaml, { docs, checkLinks }) {
         continue;
       }
       const cond = jobCondition(found.body);
-      if (everyRun && cond) problems.push(`${file} says the \`${job}\` job runs on every PR/push but it carries \`if: ${cond}\``);
+      if (everyRun && !runsOnEveryPrOrPush(cond)) problems.push(`${file} says the \`${job}\` job runs on every PR/push but it carries \`if: ${cond}\``);
       if (scheduledOnly) {
         if (!cond) problems.push(`${file} says the \`${job}\` job runs only on schedule/manual dispatch but it has no \`if:\``);
         else if (!/schedule|workflow_dispatch/.test(cond) || /!=/.test(cond)) problems.push(`${file} says the \`${job}\` job runs only on schedule/manual dispatch but its \`if: ${cond}\` does not select those events`);
@@ -272,6 +281,20 @@ test("fixture: a job named in the docs but missing from the workflow is reported
 test("fixture: a job the docs say runs on every PR/push but is gated is reported", () => {
   const p = problems({ yaml: YAML.replace("  test:\n    runs-on", "  test:\n    if: github.event_name == 'push'\n    runs-on") });
   assert.ok(p.some((x) => x.includes("the `test` job runs on every PR/push but it carries `if: github.event_name == 'push'`")), p.join("\n"));
+  const anded = problems({ yaml: YAML.replace("  test:\n    runs-on", "  test:\n    if: github.event_name != 'schedule' && github.ref == 'refs/heads/main'\n    runs-on") });
+  assert.ok(anded.some((x) => x.includes("the `test` job runs on every PR/push but it carries `if:")), anded.join("\n"));
+});
+
+test("fixture: an `if:` that only opts out of some schedule runs still counts as every PR/push", () => {
+  const SKIP_CRON = "github.event_name != 'schedule' || github.event.schedule == '17 9 * * 1'";
+  const yaml = YAML.replace("  test:\n    runs-on", `  test:\n    if: ${SKIP_CRON}\n    runs-on`)
+    .replace("  redirects:\n    runs-on", `  redirects:\n    if: ${SKIP_CRON}\n    runs-on`);
+  assert.deepEqual(problems({ yaml }), []);
+  assert.equal(runsOnEveryPrOrPush(undefined), true);
+  assert.equal(runsOnEveryPrOrPush("github.event_name != 'schedule'"), true);
+  assert.equal(runsOnEveryPrOrPush("(github.event_name != 'workflow_dispatch') || github.ref == 'refs/heads/main'"), true);
+  assert.equal(runsOnEveryPrOrPush("github.event_name != 'pull_request'"), false);
+  assert.equal(runsOnEveryPrOrPush("github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'"), false);
 });
 
 test("fixture: a scheduled-only job that is unconditional or gated on other events is reported", () => {
