@@ -772,15 +772,13 @@
   }
 
   function tick() {
-    if (!paused && !document.hidden) goTo(current + 1, false);
+    if (paused || document.hidden) return;
+    setLiveMode(true);
+    goTo(current + 1, false);
   }
 
   function start() {
-    if (reduceMotion.matches || timer) {
-      setLiveMode(false);
-      return;
-    }
-    setLiveMode(true);
+    if (reduceMotion.matches || timer) return;
     timer = setInterval(tick, AUTO_ROTATE_MS);
   }
 
