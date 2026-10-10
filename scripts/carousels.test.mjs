@@ -295,6 +295,7 @@ test("hero boot: dots built from slide names, controls revealed, first slide act
   assertHeroSlide(t, 0);
   assert.equal(t.status.textContent, "", "no announcement on boot");
   assert.deepEqual(t.timers.intervals(), [HERO_ROTATE_MS], "one rotate interval");
+  t.advance(HERO_ROTATE_MS);
   assert.equal(t.status.getAttribute("aria-live"), "off", "auto-rotation is silent to screen readers");
 });
 
@@ -380,6 +381,7 @@ test("hero reduced-motion toggle: stops and resumes rotation", () => {
   assert.equal(t.status.getAttribute("aria-live"), "polite");
   t.mq.set(false);
   assert.deepEqual(t.timers.intervals(), [HERO_ROTATE_MS]);
+  t.advance(HERO_ROTATE_MS);
   assert.equal(t.status.getAttribute("aria-live"), "off");
 });
 
@@ -389,8 +391,7 @@ test("hero next/prev: announce the new slide politely, wrap, and reset the rotat
   t.next.dispatch("click");
   assertHeroSlide(t, 1);
   assert.equal(t.status.textContent, "Hive, slide 2 of 4");
-  // Note: restart() re-enters auto mode synchronously, so aria-live is back to
-  // "off" by the time this returns; only the text is asserted here.
+  assert.equal(t.status.getAttribute("aria-live"), "polite", "user-initiated announcement is not silenced by restart()");
   t.advance(1000);
   assertHeroSlide(t, 1, "timer was reset by the click; the old tick must not fire");
   t.advance(HERO_ROTATE_MS - 1000);
@@ -405,6 +406,7 @@ test("hero dots: clicking a dot jumps directly to that slide", () => {
   t.dots()[2].dispatch("click");
   assertHeroSlide(t, 2);
   assert.equal(t.status.textContent, "Spektacular (Spek), slide 3 of 4");
+  assert.equal(t.status.getAttribute("aria-live"), "polite");
 });
 
 test("hero keyboard: Arrow/Home/End navigate and are consumed; other keys are ignored", () => {
