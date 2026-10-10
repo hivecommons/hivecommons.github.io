@@ -131,6 +131,18 @@ red PR job against.
   both directions, so adding, renaming or dropping a chip without updating `llms.txt`
   fails CI. Also requires the "See all integrations" docs URL to appear in `llms.txt`.
   Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/jsonld-contract.test.mjs` — static gate keeping the schema.org
+  JSON-LD on `index.html` in step with the page it describes (`page-scripts.test.mjs` only
+  checks that it parses): exactly one `application/ld+json` graph with `@context`
+  `https://schema.org`; the `Organization`'s `sponsor` and `funder` lists are identical and
+  name exactly the infra-thanks logos (label minus its parenthetical, e.g. `Akamai (Linode)`
+  → `Akamai`) with each `url` equal to that logo chip's link; `Organization.url` is the site
+  root and `logo` an absolute site URL; the Hive `SoftwareApplication.keywords` names every
+  integration chip (classifier chips included), every keyword is a chip or visible page text
+  (case-insensitive, plural allowed), none repeats, and every name an `including …` list in
+  `featureList` enumerates is a chip; and every `url`, `codeRepository`, `sameAs` and
+  sponsor `url` is `https` and linked by an `href` somewhere on the page (trailing-slash
+  differences ignored). Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/availability-probes.test.mjs` — static gate over the URL list the
   scheduled `availability` job in `links.yml` probes: every probed URL is `https`, under
   `hivecommons.dev`, carries its trailing slash when it is a directory page (GitHub Pages
