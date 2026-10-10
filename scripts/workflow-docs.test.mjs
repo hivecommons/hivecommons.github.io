@@ -187,7 +187,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check links
-        run: scripts/check-links.sh \${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '' || '--external-warn' }}
+        run: scripts/check-links.sh \${{ (github.event_name != 'schedule' && github.event_name != 'workflow_dispatch') && '--external-warn' || '' }}
 
   test:
     runs-on: ubuntu-latest
