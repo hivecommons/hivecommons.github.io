@@ -413,6 +413,7 @@ test("hero keyboard: Arrow/Home/End navigate and are consumed; other keys are ig
   const t = bootHero();
   let ev = t.root.dispatch("keydown", { key: "ArrowRight" });
   assert.equal(ev.defaultPrevented, true); assertHeroSlide(t, 1);
+  assert.equal(t.status.getAttribute("aria-live"), "polite", "ArrowRight announces politely");
   ev = t.root.dispatch("keydown", { key: "ArrowLeft" });
   assert.equal(ev.defaultPrevented, true); assertHeroSlide(t, 0);
   ev = t.root.dispatch("keydown", { key: "ArrowLeft" });
@@ -421,6 +422,7 @@ test("hero keyboard: Arrow/Home/End navigate and are consumed; other keys are ig
   assert.equal(ev.defaultPrevented, true); assertHeroSlide(t, 0);
   ev = t.root.dispatch("keydown", { key: "End" });
   assert.equal(ev.defaultPrevented, true); assertHeroSlide(t, HERO_SLIDES - 1);
+  assert.equal(t.status.getAttribute("aria-live"), "polite", "Home/End announce politely");
   ev = t.root.dispatch("keydown", { key: "Tab" });
   assert.equal(ev.defaultPrevented, false, "Tab must keep its default so focus can leave");
   assertHeroSlide(t, HERO_SLIDES - 1);
@@ -462,6 +464,7 @@ test("hero swipe: touch swipe past threshold navigates; mouse drags, short and v
   t.root.dispatch("pointerup", { pointerType: "touch", clientX: 300 - HERO_SWIPE_PX, clientY: 110 });
   assertHeroSlide(t, 1);
   assert.equal(t.status.textContent, "Hive, slide 2 of 4", "swipe announces");
+  assert.equal(t.status.getAttribute("aria-live"), "polite", "swipe announcement is not silenced by restart()");
   // Swipe right -> prev.
   t.root.dispatch("pointerdown", { pointerType: "touch", clientX: 100, clientY: 100 });
   t.root.dispatch("pointerup", { pointerType: "touch", clientX: 100 + HERO_SWIPE_PX, clientY: 100 });
