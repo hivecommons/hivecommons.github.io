@@ -3,7 +3,7 @@
 GitHub Pages publishes directly from the configured branch on every push to
 `main` — there is no staging environment or review gate between a merged commit
 and the live `hivecommons.dev` domain. Treat any push to `main` as an immediate
-production deploy. However, the **Link check** workflow (`.github/workflows/links.yml`) runs on every PR and push to `main`, with jobs `links`, `test`, and `redirects` that validate links, redirects, and page markup before any change reaches production. The workflow's separate `availability` job probes the live site but runs only on the weekly schedule (Monday 09:17 UTC) and manual dispatch.
+production deploy. However, the **Link check** workflow (`.github/workflows/links.yml`) runs on pull requests and on push to `main`, with jobs `links`, `test`, and `redirects` that validate links, redirects, and page markup before any change reaches production. The workflow's separate `availability` job probes the live site on a 6-hour schedule and on manual dispatch, but not on PRs or pushes. The full link check also runs on Mondays at 09:17 UTC.
 
 ## Who is affected
 
@@ -29,7 +29,7 @@ broken HTML/CSS to every visitor, so treat any of these as user-impacting.
   markup — use the error output to guide the fix. If it passed, the breakage is
   likely a live-only issue (e.g. a content deploy race, CDN cache, or Pages build
   delay). **Note: the `availability` job did not run on that push** (it only runs
-  weekly on Monday or via manual dispatch). Trigger a fresh live-site probe with
+  every 6 hours or via manual dispatch). Trigger a fresh live-site probe with
   `gh workflow run links.yml --repo hivecommons/hivecommons.github.io` (or the Actions
   "Run workflow" button) before concluding that the probe passed and the live site is up.
 - `curl -sI https://hivecommons.dev/` — confirm a `200` and that the response

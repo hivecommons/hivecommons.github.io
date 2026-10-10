@@ -225,8 +225,9 @@ they do on the live site. Each gate is described under [Checks](#checks).
 
 ## Availability monitoring
 
-The **Link check** workflow runs every Monday at 09:17 UTC and can also be run
-manually from the Actions tab. On those runs, its separate `availability` job
+The **Link check** workflow runs every Monday at 09:17 UTC, every 6 hours for
+the availability probe alone, and can also be run manually from the Actions tab.
+On those runs, its separate `availability` job
 requests the live homepage, `/stories/`, a sample of the shortcut redirects and
 `/404.html` over HTTPS and fails unless every one returns HTTP 200 (the list is
 kept in step with the committed pages by `scripts/availability-probes.test.mjs`).
@@ -236,8 +237,9 @@ the checkout; they do not probe the production site.
 
 Review failed runs in Actions and configure GitHub Actions notifications for the
 workflow if you operate the site. See [the rollback runbook](runbooks/release-rollback.md)
-for investigation and recovery. This weekly probe is a basic availability signal,
-not continuous uptime monitoring or a check after every deployment. External link
+for investigation and recovery. This 6-hourly probe is a basic availability signal,
+not continuous uptime monitoring or a check after every deployment. The 6-hourly
+runs skip the heavier jobs; the full link check runs weekly. External link
 failures remain warnings in the separate `links` job.
 
 Traffic analytics and shortcut usage tracking are not configured. Adding them
