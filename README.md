@@ -177,9 +177,13 @@ red PR job against.
 - `scripts/check-redirects.test.sh` — fixture-based self-test of the drift gate; runs
   offline against throwaway sites with a two-entry generator.
 - `node --test scripts/ci-wiring.test.mjs` — static gate keeping `links.yml`, `scripts/` and
-  this list in step: every `scripts/*.sh` gate and `*.test.sh` self-test is run by an
-  unconditional `run:` step (they are listed by hand, unlike the `node --test
-  scripts/*.test.mjs` glob, which must itself be present and unconditional); every
+  this list in step: every `scripts/*.sh` gate and `*.test.sh` self-test is run by a
+  `run:` step in a job that runs on every PR/push (they are listed by hand, unlike the
+  `node --test scripts/*.test.mjs` glob, which must itself be present and run on every
+  PR/push). A job-level `if:` counts as a gate only when it can skip a `push` or
+  `pull_request` event: `scripts/actions-if.mjs` evaluates the expression for both, so
+  the `github.event_name != 'schedule' || …` trim that lets the 6-hourly cron run
+  `availability` alone is accepted, while an unrecognised expression is not; every
   `scripts/*.sh` gate has a sibling self-test; no `.mjs` that imports `node:test` sits
   outside the glob's `*.test.mjs` name; the workflow runs on `pull_request` and on push
   to `main`; every shell script is executable; and this `## Checks` section names every
@@ -187,7 +191,8 @@ red PR job against.
 - `node --test scripts/workflow-docs.test.mjs` — static gate keeping the prose about
   `links.yml` in step with it: in this README and `runbooks/*.md`, the workflow name must
   match the workflow's `name:`; every job the docs name must exist under `jobs:`; jobs the
-  docs say run on every PR/push must be unconditional, and the ones they call
+  docs say run on every PR/push must have no `if:`, or one that `scripts/actions-if.mjs`
+  evaluates true for both `push` and `pull_request`, and the ones they call
   weekly-only or manual-only must carry an `if:` on `schedule` / `workflow_dispatch`
   (which the workflow must declare); every weekday and `HH:MM UTC` must match the
   `cron:` expression; and the `--external-warn` flag must be what the workflow passes
