@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runsOnEveryPrPush } from "./actions-if.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -54,8 +55,11 @@ export function runCommands(body) {
   return out;
 }
 
+// A job is gated when its `if:` can skip it on a push or pull_request. An `if:` that
+// only trims schedule/dispatch events (so a frequent cron runs one job alone) is not.
 export function isGatedByCondition(body) {
-  return /^\s{4}if:\s*\S/m.test(body);
+  const cond = /^\s{4}if:[ \t]*(\S.*)$/m.exec(body)?.[1].trim();
+  return !runsOnEveryPrPush(cond);
 }
 
 // Scripts under scripts/, classified.
@@ -232,8 +236,20 @@ test("fixture: the node glob step is required and must be unconditional", () => 
   assert.ok(wiringProblems(gone, { scripts: SCRIPTS, nodeSources: SOURCES }).some((p) => p.startsWith("no job runs `node --test scripts/*.test.mjs`")));
   const gated = YAML.replace("  test:\n    runs-on", "  test:\n    if: github.event_name == 'push'\n    runs-on");
   assert.ok(wiringProblems(gated, { scripts: SCRIPTS, nodeSources: SOURCES }).some((p) => p.includes("carries an `if:`")));
+  const opaque = YAML.replace("  test:\n    runs-on", "  test:\n    if: contains(github.ref, 'main')\n    runs-on");
+  assert.ok(wiringProblems(opaque, { scripts: SCRIPTS, nodeSources: SOURCES }).some((p) => p.includes("carries an `if:`")));
   const enumerated = YAML.replace("node --test scripts/*.test.mjs", "node --test scripts/page-x.test.mjs");
   assert.ok(wiringProblems(enumerated, { scripts: SCRIPTS, nodeSources: SOURCES }).some((p) => p.startsWith("no job runs `node --test scripts/*.test.mjs`")));
+});
+
+test("fixture: an `if:` that only trims schedule/dispatch events leaves the job unconditional for PR/push", () => {
+  const trim = "github.event_name != 'schedule' || github.event.schedule == '17 9 * * 1'";
+  const yaml = YAML.replace("  test:\n    runs-on", `  test:\n    if: ${trim}\n    runs-on`)
+    .replace("  redirects:\n    runs-on", "  redirects:\n    if: github.event_name != 'workflow_dispatch'\n    runs-on");
+  assert.deepEqual(wiringProblems(yaml, { scripts: SCRIPTS, nodeSources: SOURCES }), []);
+  assert.equal(isGatedByCondition(`    if: ${trim}\n    runs-on: x\n`), false);
+  assert.equal(isGatedByCondition("    if: github.event_name == 'schedule'\n    runs-on: x\n"), true);
+  assert.equal(isGatedByCondition("    runs-on: x\n"), false);
 });
 
 test("fixture: node:test files outside the glob, and glob-named files without node:test, are reported", () => {

@@ -12,6 +12,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { evalCondition, runsOnEveryPrPush } from "./actions-if.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -128,7 +129,7 @@ export function docProblems(yaml, { docs, checkLinks }) {
         continue;
       }
       const cond = jobCondition(found.body);
-      if (everyRun && cond) problems.push(`${file} says the \`${job}\` job runs on every PR/push but it carries \`if: ${cond}\``);
+      if (everyRun && !runsOnEveryPrPush(cond)) problems.push(`${file} says the \`${job}\` job runs on every PR/push but it carries \`if: ${cond}\``);
       if (scheduledOnly) {
         if (!cond) problems.push(`${file} says the \`${job}\` job runs only on schedule/manual dispatch but it has no \`if:\``);
         else if (!/schedule|workflow_dispatch/.test(cond) || /!=/.test(cond)) problems.push(`${file} says the \`${job}\` job runs only on schedule/manual dispatch but its \`if: ${cond}\` does not select those events`);
@@ -272,6 +273,35 @@ test("fixture: a job named in the docs but missing from the workflow is reported
 test("fixture: a job the docs say runs on every PR/push but is gated is reported", () => {
   const p = problems({ yaml: YAML.replace("  test:\n    runs-on", "  test:\n    if: github.event_name == 'push'\n    runs-on") });
   assert.ok(p.some((x) => x.includes("the `test` job runs on every PR/push but it carries `if: github.event_name == 'push'`")), p.join("\n"));
+  const dispatchOnly = problems({ yaml: YAML.replace("  test:\n    runs-on", "  test:\n    if: github.event_name != 'pull_request'\n    runs-on") });
+  assert.ok(dispatchOnly.some((x) => x.includes("the `test` job runs on every PR/push but it carries `if: github.event_name != 'pull_request'`")), dispatchOnly.join("\n"));
+  // Unknown expression shapes are not guessed at: they count as a gate until the parser learns them.
+  const opaque = problems({ yaml: YAML.replace("  test:\n    runs-on", "  test:\n    if: contains(github.ref, 'main')\n    runs-on") });
+  assert.ok(opaque.some((x) => x.includes("the `test` job runs on every PR/push but it carries `if: contains(github.ref, 'main')`")), opaque.join("\n"));
+});
+
+test("fixture: an `if:` that only trims schedule/dispatch events still runs on every PR/push", () => {
+  const trim = "github.event_name != 'schedule' || github.event.schedule == '17 9 * * 1'";
+  const yaml = YAML.replace("  test:\n    runs-on", `  test:\n    if: ${trim}\n    runs-on`)
+    .replace("  redirects:\n    runs-on", "  redirects:\n    if: github.event_name != 'workflow_dispatch'\n    runs-on");
+  assert.deepEqual(problems({ yaml }), []);
+});
+
+test("fixture: evalCondition handles the links.yml expression subset and refuses the rest", () => {
+  const trim = "github.event_name != 'schedule' || github.event.schedule == '17 9 * * 1'";
+  assert.equal(evalCondition(trim, { eventName: "push" }), true);
+  assert.equal(evalCondition(trim, { eventName: "pull_request" }), true);
+  assert.equal(evalCondition(trim, { eventName: "schedule", schedule: "43 */6 * * *" }), false);
+  assert.equal(evalCondition(trim, { eventName: "schedule", schedule: "17 9 * * 1" }), true);
+  assert.equal(evalCondition("(github.event_name == 'push' && github.event_name != 'x') || !(github.event_name == 'push')", { eventName: "pull_request" }), true);
+  assert.equal(evalCondition("github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'", { eventName: "push" }), false);
+  assert.equal(evalCondition("contains(github.ref, 'main')", { eventName: "push" }), undefined);
+  assert.equal(evalCondition("github.event_name == 'push' ||", { eventName: "push" }), undefined);
+  assert.equal(evalCondition("github.actor == 'x'", { eventName: "push" }), undefined);
+  assert.equal(runsOnEveryPrPush(undefined), true);
+  assert.equal(runsOnEveryPrPush(trim), true);
+  assert.equal(runsOnEveryPrPush("github.event_name == 'push'"), false);
+  assert.equal(runsOnEveryPrPush("contains(github.ref, 'main')"), false);
 });
 
 test("fixture: a scheduled-only job that is unconditional or gated on other events is reported", () => {
