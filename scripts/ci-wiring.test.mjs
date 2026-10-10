@@ -248,7 +248,12 @@ test("fixture: an `if:` that only trims schedule/dispatch events leaves the job 
     .replace("  redirects:\n    runs-on", "  redirects:\n    if: github.event_name != 'workflow_dispatch'\n    runs-on");
   assert.deepEqual(wiringProblems(yaml, { scripts: SCRIPTS, nodeSources: SOURCES }), []);
   assert.equal(isGatedByCondition(`    if: ${trim}\n    runs-on: x\n`), false);
+  assert.equal(isGatedByCondition("    if: github.event_name != 'schedule'\n    runs-on: x\n"), false);
+  assert.equal(isGatedByCondition("    if: (github.event_name != 'workflow_dispatch') || github.event_name == 'push'\n    runs-on: x\n"), false);
   assert.equal(isGatedByCondition("    if: github.event_name == 'schedule'\n    runs-on: x\n"), true);
+  assert.equal(isGatedByCondition("    if: github.event_name != 'pull_request'\n    runs-on: x\n"), true);
+  assert.equal(isGatedByCondition("    if: github.event_name != 'schedule' && github.ref == 'refs/heads/main'\n    runs-on: x\n"), true);
+  assert.equal(isGatedByCondition("    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'\n    runs-on: x\n"), true);
   assert.equal(isGatedByCondition("    runs-on: x\n"), false);
 });
 

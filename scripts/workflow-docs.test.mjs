@@ -278,6 +278,9 @@ test("fixture: a job the docs say runs on every PR/push but is gated is reported
   // Unknown expression shapes are not guessed at: they count as a gate until the parser learns them.
   const opaque = problems({ yaml: YAML.replace("  test:\n    runs-on", "  test:\n    if: contains(github.ref, 'main')\n    runs-on") });
   assert.ok(opaque.some((x) => x.includes("the `test` job runs on every PR/push but it carries `if: contains(github.ref, 'main')`")), opaque.join("\n"));
+  // A schedule trim AND-ed with a ref gate still skips PRs: the && must not be mistaken for a trim.
+  const anded = problems({ yaml: YAML.replace("  test:\n    runs-on", "  test:\n    if: github.event_name != 'schedule' && github.ref == 'refs/heads/main'\n    runs-on") });
+  assert.ok(anded.some((x) => x.includes("the `test` job runs on every PR/push but it carries `if:")), anded.join("\n"));
 });
 
 test("fixture: an `if:` that only trims schedule/dispatch events still runs on every PR/push", () => {
@@ -300,7 +303,12 @@ test("fixture: evalCondition handles the links.yml expression subset and refuses
   assert.equal(evalCondition("github.actor == 'x'", { eventName: "push" }), undefined);
   assert.equal(runsOnEveryPrPush(undefined), true);
   assert.equal(runsOnEveryPrPush(trim), true);
+  assert.equal(runsOnEveryPrPush("github.event_name != 'schedule'"), true);
+  assert.equal(runsOnEveryPrPush("(github.event_name != 'workflow_dispatch') || github.event_name == 'push'"), true);
   assert.equal(runsOnEveryPrPush("github.event_name == 'push'"), false);
+  assert.equal(runsOnEveryPrPush("github.event_name != 'pull_request'"), false);
+  assert.equal(runsOnEveryPrPush("github.event_name != 'schedule' && github.ref == 'refs/heads/main'"), false);
+  assert.equal(runsOnEveryPrPush("github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'"), false);
   assert.equal(runsOnEveryPrPush("contains(github.ref, 'main')"), false);
 });
 
