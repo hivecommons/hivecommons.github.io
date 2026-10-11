@@ -10,12 +10,11 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
-import { htmlFiles, isRedirectPage } from "./html-pages.mjs";
+import { htmlFiles, isRedirectPage, SKIP_DIRS } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 const SITE_ORIGIN = "https://hivecommons.dev";
-const SKIP_DIRS = new Set([".git", ".github", "node_modules", "scripts", ".linkcheck-work"]);
 
 const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 

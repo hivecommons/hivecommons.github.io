@@ -15,7 +15,6 @@ import { htmlFiles, isRedirectPage, lineOf } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
-const SKIP_DIRS = new Set([".git", ".github", "node_modules", "scripts", ".linkcheck-work"]);
 
 // Attributes whose value is one or more whitespace-separated id references.
 const IDREF_ATTRS = ["aria-controls", "aria-labelledby", "aria-describedby", "aria-owns", "aria-activedescendant", "for"];

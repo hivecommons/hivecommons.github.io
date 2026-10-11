@@ -17,7 +17,6 @@ import { htmlFiles } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
-const SKIP_DIRS = new Set([".git", ".github", "node_modules", "scripts", ".linkcheck-work"]);
 
 // Script types the browser never executes; CSP script-src does not apply.
 const DATA_SCRIPT_TYPES = new Set(["application/ld+json", "application/json", "importmap"]);

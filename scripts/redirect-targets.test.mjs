@@ -39,11 +39,11 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SKIP_DIRS } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 const GENERATOR = join(ROOT, "make-redirects.sh");
-const SKIP_DIRS = new Set([".git", ".github", "node_modules", "scripts", ".linkcheck-work"]);
 
 // The HTML Standard's named character references that browsers resolve even
 // without a trailing ";" (the Latin-1 set plus AMP/COPY/GT/LT/QUOT/REG).

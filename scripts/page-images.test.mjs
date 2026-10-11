@@ -20,7 +20,6 @@ import { htmlFiles, isRedirectPage, lineOf } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
-const SKIP_DIRS = new Set([".git", ".github", "node_modules", "scripts", ".linkcheck-work"]);
 const ASSET_DIR = join(ROOT, "assets");
 const IMAGE_EXT_RE = /\.(?:png|jpe?g|gif|webp|svg|ico)$/i;
 // Declared width/height may be rounded from a non-integer intrinsic ratio
