@@ -194,6 +194,17 @@ red PR job against.
   parentheses, escaped string literals, and that every unsupported context, function,
   operator or malformed expression returns `undefined` so the caller treats the job as
   gated rather than guessing. Zero dependencies.
+- `node --test scripts/html-pages.test.mjs` — direct unit test of `scripts/html-pages.mjs`,
+  the page-discovery helper every static page gate imports to decide which pages it
+  inspects: `htmlFiles()` recurses, sorts, keeps only `.html`, and skips exactly the
+  `SKIP_DIRS` tooling directories (at any depth, directories only); `SKIP_DIRS` never
+  names a content directory; `isRedirectPage()` matches the generator's
+  `http-equiv="refresh"` in every quote/case/attribute-order spelling and nothing else;
+  `lineOf()` is 1-based. Then pins the live tree: `index.html`, `404.html`,
+  `stories/index.html` and every `make-redirects.sh` MAP page are discovered, nothing
+  under a skipped directory is, and the redirect pages are exactly the MAP paths — so
+  an over-broad `SKIP_DIRS` or a broken walker cannot make the gates pass vacuously.
+  Zero dependencies.
 - `node --test scripts/workflow-docs.test.mjs` — static gate keeping the prose about
   `links.yml` in step with it: in this README and `runbooks/*.md`, the workflow name must
   match the workflow's `name:`; every job the docs name must exist under `jobs:`; jobs the
