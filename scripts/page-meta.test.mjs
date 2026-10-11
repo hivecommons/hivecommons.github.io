@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isRedirectPage } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -85,11 +86,7 @@ export function parseHead(html) {
   return { hasHead: Boolean(headMatch), titles, meta, canonical, refresh };
 }
 
-export function isRedirectPage(html) {
-  return /<meta[^>]+http-equiv\s*=\s*["']refresh["']/i.test(html);
-}
-
-function first(map, key) {
+export function first(map, key) {
   const v = map.get(key);
   return v && v.length ? v[0] : undefined;
 }

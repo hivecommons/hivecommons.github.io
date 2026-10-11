@@ -17,6 +17,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { htmlFiles, isRedirectPage, lineOf } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -82,27 +83,6 @@ const NO_INTERACTIVE_INSIDE = new Set(["a", "button", "label"]);
 
 // https://html.spec.whatwg.org/#metadata-content — the only children <head> keeps.
 const HEAD_CONTENT = new Set(["base", "link", "meta", "noscript", "script", "style", "template", "title"]);
-
-function htmlFiles(dir = ROOT) {
-  const out = [];
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) {
-      if (!SKIP_DIRS.has(name)) out.push(...htmlFiles(full));
-    } else if (name.endsWith(".html")) {
-      out.push(full);
-    }
-  }
-  return out.sort();
-}
-
-function isRedirectPage(html) {
-  return /<meta[^>]+http-equiv\s*=\s*["']refresh["']/i.test(html);
-}
-
-function lineOf(html, index) {
-  return html.slice(0, index).split("\n").length;
-}
 
 // ---------------------------------------------------------------------------
 // Tokenizer: start/end tags with their attributes, honouring quoted attribute

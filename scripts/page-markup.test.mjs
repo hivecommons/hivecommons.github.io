@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { htmlFiles, isRedirectPage, lineOf } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -18,27 +19,6 @@ const SKIP_DIRS = new Set([".git", ".github", "node_modules", "scripts", ".linkc
 
 // Attributes whose value is one or more whitespace-separated id references.
 const IDREF_ATTRS = ["aria-controls", "aria-labelledby", "aria-describedby", "aria-owns", "aria-activedescendant", "for"];
-
-function htmlFiles(dir = ROOT) {
-  const out = [];
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) {
-      if (!SKIP_DIRS.has(name)) out.push(...htmlFiles(full));
-    } else if (name.endsWith(".html")) {
-      out.push(full);
-    }
-  }
-  return out.sort();
-}
-
-function isRedirectPage(html) {
-  return /<meta[^>]+http-equiv\s*=\s*["']refresh["']/i.test(html);
-}
-
-function lineOf(html, index) {
-  return html.slice(0, index).split("\n").length;
-}
 
 // Strip <script> and <style> bodies so their contents are not mistaken for markup
 // (e.g. a querySelector('[data-x]') string is not a data-x attribute).
