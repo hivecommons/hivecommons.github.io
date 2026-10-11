@@ -28,6 +28,8 @@ jobs:
           for url in https://hivecommons.dev/ https://hivecommons.dev/stories/ \
                      https://hivecommons.dev/docs/ https://hivecommons.dev/code/ \
                      https://hivecommons.dev/discord/ https://hivecommons.dev/join/ \
+                     https://hivecommons.dev/llms.txt https://hivecommons.dev/sitemap.xml \
+                     https://hivecommons.dev/robots.txt \
                      https://hivecommons.dev/404.html; do
             status=$(curl --silent --show-error --output /dev/null \
               --write-out '%{http_code}' --connect-timeout 10 --max-time 30 \
