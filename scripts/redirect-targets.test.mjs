@@ -30,7 +30,7 @@
 //      in both url and label) and every emitted page must satisfy rules 2–3.
 //      Rule 1 keeps such entries out of the committed MAP, so without this
 //      the < > " branches of html_escape() would never execute under test
-//      (and indeed they are wrong today on bash >= 5.2: see #147, todo below).
+//      (and indeed they were wrong on bash >= 5.2 until #149: see #147).
 // Usage: node --test scripts/redirect-targets.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -351,17 +351,13 @@ export const HOSTILE_MAP = [
   { path: "copy", url: "https://example.test/c?x=1&copy&z=2", label: "R&copy by us" },
   { path: "semi", url: "https://example.test/c?a=1&amp;b=2&hellip;", label: "Q&notify &lt;now&gt;" },
   { path: "num", url: "https://example.test/c?a=&#38;b&#x26;", label: "tick &#8230; tock" },
-];
-// The '"', '<' and '>' branches. On bash >= 5.2 (ubuntu-latest) patsub_replacement
-// is on by default and an unquoted "&" in a ${s//pat/repl} replacement expands to
-// the match, so today html_escape() emits '<lt;', '>gt;' and '"quot;' for these
-// (hivecommons/hivecommons.github.io#147). Kept separate and marked todo until the
-// generator is fixed; flip the todo off (merge into HOSTILE_MAP) in that PR.
-export const HOSTILE_MAP_PENDING = [
+  // The '"', '<' and '>' branches. On bash >= 5.2 patsub_replacement is on by
+  // default and an unquoted "&" in a ${s//pat/repl} replacement expands to the
+  // match, which once made html_escape() emit '<lt;', '>gt;' and '"quot;' for
+  // these (hivecommons.github.io#147, fixed in #149 by quoting the replacements).
   { path: "quote", url: 'https://example.test/c?q="1"', label: 'say "hi"' },
   { path: "angle", url: "https://example.test/c?lt=<&gt=>", label: "<b>bold</b> & <i>loud</i>" },
 ];
-
 // Run the committed make-redirects.sh body with MAP swapped for `entries`, in a
 // scratch directory, and return { pages: {path: html}, stdout, stderr, status }.
 export function runGeneratorWith(entries, generatorScript = script) {
@@ -400,7 +396,7 @@ test("fixture: a generator whose html_escape() is a no-op is caught on every ent
   // against a generator that stopped escaping.
   const stripped = script.replace(/^html_escape\(\) \{[\s\S]*?^\}\n/m, 'html_escape() { printf \'%s\' "$1"; }\n');
   assert.notEqual(stripped, script, "could not find html_escape() to neutralise");
-  const all = [...HOSTILE_MAP, ...HOSTILE_MAP_PENDING];
+  const all = HOSTILE_MAP;
   const naive = runGeneratorWith(all, stripped);
   assert.equal(naive.status, 0, naive.stderr);
   const caught = all.filter((e) => redirectPageProblems(naive.pages[e.path], e).length > 0).map((e) => e.path);
@@ -423,16 +419,17 @@ test("make-redirects.sh: html_escape() makes every hostile url/label decode back
   assert.doesNotMatch(pages.semi, /&amp;amp;amp;/, "escaping must be applied exactly once");
 });
 
-test("make-redirects.sh: html_escape() carries '\"', '<' and '>' (hivecommons.github.io#147)", { todo: "make-redirects.sh html_escape() is wrong for these on bash >= 5.2 until #147 lands" }, () => {
-  const { pages, status, stderr } = runGeneratorWith(HOSTILE_MAP_PENDING);
+test("make-redirects.sh: html_escape() carries '\"', '<' and '>' under bash >= 5.2 patsub_replacement (hivecommons.github.io#147)", () => {
+  const { pages, status, stderr } = runGeneratorWith(HOSTILE_MAP);
   assert.equal(status, 0, stderr);
-  for (const entry of HOSTILE_MAP_PENDING) {
-    assert.ok(pages[entry.path], `${entry.path}/index.html was not generated`);
-    assert.deepEqual(redirectPageProblems(pages[entry.path], entry), [], `${entry.path}: ${JSON.stringify(entry)}`);
-  }
   assert.match(pages.quote, /url=https:\/\/example\.test\/c\?q=&quot;1&quot;"/);
   assert.match(pages.angle, /url=https:\/\/example\.test\/c\?lt=&lt;&amp;gt=&gt;"/);
   assert.match(pages.angle, /<title>Hive Commons — &lt;b&gt;bold&lt;\/b&gt; &amp; &lt;i&gt;loud&lt;\/i&gt;<\/title>/);
+  // The exact #147 symptom, named so a regression reads as what it is rather
+  // than as a decode mismatch.
+  for (const bad of ['"quot;', "<lt;", ">gt;"]) {
+    assert.ok(!pages.quote.includes(bad) && !pages.angle.includes(bad), `patsub_replacement leak: ${bad}`);
+  }
 });
 
 // --- live checks over the committed tree ------------------------------------
