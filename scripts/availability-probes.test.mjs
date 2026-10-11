@@ -113,7 +113,7 @@ test("fixture: sitemap <loc> values are extracted", () => {
 });
 
 const FIXTURE_SITEMAP = [`${SITE_ORIGIN}/`, `${SITE_ORIGIN}/stories/`];
-const GOOD_LIST = [`${SITE_ORIGIN}/`, `${SITE_ORIGIN}/stories/`, `${SITE_ORIGIN}/docs/`, `${SITE_ORIGIN}/404.html`];
+const GOOD_LIST = [`${SITE_ORIGIN}/`, `${SITE_ORIGIN}/stories/`, `${SITE_ORIGIN}/docs/`, `${SITE_ORIGIN}/llms.txt`, `${SITE_ORIGIN}/sitemap.xml`, `${SITE_ORIGIN}/robots.txt`, `${SITE_ORIGIN}/404.html`];
 
 test("fixture: a list covering the sitemap, 404.html and a redirect passes", () => {
   assert.deepEqual(probeListProblems(GOOD_LIST, { sitemap: FIXTURE_SITEMAP }), []);

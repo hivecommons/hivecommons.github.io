@@ -2,7 +2,7 @@
 
 The **Link check** workflow (`.github/workflows/links.yml`) runs its `availability`
 job on a 6-hour schedule and on manual dispatch. It requests the live homepage,
-`/stories/`, a sample of the shortcut redirects and `/404.html` over HTTPS and fails
+`/stories/`, `/docs/`, `/llms.txt`, `/sitemap.xml`, `/robots.txt`, a sample of the shortcut redirects and `/404.html` over HTTPS and fails
 unless every one returns HTTP 200. Use this runbook when that job is red and no recent
 deploy explains it; for a bad commit, use the [rollback runbook](release-rollback.md).
 
