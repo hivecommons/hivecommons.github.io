@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { lineOf } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -31,10 +32,6 @@ function attrs(tag) {
 
 function hasClass(tagAttrs, name) {
   return (tagAttrs.class ?? "").split(/\s+/).includes(name);
-}
-
-function lineOf(html, index) {
-  return html.slice(0, index).split("\n").length;
 }
 
 function textOf(inner) {

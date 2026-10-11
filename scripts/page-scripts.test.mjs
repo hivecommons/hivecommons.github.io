@@ -10,24 +10,12 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
+import { htmlFiles, isRedirectPage } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 const SITE_ORIGIN = "https://hivecommons.dev";
 const SKIP_DIRS = new Set([".git", ".github", "node_modules", "scripts", ".linkcheck-work"]);
-
-function htmlFiles(dir = ROOT) {
-  const out = [];
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) {
-      if (!SKIP_DIRS.has(name)) out.push(...htmlFiles(full));
-    } else if (name.endsWith(".html")) {
-      out.push(full);
-    }
-  }
-  return out.sort();
-}
 
 const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 
@@ -92,10 +80,6 @@ test("index.html ships the expected interactive scripts (hero carousel, ACMM lev
 });
 
 // --- sitemap.xml <-> canonical top-level pages ------------------------------
-
-function isRedirectPage(html) {
-  return /<meta[^>]+http-equiv\s*=\s*["']refresh["']/i.test(html);
-}
 
 function canonicalTopLevelPaths() {
   const paths = ["/"];

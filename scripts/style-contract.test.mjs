@@ -16,31 +16,11 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { htmlFiles, isRedirectPage, lineOf } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 const SKIP_DIRS = new Set([".git", ".github", "node_modules", "scripts", ".linkcheck-work"]);
-
-function htmlFiles(dir = ROOT) {
-  const out = [];
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) {
-      if (!SKIP_DIRS.has(name)) out.push(...htmlFiles(full));
-    } else if (name.endsWith(".html")) {
-      out.push(full);
-    }
-  }
-  return out.sort();
-}
-
-function isRedirectPage(html) {
-  return /<meta[^>]+http-equiv\s*=\s*["']refresh["']/i.test(html);
-}
-
-function lineOf(text, index) {
-  return text.slice(0, index).split("\n").length;
-}
 
 // Replace every non-newline character so line numbers survive.
 function blank(s) {

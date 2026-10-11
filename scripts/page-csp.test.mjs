@@ -13,6 +13,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { htmlFiles } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -23,19 +24,6 @@ const DATA_SCRIPT_TYPES = new Set(["application/ld+json", "application/json", "i
 const EVENT_HANDLER_RE = /\son[a-z]+\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
 const SCRIPT_RE = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
 const META_REFRESH_RE = /<meta\b[^>]+http-equiv\s*=\s*["']refresh["']/i;
-
-function htmlFiles(dir = ROOT) {
-  const out = [];
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) {
-      if (!SKIP_DIRS.has(name)) out.push(...htmlFiles(full));
-    } else if (name.endsWith(".html")) {
-      out.push(full);
-    }
-  }
-  return out.sort();
-}
 
 function attrs(tag) {
   const out = {};
