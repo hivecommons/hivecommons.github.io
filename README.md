@@ -241,8 +241,9 @@ have bounded retries for transient failures. PR and push-to-`main` runs only che
 the checkout; they do not probe the production site.
 
 Review failed runs in Actions and configure GitHub Actions notifications for the
-workflow if you operate the site. See [the rollback runbook](runbooks/release-rollback.md)
-for investigation and recovery. This 6-hourly probe is a basic availability signal,
+workflow if you operate the site. See [the availability runbook](runbooks/availability-failure.md)
+for a failing probe and [the rollback runbook](runbooks/release-rollback.md)
+for a bad deploy. This 6-hourly probe is a basic availability signal,
 not continuous uptime monitoring or a check after every deployment. The 6-hourly
 runs skip the heavier jobs; the full link check runs weekly. External link
 failures remain warnings in the separate `links` job.
