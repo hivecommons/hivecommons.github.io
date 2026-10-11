@@ -188,6 +188,12 @@ red PR job against.
   outside the glob's `*.test.mjs` name; the workflow runs on `pull_request` and on push
   to `main`; every shell script is executable; and this `## Checks` section names every
   gate and self-test. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/actions-if.test.mjs` — direct unit test of `scripts/actions-if.mjs`,
+  the job-level `if:` evaluator `ci-wiring.test.mjs` and `workflow-docs.test.mjs` share: `==`/`!=` on
+  `github.event_name` and `github.event.schedule`, `!`, `&&` over `||` precedence,
+  parentheses, escaped string literals, and that every unsupported context, function,
+  operator or malformed expression returns `undefined` so the caller treats the job as
+  gated rather than guessing. Zero dependencies.
 - `node --test scripts/workflow-docs.test.mjs` — static gate keeping the prose about
   `links.yml` in step with it: in this README and `runbooks/*.md`, the workflow name must
   match the workflow's `name:`; every job the docs name must exist under `jobs:`; jobs the
