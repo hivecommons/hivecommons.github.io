@@ -10,12 +10,11 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isRedirectPage } from "./html-pages.mjs";
+import { isRedirectPage, SKIP_DIRS } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 const SITE_ORIGIN = "https://hivecommons.dev";
-const SKIP_DIRS = new Set([".git", ".github", "node_modules", "scripts", ".linkcheck-work"]);
 
 function htmlFiles(dir = ROOT) {
   const out = [];

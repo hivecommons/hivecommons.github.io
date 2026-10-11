@@ -20,7 +20,6 @@ import { htmlFiles, isRedirectPage, lineOf } from "./html-pages.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
-const SKIP_DIRS = new Set([".git", ".github", "node_modules", "scripts", ".linkcheck-work"]);
 
 // Replace every non-newline character so line numbers survive.
 function blank(s) {
