@@ -114,6 +114,24 @@ expect_out 'ERROR internal anchor missing: index\.html -> #ghost' "same-page anc
 expect_out 'ERROR internal anchor missing: index\.html -> /other\.html#phantom' "cross-page anchor"
 expect_out 'Internal errors: 2\.' "both counted"
 
+echo "case: single-quoted and unquoted href/src are checked; ?src= and empty href are not"
+root="$(new_site quoting-forms)"
+cat > "$root/index.html" <<'HTML'
+<a href='/single-missing'>single</a>
+<a href=/unquoted-missing>unquoted</a>
+<img src='/img-missing.png'>
+<iframe src="https://example.test/embed?src=/query-missing"></iframe>
+<a href="">empty</a>
+<a href="/">root</a>
+HTML
+run_checker "$root"
+expect_rc 1 "broken single-quoted/unquoted links fail the gate"
+expect_out 'ERROR internal target missing: index\.html -> /single-missing$' "single-quoted href is checked"
+expect_out 'ERROR internal target missing: index\.html -> /unquoted-missing$' "unquoted href is checked"
+expect_out 'ERROR internal target missing: index\.html -> /img-missing\.png$' "single-quoted src is checked"
+expect_no_out 'query-missing' "?src= inside a URL is not an attribute"
+expect_out 'Internal errors: 3\.' "empty href is skipped"
+
 echo "case: site-absolute hivecommons.dev URLs are checked as internal paths"
 root="$(new_site site-absolute)"
 echo '<a href="https://hivecommons.dev/missing-page">x</a>' > "$root/index.html"
