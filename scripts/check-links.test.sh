@@ -193,6 +193,25 @@ run_checker "$root"
 expect_rc 0 "dedup site passes"
 expect_out 'Checked 1 unique links\.' "three identical links counted once"
 
+echo "case: single-quoted and unquoted attribute values are checked too"
+root="$(new_site quoting)"
+cat > "$root/index.html" <<'HTML'
+<a href="/ok">double</a>
+<a href='/nope-single'>single</a>
+<a href=/nope-bare>bare</a>
+<img src='/nope.png'>
+<iframe src="https://cal.example.test/embed?src=abc%40group.calendar.google.com&amp;scp=ALL"></iframe>
+<a href="">empty</a>
+HTML
+echo ok > "$root/ok.html"
+run_checker "$root"
+expect_rc 1 "broken links in non-double-quoted attributes fail"
+expect_out 'ERROR internal target missing: index\.html -> /nope-single' "single-quoted href is extracted"
+expect_out 'ERROR internal target missing: index\.html -> /nope-bare' "unquoted href is extracted"
+expect_out 'ERROR internal target missing: index\.html -> /nope\.png' "single-quoted src is extracted"
+expect_no_out 'abc%40group' "a ?src= query parameter inside a URL is not read as an attribute"
+expect_out 'Checked 5 unique links\. Internal errors: 3\.' "empty href is skipped and the iframe URL counts once"
+
 echo "case: result does not depend on the caller's cwd"
 root="$(new_site other-cwd)"
 echo '<a href="/nope">x</a>' > "$root/index.html"

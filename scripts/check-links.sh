@@ -60,8 +60,11 @@ normalize_internal_path() {
 
 extract_html_links() {
   local file="$1"
-  grep -Eoi '(href|src)[[:space:]]*=[[:space:]]*"[^"]+"' "$file" |
-    sed -E 's/^[^=]+=[[:space:]]*"([^"]+)"/\1/' |
+  # Attribute values may be double-quoted, single-quoted or unquoted. The
+  # leading boundary keeps `?src=` / `&src=` inside a URL from being read as
+  # an attribute.
+  grep -Eoi "(^|[[:space:]])(href|src)[[:space:]]*=[[:space:]]*(\"[^\"]+\"|'[^']+'|[^\"'[:space:]>]+)" "$file" |
+    sed -E "s/^[[:space:]]*[^=]+=[[:space:]]*//; s/^\"([^\"]+)\"$/\1/; s/^'([^']+)'$/\1/" |
     awk -v file="$file" '{ print file "\t" $0 }'
 
   grep -Eoi '<meta[^>]+http-equiv[[:space:]]*=[[:space:]]*"refresh"[^>]*>' "$file" |
