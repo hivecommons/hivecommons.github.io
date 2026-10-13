@@ -60,8 +60,8 @@ normalize_internal_path() {
 
 extract_html_links() {
   local file="$1"
-  grep -Eoi '(href|src)[[:space:]]*=[[:space:]]*"[^"]+"' "$file" |
-    sed -E 's/^[^=]+=[[:space:]]*"([^"]+)"/\1/' |
+  grep -Eoi "(^|[[:space:]])(href|src)[[:space:]]*=[[:space:]]*(\"[^\"]+\"|'[^']+'|[^[:space:]\"'>]+)" "$file" |
+    sed -E -e 's/^[^=]+=[[:space:]]*//' -e 's/^"(.*)"$/\1/' -e "s/^'(.*)'\$/\\1/" |
     awk -v file="$file" '{ print file "\t" $0 }'
 
   grep -Eoi '<meta[^>]+http-equiv[[:space:]]*=[[:space:]]*"refresh"[^>]*>' "$file" |
