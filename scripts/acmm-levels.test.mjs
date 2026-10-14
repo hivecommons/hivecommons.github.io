@@ -248,6 +248,24 @@ test("prefers-reduced-motion disables rotation, and a live change toggles it", (
   assertActive(t, 1, "frozen after reduced motion is re-enabled");
 });
 
+test("clicked tab still receives focus when focus() rejects the preventScroll options bag", () => {
+  const t = boot();
+  t.show();
+  const tab = t.tabs[2];
+  const calls = [];
+  // Older WebKit throws on focus({ preventScroll }); the script must retry bare focus().
+  tab.focus = function (opts) {
+    calls.push(opts);
+    if (opts !== undefined) throw new TypeError("focus options unsupported");
+    this.focusCount++;
+    this.doc.activeElement = this;
+  };
+  tab.dispatch("click");
+  assertActive(t, 2);
+  assert.deepEqual(calls, [{ preventScroll: true }, undefined], "options call first, then bare fallback");
+  assert.equal(tab.focusCount, 1, "fallback focus landed exactly once");
+});
+
 test("clicking a tab activates it, moves focus, and restarts the hold timer", () => {
   const t = boot();
   t.show();
