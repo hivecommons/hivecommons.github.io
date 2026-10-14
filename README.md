@@ -164,6 +164,13 @@ red PR job against.
   must be at `https://<CNAME>`; and no committed page, stylesheet or text asset may link
   the `hivecommons.github.io` fallback host (which bypasses the custom domain). Each rule
   has a fixture self-test. Zero dependencies.
+- `node --test scripts/security-txt.test.mjs` — static gate over
+  `.well-known/security.txt` (RFC 9116), whose `Expires` field nothing else reads
+  (`links.yml` only probes that the URL answers 200): exactly one `Expires` that is a
+  valid RFC 3339 timestamp at least 30 days away and no more than ~1 year ahead, at least
+  one `Contact`, and a `Canonical` equal to the published URL — so the contact is rotated
+  before scanners treat it as abandoned. Each rule has a fixture self-test. Zero
+  dependencies.
 - `node --test scripts/redirect-targets.test.mjs` — static gate over what a browser makes
   of each shortcut-redirect page. `make-redirects.sh` interpolates every `MAP` url and
   label into HTML through its `html_escape()`, so the gate parses the `MAP`, rejects any
