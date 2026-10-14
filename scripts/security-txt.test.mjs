@@ -47,6 +47,18 @@ export function check(text, now) {
   const canonical = named("canonical");
   if (!canonical.some((f) => f.value === CANONICAL)) problems.push(`Canonical must include ${CANONICAL}`);
 
+  // RFC 9116 §2.5: Contact/Canonical/Policy/Acknowledgments/Hiring values are
+  // URIs; web URIs MUST be https. Contact MAY also be mailto:/tel:. A bare
+  // address or an http:// URL is what scanners flag as a malformed file.
+  for (const f of named("contact")) {
+    if (!/^(https:\/\/\S+|mailto:\S+@\S+|tel:\+?[\d().-]+)$/.test(f.value)) problems.push(`Contact must be an https://, mailto: or tel: URI: ${JSON.stringify(f.value)}`);
+  }
+  for (const n of ["canonical", "policy", "acknowledgments", "hiring"]) {
+    for (const f of named(n)) if (!/^https:\/\/\S+$/.test(f.value)) problems.push(`${f.name} must be an https:// URI: ${JSON.stringify(f.value)}`);
+  }
+  // RFC 9116 §2.5.8: Preferred-Languages MUST NOT appear more than once.
+  if (named("preferred-languages").length > 1) problems.push("Preferred-Languages must not appear more than once");
+
   if (expires.length === 1) {
     const v = expires[0].value;
     const t = RFC3339.test(v) ? Date.parse(v) : NaN;
@@ -95,6 +107,27 @@ test("at least one Contact is required", () => {
 test("Canonical must match the published URL", () => {
   assert.match(check(fixture({ canonical: [] }), NOW).join("\n"), /Canonical must include/);
   assert.match(check(fixture({ canonical: ["Canonical: https://example.com/.well-known/security.txt"] }), NOW).join("\n"), /Canonical must include/);
+});
+
+test("Contact must be an https://, mailto: or tel: URI", () => {
+  for (const bad of ["security@example.com", "http://example.com/security", "example.com/security", "mailto:not-an-address"]) {
+    assert.match(check(fixture({ contact: [`Contact: ${bad}`] }), NOW).join("\n"), /Contact must be an https/, bad);
+  }
+  for (const good of ["mailto:security@example.com", "https://example.com/security", "tel:+1-201-555-0123"]) {
+    assert.deepEqual(check(fixture({ contact: [`Contact: ${good}`] }), NOW), [], good);
+  }
+});
+
+test("Policy, Acknowledgments and Hiring must be https:// URIs", () => {
+  for (const bad of ["Policy: http://example.com/SECURITY.md", "Acknowledgments: example.com/thanks", "Hiring: mailto:jobs@example.com"]) {
+    assert.match(check(fixture({ extra: [bad] }), NOW).join("\n"), /must be an https:\/\/ URI/, bad);
+  }
+  assert.deepEqual(check(fixture({ extra: ["Policy: https://example.com/SECURITY.md", "Hiring: https://example.com/jobs"] }), NOW), []);
+});
+
+test("Preferred-Languages may appear at most once", () => {
+  assert.deepEqual(check(fixture({ extra: ["Preferred-Languages: en, fr"] }), NOW), []);
+  assert.match(check(fixture({ extra: ["Preferred-Languages: en", "Preferred-Languages: fr"] }), NOW).join("\n"), /Preferred-Languages must not appear more than once/);
 });
 
 test("Expires must be a valid RFC 3339 timestamp", () => {
