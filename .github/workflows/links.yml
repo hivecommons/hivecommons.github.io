@@ -29,7 +29,7 @@ jobs:
                      https://hivecommons.dev/docs/ https://hivecommons.dev/code/ \
                      https://hivecommons.dev/discord/ https://hivecommons.dev/join/ \
                      https://hivecommons.dev/llms.txt https://hivecommons.dev/sitemap.xml \
-                     https://hivecommons.dev/robots.txt \
+                     https://hivecommons.dev/robots.txt https://hivecommons.dev/.well-known/security.txt \
                      https://hivecommons.dev/404.html; do
             # `|| true` keeps a curl transport failure (DNS, TLS, timeout) from
             # tripping `set -e` before the ::error:: line below is printed;
