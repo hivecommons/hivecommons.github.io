@@ -7,6 +7,12 @@ for LLM crawlers (its integration and sponsor lists are gated against `index.htm
 shortcut redirect) for `robots.txt`'s `Sitemap:` entry — when adding a new top-level
 page, add it to `sitemap.xml` too.
 
+`.well-known/security.txt` is the RFC 9116 security contact for the domain (it points at
+`security@hivecommons.dev` and the org `SECURITY.md`). Its `Expires:` field must be at
+most a year out, so bump it once a year. GitHub Pages builds the site with Jekyll, which
+drops dot-directories unless they are listed in `_config.yml`'s `include:` — that is the
+only reason `_config.yml` exists; keep `.well-known` in it.
+
 ## Shortcut redirects
 
 Short paths like `/docs`, `/code`, `/discord` are meta-refresh redirect pages. All of them
