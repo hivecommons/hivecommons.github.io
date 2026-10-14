@@ -113,6 +113,7 @@ function makeDocument() {
   count.parentElement = add("story-counter", { scope: dialog });
   inDialog("story-quote");
   inDialog("story-link");
+  add("story-link-error", { scope: dialog });
   add("story-status", { scope: dialog });
   const fallback = add("story-fallback", { scope: dialog });
   fallback.hidden = true;
@@ -353,6 +354,89 @@ test("Tab wraps focus inside the dialog in both directions", () => {
   t.el("story-name").focus();
   ev = t.dialog.dispatch("keydown", { key: "Tab", shiftKey: false });
   assert.equal(ev.defaultPrevented, false, "Tab in the middle is left to the browser");
+});
+
+test("keys other than Escape and Tab pass through the focus trap untouched", () => {
+  const t = boot();
+  t.el("opener-hero").dispatch("click");
+  const items = t.dialog.querySelectorAll("a[href], button:not([disabled])");
+  const last = items[items.length - 1];
+  last.focus();
+  for (const key of ["Enter", " ", "ArrowDown", "a"]) {
+    const ev = t.dialog.dispatch("keydown", { key, shiftKey: false });
+    assert.equal(ev.defaultPrevented, false, `${JSON.stringify(key)} is not intercepted`);
+    assert.equal(t.doc.activeElement, last, `${JSON.stringify(key)} does not move focus`);
+  }
+  assert.equal(t.dialog.closeCalls, 0, "only Escape closes");
+});
+
+test("focus trap skips focusables that are not rendered (hidden fallback link) unless they hold focus", () => {
+  const t = boot();
+  t.el("opener-hero").dispatch("click");
+  // The popup-blocked fallback block is `hidden` until needed, so its link and the
+  // copy button have no layout box; the trap must wrap around them, not onto them.
+  const copy = t.el("story-copy");
+  const fallbackLink = t.el("story-fallback-link");
+  copy.offsetParent = null;
+  fallbackLink.offsetParent = null;
+  const rendered = t.dialog.querySelectorAll("a[href], button:not([disabled])").filter((el) => el.offsetParent !== null);
+  const first = rendered[0];
+  const last = rendered[rendered.length - 1];
+  assert.notEqual(last, copy);
+  assert.notEqual(last, fallbackLink);
+  first.focus();
+  let ev = t.dialog.dispatch("keydown", { key: "Tab", shiftKey: true });
+  assert.ok(ev.defaultPrevented);
+  assert.equal(t.doc.activeElement, last, "Shift+Tab on first wraps to the last RENDERED control");
+  ev = t.dialog.dispatch("keydown", { key: "Tab", shiftKey: false });
+  assert.equal(t.doc.activeElement, first, "Tab on last rendered control wraps to first");
+  // A hidden element that somehow holds focus is still part of the ring so the
+  // trap cannot strand focus on it.
+  copy.focus();
+  ev = t.dialog.dispatch("keydown", { key: "Tab", shiftKey: false });
+  assert.equal(ev.defaultPrevented, false, "focused-but-unrendered element is counted; it is not last so Tab passes through");
+  fallbackLink.offsetParent = {};
+  copy.offsetParent = {};
+});
+
+test("focus trap is a no-op when nothing in the dialog is focusable", () => {
+  const t = boot();
+  t.el("opener-hero").dispatch("click");
+  const items = t.dialog.querySelectorAll("a[href], button:not([disabled])");
+  for (const item of items) item.offsetParent = null;
+  t.doc.activeElement = t.doc.body;
+  const ev = t.dialog.dispatch("keydown", { key: "Tab", shiftKey: false });
+  assert.equal(ev.defaultPrevented, false, "no items: browser handles Tab");
+  assert.equal(t.doc.activeElement, t.doc.body, "focus untouched");
+  for (const item of items) item.offsetParent = {};
+});
+
+test("project is required and the PR/issue link must be an absolute http(s) URL", () => {
+  let t = boot();
+  t.fill({ ...VALID, "story-project": "  " });
+  t.submit();
+  assert.equal(t.opened.length, 0, "blank project blocks submission");
+  assert.equal(t.el("story-project").getAttribute("aria-invalid"), "true");
+  assert.equal(t.el("story-project-error").textContent, "Project or hive is required.");
+  assert.equal(t.el("story-project").getAttribute("aria-describedby"), "story-project-error");
+  assert.equal(t.doc.activeElement, t.el("story-project"), "focus moves to the project field");
+
+  for (const bad of ["hivecommons/dibs#7", "javascript:void(0)", "mailto:ada@example.org"]) {
+    t = boot();
+    t.fill({ ...VALID, "story-link": bad });
+    t.submit();
+    assert.equal(t.opened.length, 0, `link ${JSON.stringify(bad)} rejected`);
+    assert.equal(t.el("story-link").getAttribute("aria-invalid"), "true");
+    assert.equal(t.el("story-link-error").textContent, "Use a full http:// or https:// URL.");
+    assert.equal(t.el("story-profile").getAttribute("aria-invalid"), "false", "valid profile not flagged alongside");
+  }
+
+  // Fixing the field clears the message on the next submit.
+  t.fill({ "story-link": "https://github.com/hivecommons/dibs/pull/7" });
+  t.submit();
+  assert.equal(t.opened.length, 1);
+  assert.equal(t.el("story-link").getAttribute("aria-invalid"), "false");
+  assert.equal(t.el("story-link-error").textContent, "");
 });
 
 test("clicking the backdrop closes; clicking inside the panel does not", () => {
