@@ -168,9 +168,21 @@ red PR job against.
   `.well-known/security.txt` (RFC 9116), whose `Expires` field nothing else reads
   (`links.yml` only probes that the URL answers 200): exactly one `Expires` that is a
   valid RFC 3339 timestamp at least 30 days away and no more than ~1 year ahead, at least
-  one `Contact`, and a `Canonical` equal to the published URL — so the contact is rotated
-  before scanners treat it as abandoned. Each rule has a fixture self-test. Zero
-  dependencies.
+  one `Contact` (an `https://`, `mailto:` or `tel:` URI), a `Canonical` equal to the
+  published URL, `https://` for every `Canonical`/`Policy`/`Acknowledgments`/`Hiring`
+  value, and at most one `Preferred-Languages` — so the contact is rotated before
+  scanners treat it as abandoned and the file never ships in a shape they reject. Each
+  rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/pages-build.test.mjs` — static gate over what GitHub Pages'
+  Jekyll build actually deploys, which no other gate sees: `_config.yml` must parse, carry
+  only `include:` (the README's "nothing else is configured"), and name only directories
+  that exist; every root dot-directory holding site files (`.well-known`) must be in
+  `include:`; every URL the site publishes (each `sitemap.xml` `<loc>`, each
+  `links.yml` availability-probe URL, the `security.txt` `Canonical`) must map to a file
+  Jekyll will publish — not under an `exclude:` or default-exclude path and not behind an
+  `_`/`.`/`#`/`~` segment that `include:` does not list; and no published file may open
+  with a `---` front matter block (Jekyll would run Liquid over it). Each rule has a
+  fixture self-test. Zero dependencies.
 - `node --test scripts/redirect-targets.test.mjs` — static gate over what a browser makes
   of each shortcut-redirect page. `make-redirects.sh` interpolates every `MAP` url and
   label into HTML through its `html_escape()`, so the gate parses the `MAP`, rejects any
