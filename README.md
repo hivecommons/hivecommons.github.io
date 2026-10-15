@@ -252,6 +252,15 @@ red PR job against.
   scanning" needs a `github/codeql-action/upload-sarif` step. Every committed workflow
   must be introduced that way in this README, so new automation cannot land undocumented.
   Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/workflow-hardening.test.mjs` — static gate over the supply-chain
+  hardening of every workflow under `.github/workflows/`: every `uses:` is pinned to a
+  40-hex commit SHA with a trailing `# <version>` comment (`./` local actions exempt,
+  `docker://` images by `@sha256:` digest), including the reusable-workflow `uses:`; the
+  workflow declares a top-level `permissions:` block and nothing grants `write-all`; every
+  `actions/checkout` step sets `persist-credentials: false`; and every job with `runs-on`
+  sets `timeout-minutes`. OpenSSF Scorecard reads the same files but runs only on `main`
+  and a lower score fails nothing, so a tag re-pin or a dropped `persist-credentials: false`
+  would otherwise merge green. Each rule has a fixture self-test. Zero dependencies.
 
 ## Local preview and running the checks
 
