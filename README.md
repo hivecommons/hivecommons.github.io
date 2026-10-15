@@ -33,7 +33,10 @@ red PR job against.
 
 - `scripts/check-links.sh [--external-warn]` — resolves every internal link/anchor and
   probes external URLs (CI runs it with `--external-warn` on PRs and pushes; the weekly
-  scheduled run and manual dispatch hard-fail on broken external links).
+  scheduled run and manual dispatch hard-fail on broken external links). Besides every
+  committed page and the `make-redirects.sh` map, it checks the URI fields of
+  `.well-known/security.txt` (RFC 9116 `Contact`, `Canonical`, `Policy`,
+  `Acknowledgments`, `Hiring`), so a rotted security-contact link is reported too.
 - `scripts/check-links.test.sh` — fixture-based self-test of the link checker; runs
   offline (fake `curl`).
 - `node --test scripts/story-dialog.test.mjs` — runs the Share-your-story dialog script

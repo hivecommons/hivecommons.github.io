@@ -165,6 +165,47 @@ expect_out 'ERROR external broken: make-redirects\.sh -> https://example\.test/b
 expect_no_out 'label' "label half is not treated as a URL"
 expect_out 'External failures: 1\.' "only the broken target counts"
 
+echo "case: .well-known/security.txt URI fields are checked (RFC 9116 Contact/Canonical/Policy/Acknowledgments/Hiring)"
+root="$(new_site security-txt)"
+echo '<p>home</p>' > "$root/index.html"
+mkdir -p "$root/.well-known"
+cat > "$root/.well-known/security.txt" <<'TXT'
+# A comment mentioning https://example.test/broken-comment must be ignored
+Contact: mailto:security@example.test
+Contact: https://example.test/broken
+Expires: 2027-01-01T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://hivecommons.dev/.well-known/security.txt
+Policy: https://example.test/fine
+Acknowledgments: https://example.test/soft404
+Hiring: https://example.test/server-error
+TXT
+run_checker "$root"
+expect_rc 1 "rotten security.txt URIs fail the gate"
+expect_out 'ERROR external broken: \.well-known/security\.txt -> https://example\.test/broken \(404' "https Contact is probed and attributed to security.txt"
+expect_out 'ERROR external soft-404: \.well-known/security\.txt -> https://example\.test/soft404 \(200' "Acknowledgments is probed"
+expect_out 'ERROR external broken: \.well-known/security\.txt -> https://example\.test/server-error \(500' "Hiring is probed"
+expect_no_out 'broken-comment' "comment lines are not harvested"
+expect_no_out 'mailto' "mailto: Contact is skipped, not flagged"
+expect_no_out 'internal target missing' "Canonical resolves to the committed security.txt"
+expect_out 'External failures: 3\.' "Policy that resolves is not counted"
+
+echo "case: security.txt Canonical pointing at a path the tree does not publish is an internal error"
+root="$(new_site security-canonical)"
+echo '<p>home</p>' > "$root/index.html"
+mkdir -p "$root/.well-known"
+printf 'Contact: mailto:security@example.test\nCanonical: https://hivecommons.dev/.well-known/other.txt\n' > "$root/.well-known/security.txt"
+run_checker "$root" --external-warn
+expect_rc 1 "unpublished Canonical fails even under --external-warn"
+expect_out 'ERROR internal target missing: \.well-known/security\.txt -> https://hivecommons\.dev/\.well-known/other\.txt' "Canonical is resolved against the tree like any site URL"
+
+echo "case: a site without security.txt is unaffected"
+root="$(new_site no-security-txt)"
+echo '<a href="/">home</a>' > "$root/index.html"
+run_checker "$root"
+expect_rc 0 "no security.txt, no extra links"
+expect_out 'Checked 1 unique links\.' "only the page link is counted"
+
 echo "case: external failures — hard 404, 5xx, curl failure, soft-404"
 root="$(new_site external)"
 cat > "$root/index.html" <<'HTML'
