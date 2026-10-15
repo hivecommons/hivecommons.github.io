@@ -75,12 +75,23 @@ extract_redirect_targets() {
   awk -F'"' '/^[[:space:]]*\[[^]]+\]="/ { split($2, parts, "|"); print "make-redirects.sh\t" parts[1] }' "$redirects"
 }
 
+# RFC 9116 §2.5: the values of these security.txt fields are URIs. Comment
+# lines (#) and non-URI fields (Expires, Preferred-Languages) are left alone.
+extract_security_txt_uris() {
+  local file=".well-known/security.txt"
+  [[ -f "$ROOT/$file" ]] || return 0
+  grep -Ei '^(Contact|Canonical|Policy|Acknowledgments|Hiring):' "$ROOT/$file" |
+    sed -E -e 's/^[^:]+:[[:space:]]*//' -e 's/[[:space:]]+$//' |
+    awk -v file="$file" 'NF { print file "\t" $0 }'
+}
+
 find "$ROOT" -name '*.html' -not -path "$WORK_DIR/*" -print | sort |
   while IFS= read -r file; do
     rel="${file#$ROOT/}"
     extract_html_links "$rel"
   done > "$WORK_DIR/links.tsv"
 extract_redirect_targets >> "$WORK_DIR/links.tsv"
+extract_security_txt_uris >> "$WORK_DIR/links.tsv"
 
 sort -u "$WORK_DIR/links.tsv" > "$WORK_DIR/links.dedup.tsv"
 
