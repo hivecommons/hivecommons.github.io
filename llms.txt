@@ -4,6 +4,16 @@ Hive Commons maintains Hive, an Apache-2.0 control layer for governed, audited f
 
 Hive Commons also maintains Spektacular (Spek), a spec-driven workflow tool; the specs it produces are called speks.
 
+## Projects
+
+- [Hive](https://github.com/hivecommons/hive): control layer for governed, audited fleets of AI coding agents. Docs: https://docs.hivecommons.dev
+- [Spektacular (Spek)](https://spektacular.dev): spec-driven development for AI coding agents; a markdown spek becomes a reviewed plan and an agent-driven implementation.
+- [hotshot](https://github.com/hivecommons/hotshot): watches for new screenshots and injects them into the terminal session you last used, for AI coding assistants that accept image paths.
+- [pluk](https://github.com/hivecommons/pluk): lightweight pub-sub event streaming for tmux sessions running AI coding agents; classifies, subscribes to, and reacts to their JSONL event streams.
+- [promptargs](https://github.com/hivecommons/promptargs): template arguments for AI prompts; fills `{{variables}}` in prompts for Claude Code, Copilot, Goose, Bob and others.
+- [rationguard](https://github.com/hivecommons/rationguard): detects and rebuts rationalization patterns in AI agent output.
+- [dibs](https://dibs.hivecommons.dev): contributor attribution layer for the AI-agent era, connecting ideators with hive-managed repositories.
+
 ## Supported agents and inference engines
 
 Hive supports agent CLIs including Claude Code, GitHub Copilot CLI, Goose, OpenAI Codex CLI, Pi, IBM Bob, Aider, Gemini CLI, Google Antigravity CLI, OpenCode, Kilo Code, Muse Code and Oh My Pi.
