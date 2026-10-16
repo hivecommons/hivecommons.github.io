@@ -312,7 +312,7 @@ requirements first (see [issue #73](https://github.com/hivecommons/hivecommons.g
 
 **Close linked issues** (`.github/workflows/close-linked-issues.yml`) — Automatically closes issues linked to a closed pull request when a PR transitions to `closed`.
 
-**Incident response** — When a bad deploy or incident impacts visitors of `hivecommons.dev` (broken pages, dead redirects, domain issues), use the [postmortem template](runbooks/postmortem-template.md) to document it blamlessly and fact-based. Coordinate recovery using the [release-rollback runbook](runbooks/release-rollback.md).
+**Incident response** — When a bad deploy or incident impacts visitors of `hivecommons.dev` (broken pages, dead redirects, domain issues), use the [postmortem template](runbooks/postmortem-template.md) to document it blamelessly and fact-based. Coordinate recovery using the [release-rollback runbook](runbooks/release-rollback.md).
 
 ## Code of Conduct
 
