@@ -264,6 +264,17 @@ red PR job against.
   sets `timeout-minutes`. OpenSSF Scorecard reads the same files but runs only on `main`
   and a lower score fails nothing, so a tag re-pin or a dropped `persist-credentials: false`
   would otherwise merge green. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/doc-paths.test.mjs` — static gate over the repository paths named
+  in backticks by `README.md` and `runbooks/*.md`: a word in an inline code span is a
+  path claim when it starts with `./`, or when its first segment is a committed top-level
+  directory or it is root-absolute and it ends in a file extension or `/` (so
+  `/404.html`, `/stories/` and `scripts/*.sh` are checked, while URL-path examples such as
+  `/some/deep/path`, action references and bare basenames are not); every claim must
+  resolve to a committed file or directory, a `*` in the last segment matching at least
+  one. `page-meta.test.mjs` resolves Markdown links only and `ci-wiring.test.mjs` checks
+  that every existing gate is described here, not that every described path still exists,
+  so a renamed script or dropped workflow would otherwise leave the prose pointing at the
+  old name. Each rule has a fixture self-test. Zero dependencies.
 
 ## Local preview and running the checks
 
