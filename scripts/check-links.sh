@@ -119,6 +119,19 @@ extract_html_links() {
     sed -E 's/[[:space:]]+$//' |
     html_unescape |
     awk -v file="$file" '{ print file "\t" $0 }'
+
+  grep -Eoi '<meta[^>]+(property|name)[[:space:]]*=[[:space:]]*["'"'"']?(og:image|og:url|twitter:image)(["'"'"']|[[:space:]/>])[^>]*>' "$file" |
+    sed -En "s/.*[[:space:]]content[[:space:]]*=[[:space:]]*(\"([^\"]+)\"|'([^']+)'|([^[:space:]\"'>]+)).*/\\2\\3\\4/p" |
+    html_unescape |
+    awk -v file="$file" '{ print file "\t" $0 }'
+
+  # No html_unescape here: JSON-LD escapes with \uXXXX, not HTML entities.
+  # One output line per block, so a page with several ld+json blocks keeps them all.
+  awk '/application\/ld\+json/{f=1; buf=""} f{buf=buf $0 " "} f&&/<\/script>/{f=0; print buf}' "$file" |
+    sed -E 's#^.*<script[^>]*application/ld\+json[^>]*>##; s#</script>.*$##' |
+    grep -oE '"(url|logo|codeRepository|sameAs|license)":[[:space:]]*(\[[^]]*\]|"[^"]+")' |
+    grep -oE 'https?://[^"]+' |
+    awk -v file="$file" '{ print file "\t" $0 }'
 }
 
 extract_redirect_targets() {

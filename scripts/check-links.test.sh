@@ -321,6 +321,70 @@ run_checker "$root"
 expect_rc 1 "broken meta-refresh target behind &amp; fails"
 expect_out 'go/index\.html -> https://example\.test/m\?a=1&b=2&broken \(404' "full URL extracted, not truncated at &amp"
 
+echo "case: og:image meta URL pointing at a missing internal file is reported"
+root="$(new_site og-image)"
+cat > "$root/index.html" <<'HTML'
+<meta property="og:image" content="https://hivecommons.dev/assets/missing-og.png">
+<meta name="twitter:image" content="https://hivecommons.dev/index.html">
+<meta property="og:image:width" content="https://hivecommons.dev/assets/not-a-meta-image.png">
+HTML
+run_checker "$root"
+expect_rc 1 "missing og:image target fails"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/assets/missing-og\.png' "og:image is resolved against the tree"
+expect_out 'Internal errors: 1\.' "resolvable twitter:image is not flagged and og:image:width is not treated as og:image"
+
+echo "case: single-quoted and root-relative og/twitter image values are checked"
+root="$(new_site og-quoting)"
+cat > "$root/index.html" <<'HTML'
+<meta property='og:image' content='https://hivecommons.dev/assets/missing-single-quoted.png'>
+<meta name="twitter:image" content="/assets/missing-root-relative.png">
+<meta property="og:url" content=https://hivecommons.dev/missing-unquoted/>
+<meta property="og:image:alt" content="/assets/not-a-link.png">
+HTML
+run_checker "$root"
+expect_rc 1 "missing og/twitter targets fail regardless of quoting"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/assets/missing-single-quoted\.png' "single-quoted og:image is checked"
+expect_out 'ERROR internal target missing: index\.html -> /assets/missing-root-relative\.png' "root-relative twitter:image is resolved against the tree"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/missing-unquoted/' "unquoted og:url is checked"
+expect_out 'Internal errors: 3\.' "og:image:alt is not treated as a link"
+
+echo "case: JSON-LD logo pointing at a missing internal file is reported"
+root="$(new_site jsonld-logo)"
+cat > "$root/index.html" <<'HTML'
+<script type="application/ld+json">
+{"@type": "Organization", "name": "Hive", "logo": "https://hivecommons.dev/assets/missing-logo.png"}
+</script>
+HTML
+run_checker "$root"
+expect_rc 1 "missing JSON-LD logo target fails"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/assets/missing-logo\.png' "JSON-LD logo is resolved against the tree"
+
+echo "case: single-line JSON-LD does not bleed into a following script block"
+root="$(new_site jsonld-oneline)"
+cat > "$root/index.html" <<'HTML'
+<script type="application/ld+json">{"url":"https://hivecommons.dev/","logo":"https://hivecommons.dev/missing-logo.png"}</script>
+<script>var cfg={"url":"https://hivecommons.dev/not-jsonld"};</script>
+HTML
+run_checker "$root"
+expect_rc 1 "missing single-line JSON-LD logo fails"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/missing-logo\.png' "single-line JSON-LD logo is checked"
+expect_out 'Internal errors: 1\.' "URL in the following inline script is not probed"
+
+echo "case: every JSON-LD block on a page is checked, not only the last"
+root="$(new_site jsonld-multi)"
+cat > "$root/index.html" <<'HTML'
+<script type="application/ld+json">{"@type":"Organization","logo":"https://hivecommons.dev/first-missing.png"}</script>
+<p>between</p>
+<script type="application/ld+json">
+{"@type":"WebSite","url":"https://hivecommons.dev/second-missing/"}
+</script>
+HTML
+run_checker "$root"
+expect_rc 1 "missing targets in both JSON-LD blocks fail"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/first-missing\.png' "first JSON-LD block is checked"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/second-missing/' "second JSON-LD block is checked"
+expect_out 'Internal errors: 2\.' "both blocks counted"
+
 echo "case: a site with no links to check fails closed"
 root="$(new_site empty)"
 run_checker "$root"
