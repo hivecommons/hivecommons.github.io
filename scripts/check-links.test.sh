@@ -260,6 +260,27 @@ expect_rc 1 "broken link still fails when run from another directory"
 expect_out 'ERROR internal target missing: index\.html -> /nope' "page links are extracted from outside the root"
 expect_no_out 'No such file' "no grep path errors"
 
+echo "case: HTML entities in URLs are decoded before probing"
+root="$(new_site entities)"
+echo '<a href="https://example.test/e?a=1&amp;broken">x</a><a href="/page.html?x=1&amp;y=2#frag">y</a>' > "$root/index.html"
+echo '<p id="frag">p</p>' > "$root/page.html"
+run_checker "$root"
+expect_rc 1 "broken external link behind &amp; fails"
+expect_out 'index\.html -> https://example\.test/e\?a=1&broken \(404' "href &amp; is decoded to & before probing"
+expect_no_out '&amp;' "no literal &amp; reaches the probe"
+expect_no_out 'internal' "internal link with &amp; query and anchor resolves"
+
+echo "case: meta-refresh URL keeps ';' from &amp; and is decoded"
+root="$(new_site meta-entities)"
+mkdir -p "$root/go"
+echo '<a href="/go/">go</a>' > "$root/index.html"
+cat > "$root/go/index.html" <<'HTML'
+<meta http-equiv="refresh" content="0; url=https://example.test/m?a=1&amp;b=2&amp;broken">
+HTML
+run_checker "$root"
+expect_rc 1 "broken meta-refresh target behind &amp; fails"
+expect_out 'go/index\.html -> https://example\.test/m\?a=1&b=2&broken \(404' "full URL extracted, not truncated at &amp"
+
 echo "case: a site with no links to check fails closed"
 root="$(new_site empty)"
 run_checker "$root"
