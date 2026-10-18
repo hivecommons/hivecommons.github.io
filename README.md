@@ -87,6 +87,14 @@ red PR job against.
   local `url()` (self-hosted `@font-face` files, images) names a committed file whose magic
   bytes match its `format()` hint or extension; and every font file under `assets/fonts/`
   is referenced by some `url()`. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/font-licenses.test.mjs` — static gate over the licence files that
+  must travel with the self-hosted fonts: every font family under `assets/fonts/` (the file
+  name up to the first `-`) has an `OFL-<Family>.txt`, every `OFL-*.txt` still matches a
+  shipped family, each is the SIL Open Font License 1.1 text opening with its Copyright
+  notice, and the directory holds nothing else. `style-contract.test.mjs` checks the font
+  bytes, not the licence the OFL requires to accompany them, so a deleted licence or a new
+  family added without one would otherwise merge green. Each rule has a fixture
+  self-test. Zero dependencies.
 - `node --test scripts/page-images.test.mjs` — static gate over every local image the pages
   embed (`<img src>`/`srcset`, icon and `preload as="image"` `<link>`s, `og:image`): each is
   a committed, non-empty file whose magic bytes match its extension (a PNG re-exported as
