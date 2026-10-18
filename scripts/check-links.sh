@@ -120,7 +120,7 @@ extract_html_links() {
     html_unescape |
     awk -v file="$file" '{ print file "\t" $0 }'
 
-  grep -Eoi '<meta[^>]+(property|name)[[:space:]]*=[[:space:]]*["'"'"']?(og:image|og:url|twitter:image)["'"'"']?[^>]*>' "$file" |
+  grep -Eoi '<meta[^>]+(property|name)[[:space:]]*=[[:space:]]*["'"'"']?(og:image|og:url|twitter:image)(["'"'"']|[[:space:]/>])[^>]*>' "$file" |
     sed -En 's/.*[[:space:]]content[[:space:]]*=[[:space:]]*"([^"]*)".*/\1/p' |
     grep -E '^https?://' |
     html_unescape |

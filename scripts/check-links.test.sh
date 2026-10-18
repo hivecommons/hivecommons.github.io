@@ -326,11 +326,12 @@ root="$(new_site og-image)"
 cat > "$root/index.html" <<'HTML'
 <meta property="og:image" content="https://hivecommons.dev/assets/missing-og.png">
 <meta name="twitter:image" content="https://hivecommons.dev/index.html">
+<meta property="og:image:width" content="https://hivecommons.dev/assets/not-a-meta-image.png">
 HTML
 run_checker "$root"
 expect_rc 1 "missing og:image target fails"
 expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/assets/missing-og\.png' "og:image is resolved against the tree"
-expect_out 'Internal errors: 1\.' "resolvable twitter:image is not flagged"
+expect_out 'Internal errors: 1\.' "resolvable twitter:image is not flagged and og:image:width is not treated as og:image"
 
 echo "case: JSON-LD logo pointing at a missing internal file is reported"
 root="$(new_site jsonld-logo)"
