@@ -119,6 +119,17 @@ extract_html_links() {
     sed -E 's/[[:space:]]+$//' |
     html_unescape |
     awk -v file="$file" '{ print file "\t" $0 }'
+
+  grep -Eoi '<meta[^>]+(property|name)[[:space:]]*=[[:space:]]*["'"'"']?(og:image|og:url|twitter:image)["'"'"']?[^>]*>' "$file" |
+    sed -En 's/.*[[:space:]]content[[:space:]]*=[[:space:]]*"([^"]*)".*/\1/p' |
+    grep -E '^https?://' |
+    html_unescape |
+    awk -v file="$file" '{ print file "\t" $0 }'
+
+  sed -n '/application\/ld+json/,/<\/script>/p' "$file" | tr '\n' ' ' |
+    grep -oE '"(url|logo|codeRepository|sameAs|license)":[[:space:]]*(\[[^]]*\]|"[^"]+")' |
+    grep -oE 'https?://[^"]+' |
+    awk -v file="$file" '{ print file "\t" $0 }'
 }
 
 extract_redirect_targets() {
