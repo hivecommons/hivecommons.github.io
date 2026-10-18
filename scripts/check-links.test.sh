@@ -333,6 +333,21 @@ expect_rc 1 "missing og:image target fails"
 expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/assets/missing-og\.png' "og:image is resolved against the tree"
 expect_out 'Internal errors: 1\.' "resolvable twitter:image is not flagged and og:image:width is not treated as og:image"
 
+echo "case: single-quoted and root-relative og/twitter image values are checked"
+root="$(new_site og-quoting)"
+cat > "$root/index.html" <<'HTML'
+<meta property='og:image' content='https://hivecommons.dev/assets/missing-single-quoted.png'>
+<meta name="twitter:image" content="/assets/missing-root-relative.png">
+<meta property="og:url" content=https://hivecommons.dev/missing-unquoted/>
+<meta property="og:image:alt" content="/assets/not-a-link.png">
+HTML
+run_checker "$root"
+expect_rc 1 "missing og/twitter targets fail regardless of quoting"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/assets/missing-single-quoted\.png' "single-quoted og:image is checked"
+expect_out 'ERROR internal target missing: index\.html -> /assets/missing-root-relative\.png' "root-relative twitter:image is resolved against the tree"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/missing-unquoted/' "unquoted og:url is checked"
+expect_out 'Internal errors: 3\.' "og:image:alt is not treated as a link"
+
 echo "case: JSON-LD logo pointing at a missing internal file is reported"
 root="$(new_site jsonld-logo)"
 cat > "$root/index.html" <<'HTML'
