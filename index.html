@@ -2,7 +2,7 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-Tcj22rcQ8LmHFWHGffJZIY7By1ys2QTLGDHGf1G71Vs=' 'sha256-QSGzxNSepdjMBRwnovEOJlbbTDp+rqYlcPfhcB+fgnQ=' 'sha256-A5srAwD7+6TVyyLq52he99eBsiwj4+Y5nAJdHq9+Qqw='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-IXrNMFsbjAXC+sX1T0IOFqUecOh3LhlgUUWZ9hH5IFw=' 'sha256-QSGzxNSepdjMBRwnovEOJlbbTDp+rqYlcPfhcB+fgnQ=' 'sha256-yDk9g0p1zFFAzRAKzvh9BO3odtKg96amzKsWG0jpax4='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hive Commons</title>
 <meta name="description" content="Hive Commons supports Hive: governed AI-agent fleets with Jira Data Center work sources, The Commons, swarms, Claude Code, GitHub Copilot, vLLM, llm-d and more.">
@@ -686,7 +686,8 @@
   var current = 0;
   var timer = null;
   var resizeTimer = null;
-  var paused = false;
+  var pointerPaused = false;
+  var focusPaused = false;
   var pointerStartX = null;
   var pointerStartY = null;
 
@@ -772,13 +773,13 @@
   }
 
   function tick() {
-    if (paused || document.hidden) return;
+    if (pointerPaused || focusPaused || document.hidden) return;
     setLiveMode(true);
     goTo(current + 1, false);
   }
 
   function start() {
-    if (reduceMotion.matches || timer) return;
+    if (reduceMotion.matches || pointerPaused || focusPaused || timer) return;
     timer = setInterval(tick, AUTO_ROTATE_MS);
   }
 
@@ -804,11 +805,11 @@
   if (next) next.addEventListener('click', function () { goTo(current + 1, true); restart(); });
   root.addEventListener('keydown', onKey);
 
-  root.addEventListener('mouseenter', function () { paused = true; stop(); });
-  root.addEventListener('mouseleave', function () { paused = false; start(); });
-  root.addEventListener('focusin', function () { paused = true; stop(); });
+  root.addEventListener('mouseenter', function () { pointerPaused = true; stop(); });
+  root.addEventListener('mouseleave', function () { pointerPaused = false; start(); });
+  root.addEventListener('focusin', function () { focusPaused = true; stop(); });
   root.addEventListener('focusout', function (e) {
-    if (!root.contains(e.relatedTarget)) { paused = false; start(); }
+    if (!root.contains(e.relatedTarget)) { focusPaused = false; start(); }
   });
 
   root.addEventListener('pointerdown', function (e) {
@@ -990,7 +991,8 @@
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   var current = 0;
   var timer = null;
-  var paused = false;
+  var pointerPaused = false;
+  var focusPaused = false;
   var programmaticScroll = false;
 
   // Dot indicators
@@ -1128,7 +1130,7 @@
 
   // Gentle auto-advance; pauses on hover and focus, off under reduced motion
   function canAutoAdvance() {
-    return !reduceMotion.matches && !paused && !document.hidden;
+    return !reduceMotion.matches && !pointerPaused && !focusPaused && !document.hidden;
   }
   function tick() {
     if (canAutoAdvance()) goTo(current + 1, false);
@@ -1139,12 +1141,12 @@
   }
   function stop() { clearInterval(timer); timer = null; }
   function restart() { stop(); start(); }
-  root.addEventListener('mouseenter', function () { paused = true; stop(); });
-  root.addEventListener('mouseleave', function () { paused = false; start(); });
-  root.addEventListener('focusin', function () { paused = true; stop(); });
+  root.addEventListener('mouseenter', function () { pointerPaused = true; stop(); });
+  root.addEventListener('mouseleave', function () { pointerPaused = false; start(); });
+  root.addEventListener('focusin', function () { focusPaused = true; stop(); });
   root.addEventListener('focusout', function (e) {
     if (!root.contains(e.relatedTarget)) {
-      paused = false;
+      focusPaused = false;
       start();
     }
   });
