@@ -267,6 +267,17 @@ red PR job against.
   sets `timeout-minutes`. OpenSSF Scorecard reads the same files but runs only on `main`
   and a lower score fails nothing, so a tag re-pin or a dropped `persist-credentials: false`
   would otherwise merge green. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/dependabot-config.test.mjs` — static gate over
+  `.github/dependabot.yml`, the only thing that moves the SHA pins
+  `workflow-hardening.test.mjs` requires: the file exists and is `version: 2`; every
+  `updates:` entry names a `package-ecosystem` Dependabot knows, a `directory:` and a
+  `schedule.interval` it accepts; every ecosystem the tree contains (workflows under
+  `.github/workflows/` → `github-actions`, a root `package.json` → `npm`, …) is covered by an
+  entry at `/`, no entry names an ecosystem the tree lacks, and no two entries cover the
+  same ecosystem and directory. Without it a deleted or mistyped config leaves every pin
+  valid but silently rotting — Scorecard's Dependency-Update-Tool check reads the same file
+  but only on `main`, and a lower score fails nothing. Each rule has a fixture self-test.
+  Zero dependencies.
 - `node --test scripts/doc-paths.test.mjs` — static gate over the repository paths named
   in backticks by `README.md` and `runbooks/*.md`: a word in an inline code span is a
   path claim when it starts with `./`, or when its first segment is a committed top-level
