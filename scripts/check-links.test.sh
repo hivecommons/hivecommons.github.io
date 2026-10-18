@@ -355,6 +355,21 @@ expect_rc 1 "missing single-line JSON-LD logo fails"
 expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/missing-logo\.png' "single-line JSON-LD logo is checked"
 expect_out 'Internal errors: 1\.' "URL in the following inline script is not probed"
 
+echo "case: every JSON-LD block on a page is checked, not only the last"
+root="$(new_site jsonld-multi)"
+cat > "$root/index.html" <<'HTML'
+<script type="application/ld+json">{"@type":"Organization","logo":"https://hivecommons.dev/first-missing.png"}</script>
+<p>between</p>
+<script type="application/ld+json">
+{"@type":"WebSite","url":"https://hivecommons.dev/second-missing/"}
+</script>
+HTML
+run_checker "$root"
+expect_rc 1 "missing targets in both JSON-LD blocks fail"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/first-missing\.png' "first JSON-LD block is checked"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/second-missing/' "second JSON-LD block is checked"
+expect_out 'Internal errors: 2\.' "both blocks counted"
+
 echo "case: a site with no links to check fails closed"
 root="$(new_site empty)"
 run_checker "$root"
