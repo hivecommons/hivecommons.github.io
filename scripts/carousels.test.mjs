@@ -453,6 +453,24 @@ test("hero pause: focus inside stops rotation; focus moving within the carousel 
   assert.deepEqual(t.timers.intervals(), [HERO_ROTATE_MS], "resumes when focus leaves");
 });
 
+test("hero pause: focus inside then pointer leaving stays paused until focus leaves", () => {
+  const t = bootHero();
+  t.root.dispatch("focusin");
+  t.root.dispatch("mouseleave");
+  assert.deepEqual(t.timers.intervals(), [], "still paused while focus is inside");
+  t.root.dispatch("focusout", { relatedTarget: null });
+  assert.deepEqual(t.timers.intervals(), [HERO_ROTATE_MS], "resumes once neither is inside");
+});
+
+test("hero pause: pointer hovering then external focusout stays paused until pointer leaves", () => {
+  const t = bootHero();
+  t.root.dispatch("mouseenter");
+  t.root.dispatch("focusout", { relatedTarget: null });
+  assert.deepEqual(t.timers.intervals(), [], "still paused while pointer hovers");
+  t.root.dispatch("mouseleave");
+  assert.deepEqual(t.timers.intervals(), [HERO_ROTATE_MS], "resumes once neither is inside");
+});
+
 test("hero swipe: touch swipe past threshold navigates; mouse drags, short and vertical swipes are ignored", () => {
   const t = bootHero();
   // Mouse "drag" is ignored entirely.
@@ -736,6 +754,24 @@ test("projects hover: pauses and resumes auto-advance", () => {
   assert.deepEqual(t.timers.intervals(), []);
   t.root.dispatch("mouseleave");
   assert.deepEqual(t.timers.intervals(), [PROJECT_ADVANCE_MS]);
+});
+
+test("projects pause: focus inside then pointer leaving stays paused until focus leaves", () => {
+  const t = bootProjects();
+  t.root.dispatch("focusin");
+  t.root.dispatch("mouseleave");
+  assert.deepEqual(t.timers.intervals(), [], "still paused while focus is inside");
+  t.root.dispatch("focusout", { relatedTarget: null });
+  assert.deepEqual(t.timers.intervals(), [PROJECT_ADVANCE_MS], "resumes once neither is inside");
+});
+
+test("projects pause: pointer hovering then external focusout stays paused until pointer leaves", () => {
+  const t = bootProjects();
+  t.root.dispatch("mouseenter");
+  t.root.dispatch("focusout", { relatedTarget: null });
+  assert.deepEqual(t.timers.intervals(), [], "still paused while pointer hovers");
+  t.root.dispatch("mouseleave");
+  assert.deepEqual(t.timers.intervals(), [PROJECT_ADVANCE_MS], "resumes once neither is inside");
 });
 
 test("projects reduced-motion toggle: stops and resumes auto-advance", () => {

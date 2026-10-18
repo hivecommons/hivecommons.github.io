@@ -686,7 +686,8 @@
   var current = 0;
   var timer = null;
   var resizeTimer = null;
-  var paused = false;
+  var pointerPaused = false;
+  var focusPaused = false;
   var pointerStartX = null;
   var pointerStartY = null;
 
@@ -772,13 +773,13 @@
   }
 
   function tick() {
-    if (paused || document.hidden) return;
+    if (pointerPaused || focusPaused || document.hidden) return;
     setLiveMode(true);
     goTo(current + 1, false);
   }
 
   function start() {
-    if (reduceMotion.matches || timer) return;
+    if (reduceMotion.matches || pointerPaused || focusPaused || timer) return;
     timer = setInterval(tick, AUTO_ROTATE_MS);
   }
 
@@ -804,11 +805,11 @@
   if (next) next.addEventListener('click', function () { goTo(current + 1, true); restart(); });
   root.addEventListener('keydown', onKey);
 
-  root.addEventListener('mouseenter', function () { paused = true; stop(); });
-  root.addEventListener('mouseleave', function () { paused = false; start(); });
-  root.addEventListener('focusin', function () { paused = true; stop(); });
+  root.addEventListener('mouseenter', function () { pointerPaused = true; stop(); });
+  root.addEventListener('mouseleave', function () { pointerPaused = false; start(); });
+  root.addEventListener('focusin', function () { focusPaused = true; stop(); });
   root.addEventListener('focusout', function (e) {
-    if (!root.contains(e.relatedTarget)) { paused = false; start(); }
+    if (!root.contains(e.relatedTarget)) { focusPaused = false; start(); }
   });
 
   root.addEventListener('pointerdown', function (e) {
@@ -990,7 +991,8 @@
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   var current = 0;
   var timer = null;
-  var paused = false;
+  var pointerPaused = false;
+  var focusPaused = false;
   var programmaticScroll = false;
 
   // Dot indicators
@@ -1128,7 +1130,7 @@
 
   // Gentle auto-advance; pauses on hover and focus, off under reduced motion
   function canAutoAdvance() {
-    return !reduceMotion.matches && !paused && !document.hidden;
+    return !reduceMotion.matches && !pointerPaused && !focusPaused && !document.hidden;
   }
   function tick() {
     if (canAutoAdvance()) goTo(current + 1, false);
@@ -1139,12 +1141,12 @@
   }
   function stop() { clearInterval(timer); timer = null; }
   function restart() { stop(); start(); }
-  root.addEventListener('mouseenter', function () { paused = true; stop(); });
-  root.addEventListener('mouseleave', function () { paused = false; start(); });
-  root.addEventListener('focusin', function () { paused = true; stop(); });
+  root.addEventListener('mouseenter', function () { pointerPaused = true; stop(); });
+  root.addEventListener('mouseleave', function () { pointerPaused = false; start(); });
+  root.addEventListener('focusin', function () { focusPaused = true; stop(); });
   root.addEventListener('focusout', function (e) {
     if (!root.contains(e.relatedTarget)) {
-      paused = false;
+      focusPaused = false;
       start();
     }
   });
