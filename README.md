@@ -149,9 +149,12 @@ red PR job against.
   root and `logo` an absolute site URL; the Hive `SoftwareApplication.keywords` names every
   integration chip (classifier chips included), every keyword is a chip or visible page text
   (case-insensitive, plural allowed), none repeats, and every name an `including …` list in
-  `featureList` enumerates is a chip; and every `url`, `codeRepository`, `sameAs` and
+  `featureList` enumerates is a chip; every `url`, `codeRepository`, `sameAs` and
   sponsor `url` is `https` and linked by an `href` somewhere on the page (trailing-slash
-  differences ignored). Each rule has a fixture self-test. Zero dependencies.
+  differences ignored); and the Projects carousel and the `SoftwareApplication` nodes
+  describe the same set of projects — every card (its `<h3>` minus the `tag` badge) has a
+  node of that name whose `codeRepository` is the card's GitHub link, and every node has a
+  card. Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/availability-probes.test.mjs` — static gate over the URL list the
   scheduled `availability` job in `links.yml` probes: every probed URL is `https`, under
   `hivecommons.dev`, carries its trailing slash when it is a directory page (GitHub Pages

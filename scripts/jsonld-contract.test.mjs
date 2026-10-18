@@ -9,6 +9,11 @@
 // llms-txt.test.mjs gates the *other* crawler summary (llms.txt) against the
 // same chips but never looks at the JSON-LD, so a chip renamed on the page
 // keeps being advertised under its old name here with nothing going red.
+// The Projects carousel is gated the same way: every project card must have a
+// SoftwareApplication node whose name and codeRepository match the card, and
+// every SoftwareApplication must be a card — the graph described two of the
+// seven listed projects for weeks before #203 noticed, and a project added to
+// (or dropped from) the carousel would otherwise drift the same way again.
 // Each rule has a fixture self-test. Zero dependencies.
 // Usage: node --test scripts/jsonld-contract.test.mjs
 import { test } from "node:test";
@@ -195,6 +200,29 @@ export function keywordShown(keyword, text, chipSet) {
   return lower.includes(k) || (k.endsWith("s") && lower.includes(k.slice(0, -1)));
 }
 
+// The Projects carousel (`<ul … aria-label="Projects">`) as [{ name, repo }]
+// in page order. `name` is the card's <h3> with any <span class="tag"> badge
+// ("flagship", "Spek for short") dropped; `repo` is the first GitHub
+// repository href inside the card, or null for a card that links only its own
+// site. Returns null when the carousel is not on the page at all, so the
+// live check fails loudly instead of passing on an empty list.
+export function projectCards(html) {
+  const open = html.match(/<ul\b[^>]*\baria-label="Projects"[^>]*>/);
+  if (!open) return null;
+  const start = open.index + open[0].length;
+  const end = html.indexOf("</ul>", start);
+  if (end < 0) return null;
+  const out = [];
+  for (const li of html.slice(start, end).matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)) {
+    const h3 = li[1].match(/<h3\b[^>]*>([\s\S]*?)<\/h3>/);
+    if (!h3) continue;
+    const name = decode(h3[1].replace(/<span\b[^>]*\bclass="tag[^"]*"[^>]*>[\s\S]*?<\/span>/g, "").replace(/<[^>]*>/g, ""));
+    const repo = li[1].match(/\bhref="(https:\/\/github\.com\/[^/"?#]+\/[^/"?#]+)\/?"/);
+    out.push({ name, repo: repo ? decodeAttr(repo[1]) : null });
+  }
+  return out;
+}
+
 // --- rules -------------------------------------------------------------------
 
 export function checkOrganization(nodes, html) {
@@ -290,9 +318,44 @@ export function checkLinks(nodes, html) {
   return problems;
 }
 
+export function checkProjectCards(nodes, html) {
+  const cards = projectCards(html);
+  if (cards === null) return ['no Projects carousel (<ul … aria-label="Projects">) found — the gate\'s selector no longer matches the page'];
+  if (!cards.length) return ["the Projects carousel has no cards with an <h3> name"];
+  const problems = [];
+  const apps = nodesOfType(nodes, "SoftwareApplication");
+  const appNames = apps.map((a) => a.name);
+  const cardNames = cards.map((c) => c.name);
+  const dupes = cardNames.filter((n, i) => cardNames.indexOf(n) !== i);
+  if (dupes.length) problems.push(`the Projects carousel repeats a card name: ${[...new Set(dupes)].map((d) => JSON.stringify(d)).join(", ")}`);
+
+  for (const card of cards) {
+    const app = apps.find((a) => a.name === card.name);
+    if (!app) {
+      problems.push(`project card ${JSON.stringify(card.name)} is on the page but no SoftwareApplication is named ${JSON.stringify(card.name)} — add a node for it to the JSON-LD`);
+      continue;
+    }
+    if (card.repo && normalizeUrl(app.codeRepository ?? "") !== normalizeUrl(card.repo)) {
+      problems.push(`SoftwareApplication ${JSON.stringify(card.name)}.codeRepository is ${JSON.stringify(app.codeRepository)} but the project card links ${card.repo}`);
+    }
+  }
+  for (const app of apps) {
+    if (!cardNames.includes(app.name)) problems.push(`SoftwareApplication ${JSON.stringify(app.name)} has no project card in the Projects carousel — remove the node or add the project to the page`);
+  }
+  return problems;
+}
+
 // --- fixtures ----------------------------------------------------------------
 
-function fixturePage({ ld, extraHtml = "" } = {}) {
+function fixturePage({ ld, extraHtml = "", projects = [{ name: "Widget", tag: "flagship", repo: "https://github.com/acme/widget" }] } = {}) {
+  const cards = projects
+    .map(({ name, tag, repo, href }) => {
+      const h3 = tag ? `<h3>${name} <span class="tag">${tag}</span></h3>` : `<h3>${name}</h3>`;
+      const inner = `${h3}<p>About ${name}.</p>` + (repo ? `<a class="card-link" href="${repo}">Source</a>` : "");
+      return href ? `<li class="slide" data-slide><a class="card" href="${href}">${inner}</a></li>` : `<li class="slide" data-slide><div class="card">${inner}</div></li>`;
+    })
+    .join("\n");
+  const carousel = `<ul class="track" data-car-track aria-label="Projects" tabindex="0">${cards}</ul>`;
   const chips = `
 <section class="integration-group" aria-labelledby="agent-cli-title"><h3 id="agent-cli-title">Agent CLIs</h3>
 <ul class="integration-list"><li><a href="https://alpha.dev"><span class="integration-chip">Alpha CLI</span><span>backend: alpha</span></a></li></ul></section>
@@ -308,7 +371,7 @@ function fixturePage({ ld, extraHtml = "" } = {}) {
 <a href="https://github.com/acme">GitHub</a> <a href="https://docs.acme.dev">Docs</a>
 <a href="https://widget.acme.dev">Widget</a> <a href="https://github.com/acme/widget">Repo</a>`;
   const script = ld === undefined ? "" : `<script type="application/ld+json">${typeof ld === "string" ? ld : JSON.stringify(ld)}</script>`;
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>x</title><link rel="canonical" href="https://hivecommons.dev/">${script}</head><body>${chips}${extraHtml}<script>var s = 'Hidden Name';</script></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>x</title><link rel="canonical" href="https://hivecommons.dev/">${script}</head><body>${carousel}${chips}${extraHtml}<script>var s = 'Hidden Name';</script></body></html>`;
 }
 
 function goodLd() {
@@ -342,14 +405,14 @@ function goodLd() {
 
 function allProblems(html) {
   const nodes = jsonLdNodes(html);
-  return [...checkOrganization(nodes, html), ...checkSoftwareApplications(nodes, html), ...checkLinks(nodes, html)];
+  return [...checkOrganization(nodes, html), ...checkSoftwareApplications(nodes, html), ...checkLinks(nodes, html), ...checkProjectCards(nodes, html)];
 }
 
 test("fixture: a consistent page and JSON-LD pass every rule", () => {
   // The fixture's Widget is the "Hive" stand-in, so relax that one name.
   const ld = goodLd();
   ld[1].name = "Hive";
-  const html = fixturePage({ ld, extraHtml: "<p>Hive</p>" });
+  const html = fixturePage({ ld, extraHtml: "<p>Hive</p>", projects: [{ name: "Hive", tag: "flagship", repo: "https://github.com/acme/widget" }] });
   assert.deepEqual(allProblems(html), []);
 });
 
@@ -480,6 +543,34 @@ test("fixture: a JSON-LD URL the page never links, a non-https URL, and trailing
   assert.match(checkLinks(sponsorUrl, fixturePage({ ld: sponsorUrl })).join("\n"), /Organization#0\.sponsor\[1\]\.url = https:\/\/host-three\.example\/ is not linked/);
 });
 
+test("fixture: a project card with no SoftwareApplication, a node with no card, a codeRepository that disagrees with the card, and a missing carousel are reported", () => {
+  const ld = goodLd();
+  const widget = { name: "Widget", repo: "https://github.com/acme/widget" };
+
+  const missing = fixturePage({ ld, projects: [widget, { name: "Gadget", repo: "https://github.com/acme/gadget" }] });
+  assert.deepEqual(checkProjectCards(ld, missing), ['project card "Gadget" is on the page but no SoftwareApplication is named "Gadget" — add a node for it to the JSON-LD']);
+
+  const stale = JSON.parse(JSON.stringify(ld));
+  stale.push({ ...ld[1], name: "Gizmo", codeRepository: "https://github.com/acme/gizmo" });
+  assert.deepEqual(checkProjectCards(stale, fixturePage({ ld: stale })), ['SoftwareApplication "Gizmo" has no project card in the Projects carousel — remove the node or add the project to the page']);
+
+  const wrongRepo = fixturePage({ ld, projects: [{ name: "Widget", repo: "https://github.com/acme/widget-legacy" }] });
+  assert.deepEqual(checkProjectCards(ld, wrongRepo), ['SoftwareApplication "Widget".codeRepository is "https://github.com/acme/widget" but the project card links https://github.com/acme/widget-legacy']);
+
+  const siteOnly = fixturePage({ ld, projects: [{ name: "Widget", tag: "new", href: "https://widget.acme.dev" }] });
+  assert.deepEqual(checkProjectCards(ld, siteOnly), [], "a card that links only its own site is matched by name; codeRepository is not checked against it");
+
+  const slash = fixturePage({ ld, projects: [{ name: "Widget", repo: "https://github.com/acme/widget/" }] });
+  assert.deepEqual(checkProjectCards(ld, slash), [], "a trailing slash on the card href is not drift");
+
+  const repeated = fixturePage({ ld, projects: [widget, widget] });
+  assert.match(checkProjectCards(ld, repeated).join("\n"), /repeats a card name: "Widget"/);
+
+  const noCarousel = fixturePage({ ld }).replace(/<ul class="track"[\s\S]*?<\/ul>/, "");
+  assert.match(checkProjectCards(ld, noCarousel).join("\n"), /no Projects carousel/);
+  assert.match(checkProjectCards(ld, fixturePage({ ld, projects: [] })).join("\n"), /carousel has no cards/);
+});
+
 test("fixture: helpers — includingLists, splitKeywords, infraSponsors, normalizeUrl, visibleText, chip parsing", () => {
   assert.deepEqual(allChipNames(fixturePage({ ld: goodLd() })), ["Alpha CLI", "Engine", "Clf"], "classifier chips are chips too");
   assert.deepEqual(chipNamesIn(null), []);
@@ -498,6 +589,15 @@ test("fixture: helpers — includingLists, splitKeywords, infraSponsors, normali
   assert.equal(normalizeUrl("https://a.dev"), normalizeUrl("https://a.dev/"));
   assert.equal(normalizeUrl("https://a.dev/x/#frag"), normalizeUrl("https://a.dev/x"));
   assert.notEqual(normalizeUrl("https://a.dev/x"), normalizeUrl("https://a.dev/y"));
+  assert.deepEqual(
+    projectCards(fixturePage({ ld: goodLd(), projects: [{ name: "Widget", tag: "flagship", repo: "https://github.com/acme/widget" }, { name: "Spek &amp; Co", tag: "Spek for short", href: "https://spek.example" }] })),
+    [
+      { name: "Widget", repo: "https://github.com/acme/widget" },
+      { name: "Spek & Co", repo: null },
+    ],
+    "the tag badge is dropped from the name, entities are decoded, and a card without a GitHub href has repo null",
+  );
+  assert.equal(projectCards("<p>x</p>"), null);
   const text = visibleText(fixturePage({ ld: goodLd() }));
   assert.ok(text.includes("Acme Commons"));
   assert.ok(!text.includes("Hidden Name"), "script bodies are not visible text");
@@ -525,4 +625,9 @@ test("JSON-LD SoftwareApplication keywords and featureList match the integration
 
 test("every URL in the JSON-LD is https and linked somewhere on index.html", () => {
   assert.deepEqual(checkLinks(NODES, INDEX_HTML), []);
+});
+
+test("every project card in the Projects carousel has a matching SoftwareApplication (name and codeRepository), and no SoftwareApplication lacks a card", () => {
+  assert.ok((projectCards(INDEX_HTML) ?? []).length >= 2, "fewer than two project cards found — the gate's selectors no longer match index.html");
+  assert.deepEqual(checkProjectCards(NODES, INDEX_HTML), []);
 });
