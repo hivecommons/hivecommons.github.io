@@ -58,14 +58,22 @@ normalize_internal_path() {
   printf '%s\n' "$url"
 }
 
+# Decode the common HTML entities; &amp; goes last so &amp;lt; yields &lt;.
+html_unescape() {
+  sed -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&quot;/"/g' -e "s/&#39;/'/g" -e "s/&apos;/'/g" -e 's/&amp;/\&/g'
+}
+
 extract_html_links() {
   local file="$1"
   grep -Eoi "(^|[[:space:]])(href|src)[[:space:]]*=[[:space:]]*(\"[^\"]+\"|'[^']+'|[^[:space:]\"'>]+)" "$file" |
     sed -E -e 's/^[^=]+=[[:space:]]*//' -e 's/^"(.*)"$/\1/' -e "s/^'(.*)'\$/\\1/" |
+    html_unescape |
     awk -v file="$file" '{ print file "\t" $0 }'
 
   grep -Eoi '<meta[^>]+http-equiv[[:space:]]*=[[:space:]]*"refresh"[^>]*>' "$file" |
-    sed -En 's/.*content[[:space:]]*=[[:space:]]*"[^"]*[Uu][Rr][Ll][[:space:]]*=[[:space:]]*([^";]+).*/\1/p' |
+    sed -En 's/.*content[[:space:]]*=[[:space:]]*"[^"]*[Uu][Rr][Ll][[:space:]]*=[[:space:]]*([^"]+).*/\1/p' |
+    sed -E 's/[[:space:]]+$//' |
+    html_unescape |
     awk -v file="$file" '{ print file "\t" $0 }'
 }
 
