@@ -126,7 +126,9 @@ extract_html_links() {
     html_unescape |
     awk -v file="$file" '{ print file "\t" $0 }'
 
-  sed -n '/application\/ld+json/,/<\/script>/p' "$file" | tr '\n' ' ' |
+  # No html_unescape here: JSON-LD escapes with \uXXXX, not HTML entities.
+  awk '/application\/ld\+json/{f=1} f{print} f&&/<\/script>/{f=0}' "$file" | tr '\n' ' ' |
+    sed -E 's#^.*<script[^>]*application/ld\+json[^>]*>##; s#</script>.*$##' |
     grep -oE '"(url|logo|codeRepository|sameAs|license)":[[:space:]]*(\[[^]]*\]|"[^"]+")' |
     grep -oE 'https?://[^"]+' |
     awk -v file="$file" '{ print file "\t" $0 }'

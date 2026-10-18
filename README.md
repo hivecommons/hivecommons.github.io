@@ -36,7 +36,9 @@ red PR job against.
   scheduled run and manual dispatch hard-fail on broken external links). Besides every
   committed page and the `make-redirects.sh` map, it checks the URI fields of
   `.well-known/security.txt` (RFC 9116 `Contact`, `Canonical`, `Policy`,
-  `Acknowledgments`, `Hiring`), so a rotted security-contact link is reported too.
+  `Acknowledgments`, `Hiring`), so a rotted security-contact link is reported too. It
+  also checks `og:image`/`og:url`/`twitter:image` `content=` URLs and JSON-LD
+  `url`/`logo`/`codeRepository`/`sameAs`/`license` values.
 - `scripts/check-links.test.sh` — fixture-based self-test of the link checker; runs
   offline (fake `curl`).
 - `node --test scripts/story-dialog.test.mjs` — runs the Share-your-story dialog script

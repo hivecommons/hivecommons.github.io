@@ -343,6 +343,17 @@ run_checker "$root"
 expect_rc 1 "missing JSON-LD logo target fails"
 expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/assets/missing-logo\.png' "JSON-LD logo is resolved against the tree"
 
+echo "case: single-line JSON-LD does not bleed into a following script block"
+root="$(new_site jsonld-oneline)"
+cat > "$root/index.html" <<'HTML'
+<script type="application/ld+json">{"url":"https://hivecommons.dev/","logo":"https://hivecommons.dev/missing-logo.png"}</script>
+<script>var cfg={"url":"https://hivecommons.dev/not-jsonld"};</script>
+HTML
+run_checker "$root"
+expect_rc 1 "missing single-line JSON-LD logo fails"
+expect_out 'ERROR internal target missing: index\.html -> https://hivecommons\.dev/missing-logo\.png' "single-line JSON-LD logo is checked"
+expect_out 'Internal errors: 1\.' "URL in the following inline script is not probed"
+
 echo "case: a site with no links to check fails closed"
 root="$(new_site empty)"
 run_checker "$root"
