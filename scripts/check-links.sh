@@ -58,6 +58,50 @@ normalize_internal_path() {
   printf '%s\n' "$url"
 }
 
+# Resolve REL (no query/anchor) against the site-relative directory BASE and
+# print a root-relative path. Fails if ".." would climb above the site root.
+resolve_relative_path() {
+  local base="$1" rel="$2" seg
+  local -a out=() parts=()
+  if [[ "$rel" == /* ]]; then
+    base=""
+  fi
+  IFS='/' read -r -a parts <<< "$base/$rel"
+  for seg in "${parts[@]}"; do
+    case "$seg" in
+      ""|.) ;;
+      ..)
+        (( ${#out[@]} > 0 )) || return 1
+        unset 'out[${#out[@]}-1]'
+        ;;
+      *) out+=("$seg") ;;
+    esac
+  done
+  local IFS=/
+  printf '/%s' "${out[*]}"
+  [[ "$rel" == */ ]] && printf '/'
+  printf '\n'
+}
+
+# check_internal SOURCE DISPLAY_URL ROOT_RELATIVE_URL[#anchor]
+check_internal() {
+  local source="$1" url="$2" local_url="$3"
+  local path_part="${local_url%%#*}" anchor="" target
+  if [[ "$local_url" == *#* ]]; then
+    anchor="${local_url#*#}"
+  fi
+  target="$(html_file_for_path "$path_part")"
+  if [[ ! -f "$target" ]]; then
+    echo "ERROR internal target missing: $source -> $url"
+    ((internal_errors++))
+    return
+  fi
+  if [[ -n "$anchor" ]] && ! has_id "$target" "$anchor"; then
+    echo "ERROR internal anchor missing: $source -> $url"
+    ((internal_errors++))
+  fi
+}
+
 # Decode the common HTML entities; &amp; goes last so &amp;lt; yields &lt;.
 html_unescape() {
   sed -e 's/&lt;/</g' -e 's/&gt;/>/g' -e 's/&quot;/"/g' -e "s/&#39;/'/g" -e "s/&apos;/'/g" -e 's/&amp;/\&/g'
@@ -126,22 +170,32 @@ while IFS=$'\t' read -r source url; do
     continue
   fi
 
+  if [[ "$url" == //* ]]; then
+    url="https:$url"
+  fi
+
   if [[ "$url" == /* ]] || is_site_url "$url"; then
-    local_url="$(normalize_internal_path "$url")"
-    path_part="${local_url%%#*}"
-    anchor=""
-    if [[ "$local_url" == *#* ]]; then
-      anchor="${local_url#*#}"
+    check_internal "$source" "$url" "$(normalize_internal_path "$url")"
+    continue
+  fi
+
+  if [[ ! "$url" =~ ^[a-zA-Z][a-zA-Z0-9+.-]*: ]]; then
+    rel_path="${url%%\#*}"
+    rel_anchor=""
+    if [[ "$url" == *#* ]]; then
+      rel_anchor="${url#*#}"
     fi
-    target="$(html_file_for_path "$path_part")"
-    if [[ ! -f "$target" ]]; then
+    rel_path="${rel_path%%\?*}"
+    if [[ -z "$rel_path" ]]; then
+      resolved="/$source"
+    else
+      resolved="$(resolve_relative_path "$(dirname "$source")" "$rel_path")" || resolved=""
+    fi
+    if [[ -z "$resolved" ]]; then
       echo "ERROR internal target missing: $source -> $url"
       ((internal_errors++))
-      continue
-    fi
-    if [[ -n "$anchor" ]] && ! has_id "$target" "$anchor"; then
-      echo "ERROR internal anchor missing: $source -> $url"
-      ((internal_errors++))
+    else
+      check_internal "$source" "$url" "${resolved}${rel_anchor:+#$rel_anchor}"
     fi
     continue
   fi
