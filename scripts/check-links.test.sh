@@ -206,6 +206,34 @@ run_checker "$root"
 expect_rc 0 "no security.txt, no extra links"
 expect_out 'Checked 1 unique links\.' "only the page link is counted"
 
+echo "case: llms.txt URLs are checked"
+root="$(new_site llms-txt)"
+echo '<p>home</p>' > "$root/index.html"
+cat > "$root/llms.txt" <<'TXT'
+# Hive Commons
+
+- [Thing](https://example.test/broken): text
+- Docs: https://example.test/fine.
+- Site (https://example.test/soft404)
+- Ends with comma https://example.test/server-error,
+- Home: https://hivecommons.dev/
+TXT
+run_checker "$root"
+expect_rc 1 "rotten llms.txt URLs fail the gate"
+expect_out 'ERROR external broken: llms\.txt -> https://example\.test/broken \(404' "Markdown link is probed, attributed to llms.txt, closing paren not captured"
+expect_out 'ERROR external soft-404: llms\.txt -> https://example\.test/soft404 \(200' "parenthesised URL is probed"
+expect_out 'ERROR external broken: llms\.txt -> https://example\.test/server-error \(500' "trailing comma is stripped"
+expect_no_out 'example\.test/fine\.' "trailing period is stripped"
+expect_no_out 'internal target missing' "site-origin URL resolves against the tree"
+expect_out 'External failures: 3\.' "only the three rotten URLs count"
+
+echo "case: a site without llms.txt is unaffected"
+root="$(new_site no-llms-txt)"
+echo '<a href="/">home</a>' > "$root/index.html"
+run_checker "$root"
+expect_rc 0 "no llms.txt, no extra links"
+expect_out 'Checked 1 unique links\.' "only the page link is counted"
+
 echo "case: external failures — hard 404, 5xx, curl failure, soft-404"
 root="$(new_site external)"
 cat > "$root/index.html" <<'HTML'
