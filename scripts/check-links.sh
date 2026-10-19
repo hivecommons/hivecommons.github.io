@@ -150,6 +150,17 @@ extract_security_txt_uris() {
     awk -v file="$file" 'NF { print file "\t" $0 }'
 }
 
+# llms.txt is the machine-readable summary LLM crawlers fetch instead of the page,
+# and its links rot like any other; page-meta.test.mjs only resolves its
+# site-origin URLs against the tree statically.
+extract_llms_txt_urls() {
+  local file="llms.txt"
+  [[ -f "$ROOT/$file" ]] || return 0
+  grep -oE 'https?://[^][:space:]<>"'"'"')]+' "$ROOT/$file" |
+    sed -E 's/[.,;:]+$//' |
+    awk -v file="$file" 'NF { print file "\t" $0 }'
+}
+
 find "$ROOT" -name '*.html' -not -path "$WORK_DIR/*" -print | sort |
   while IFS= read -r file; do
     rel="${file#$ROOT/}"
@@ -157,6 +168,7 @@ find "$ROOT" -name '*.html' -not -path "$WORK_DIR/*" -print | sort |
   done > "$WORK_DIR/links.tsv"
 extract_redirect_targets >> "$WORK_DIR/links.tsv"
 extract_security_txt_uris >> "$WORK_DIR/links.tsv"
+extract_llms_txt_urls >> "$WORK_DIR/links.tsv"
 
 sort -u "$WORK_DIR/links.tsv" > "$WORK_DIR/links.dedup.tsv"
 
