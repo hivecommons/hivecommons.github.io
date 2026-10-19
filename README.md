@@ -92,6 +92,16 @@ red PR job against.
   local `url()` (self-hosted `@font-face` files, images) names a committed file whose magic
   bytes match its `format()` hint or extension; and every font file under `assets/fonts/`
   is referenced by some `url()`. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/no-js-controls.test.mjs` — static gate over every committed
+  non-redirect page's script-only controls: each `<button type="button">` (the kind that
+  does nothing until an inline script attaches a handler) must be unreachable without
+  JavaScript — it or an ancestor carries `hidden` (the script reveals it), it sits inside
+  a closed `<dialog>`, or a `.no-js … { display: none; }` rule in the page's stylesheets
+  matches it or an ancestor — unless it is a `role="tab"` whose `aria-controls` panel is
+  already visible without JavaScript. Submit/reset buttons have native form behaviour and
+  are left alone. A new JavaScript-driven call to action can therefore not ship as a dead
+  button for `no-js` visitors, the way `[data-story-open]` on `/stories/` did (#216).
+  Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/font-licenses.test.mjs` — static gate over the licence files that
   must travel with the self-hosted fonts: every font family under `assets/fonts/` (the file
   name up to the first `-`) has an `OFL-<Family>.txt`, `Apache-2.0-<Family>.txt` or
