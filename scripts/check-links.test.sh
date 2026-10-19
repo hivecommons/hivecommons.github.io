@@ -213,7 +213,7 @@ cat > "$root/llms.txt" <<'TXT'
 # Hive Commons
 
 - [Thing](https://example.test/broken): text
-- Docs: https://example.test/fine.
+- Docs: https://example.test/broken-period.
 - Site (https://example.test/soft404)
 - Ends with comma https://example.test/server-error,
 - Home: https://hivecommons.dev/
@@ -223,9 +223,10 @@ expect_rc 1 "rotten llms.txt URLs fail the gate"
 expect_out 'ERROR external broken: llms\.txt -> https://example\.test/broken \(404' "Markdown link is probed, attributed to llms.txt, closing paren not captured"
 expect_out 'ERROR external soft-404: llms\.txt -> https://example\.test/soft404 \(200' "parenthesised URL is probed"
 expect_out 'ERROR external broken: llms\.txt -> https://example\.test/server-error \(500' "trailing comma is stripped"
-expect_no_out 'example\.test/fine\.' "trailing period is stripped"
+expect_out 'ERROR external broken: llms\.txt -> https://example\.test/broken-period \(404' "trailing period is stripped"
+expect_no_out 'broken-period\.' "URL is not reported with its trailing period"
 expect_no_out 'internal target missing' "site-origin URL resolves against the tree"
-expect_out 'External failures: 3\.' "only the three rotten URLs count"
+expect_out 'External failures: 4\.' "only the four rotten URLs count"
 
 echo "case: a site without llms.txt is unaffected"
 root="$(new_site no-llms-txt)"
