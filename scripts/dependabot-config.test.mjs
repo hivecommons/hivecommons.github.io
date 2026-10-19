@@ -15,9 +15,11 @@
 //      accepts.
 //   3. Every package ecosystem the tree actually contains (workflows under
 //      `.github/workflows/` -> `github-actions`, a root `package.json` ->
-//      `npm`, …) has an entry rooted at `/`, and no entry names an ecosystem
-//      the tree does not contain (a dead entry is a config that stopped
-//      meaning anything).
+//      `npm`, …) has an entry rooted at `/`, and no `/` entry names a
+//      marker-backed ecosystem the tree does not contain (a dead entry is a
+//      config that stopped meaning anything). Ecosystems without a root
+//      marker, and entries below the root, are outside the rule's knowledge
+//      and are left alone.
 //   4. No two entries cover the same ecosystem at the same directory.
 // Usage: node --test scripts/dependabot-config.test.mjs
 import { test } from "node:test";
@@ -50,6 +52,8 @@ export const ECOSYSTEM_MARKERS = [
   { ecosystem: "docker", test: (fs, root) => fs.existsSync(join(root, "Dockerfile")) },
   { ecosystem: "gitsubmodule", test: (fs, root) => fs.existsSync(join(root, ".gitmodules")) },
 ];
+
+export const MARKED_ECOSYSTEMS = new Set(ECOSYSTEM_MARKERS.map((m) => m.ecosystem));
 
 function listDir(fs, dir) {
   try { return fs.readdirSync(dir); } catch { return []; }
@@ -95,7 +99,8 @@ export function parseDependabot(text) {
       item = { line: n, schedule: {} };
       out.updates.push(item);
       nested = null;
-      setKey(item, m[1], m[2].trim());
+      const err = setKey(item, m[1], m[2].trim());
+      if (err) out.problems.push(`line ${n}: ${err}`);
       return;
     }
     if (!item) { out.problems.push(`line ${n}: list item expected: ${JSON.stringify(raw)}`); return; }
@@ -103,7 +108,7 @@ export function parseDependabot(text) {
       const v = m[2].trim();
       nested = v === "" ? m[1] : null;
       nestedIndent = 4;
-      if (v !== "") setKey(item, m[1], v);
+      if (v !== "") { const err = setKey(item, m[1], v); if (err) out.problems.push(`line ${n}: ${err}`); }
       else if (m[1] === "directories") item.directories = [];
       return;
     }
@@ -118,9 +123,24 @@ export function parseDependabot(text) {
   return out;
 }
 
+// Assigns a scalar, `[…]` flow list or single-level `{…}` flow map (e.g.
+// `schedule: {interval: weekly}`). Returns a problem string when the value
+// cannot be read, so the caller can report it against the line.
 function setKey(item, key, value) {
-  if (/^\[(.*)\]$/.test(value)) item[key] = value.slice(1, -1).split(",").map((s) => unquote(s.trim())).filter(Boolean);
-  else item[key] = unquote(value);
+  let m;
+  if (/^\[(.*)\]$/.test(value)) { item[key] = value.slice(1, -1).split(",").map((s) => unquote(s.trim())).filter(Boolean); return; }
+  if ((m = /^\{(.*)\}$/.exec(value))) {
+    const map = {};
+    for (const part of m[1].split(",")) {
+      if (!part.trim()) continue;
+      const kv = /^\s*(["']?)([A-Za-z_][\w-]*)\1\s*:\s*(.*?)\s*$/.exec(part);
+      if (!kv) return `unreadable flow map ${key}: ${JSON.stringify(value)}`;
+      map[kv[2]] = unquote(kv[3]);
+    }
+    item[key] = map;
+    return;
+  }
+  item[key] = unquote(value);
 }
 
 function unquote(s) {
@@ -142,17 +162,21 @@ export function dependabotProblems({ config, expected }) {
     if (!KNOWN_ECOSYSTEMS.has(eco)) problems.push(`${where}: unknown package-ecosystem ${eco}`);
     const dirs = Array.isArray(u.directories) ? u.directories : u.directory ? [u.directory] : [];
     if (dirs.length === 0) problems.push(`${where}: ${eco} entry has no directory: or directories:`);
-    const interval = u.schedule.interval;
+    const schedule = u.schedule && typeof u.schedule === "object" ? u.schedule : {};
+    if (u.schedule !== undefined && typeof u.schedule !== "object") problems.push(`${where}: ${eco} schedule: must be a map`);
+    const interval = schedule.interval;
     if (!interval) problems.push(`${where}: ${eco} entry has no schedule.interval`);
     else if (!KNOWN_INTERVALS.has(interval)) problems.push(`${where}: ${eco} schedule.interval ${interval} is not one Dependabot accepts`);
-    if (interval === "cron" && !u.schedule.cronjob) problems.push(`${where}: ${eco} schedule.interval cron needs schedule.cronjob`);
+    if (interval === "cron" && !schedule.cronjob) problems.push(`${where}: ${eco} schedule.interval cron needs schedule.cronjob`);
     for (const d of dirs) {
       const key = `${eco} ${d}`;
       if (seen.has(key)) problems.push(`${where}: ${eco} at ${d} is already covered by the entry at line ${seen.get(key)}`);
       else seen.set(key, u.line);
       if (d === "/") covered.add(eco);
     }
-    if (!expected.includes(eco)) problems.push(`${where}: ${eco} entry has no matching manifest at the repository root (dead entry)`);
+    // Only ecosystems with a root marker can be judged dead, and only for a `/`
+    // entry: `npm` at `/site` or a `terraform` entry are outside this rule's knowledge.
+    if (dirs.includes("/") && MARKED_ECOSYSTEMS.has(eco) && !expected.includes(eco)) problems.push(`${where}: ${eco} entry has no matching manifest at the repository root (dead entry)`);
   }
   for (const eco of expected) {
     if (!covered.has(eco)) problems.push(`${eco}: the tree contains this ecosystem but no updates: entry covers it at directory /`);
@@ -229,6 +253,23 @@ test("fixture: an entry for an ecosystem the tree no longer contains is reported
   const p = dependabotProblems({ config: cfg, expected: ["github-actions"] }).join("\n");
   assert.match(p, /bundler entry has no matching manifest at the repository root \(dead entry\)/);
   assert.match(p, /github-actions: the tree contains this ecosystem but no updates: entry covers it at directory \//);
+});
+
+test("fixture: a flow-style `schedule: {interval: weekly}` is read as a map, and an unreadable flow map is reported", () => {
+  const c = parseDependabot("version: 2\nupdates:\n  - package-ecosystem: npm\n    directory: /\n    schedule: {interval: weekly, day: monday}\n");
+  assert.deepEqual(c.problems, []);
+  assert.deepEqual(c.updates[0].schedule, { interval: "weekly", day: "monday" });
+  assert.deepEqual(dependabotProblems({ config: c, expected: ["npm"] }), []);
+  const bad = parseDependabot("version: 2\nupdates:\n  - package-ecosystem: npm\n    directory: /\n    schedule: {weekly}\n");
+  assert.match(bad.problems.join("\n"), /line 5: unreadable flow map schedule/);
+  const scalar = parseDependabot("version: 2\nupdates:\n  - package-ecosystem: npm\n    directory: /\n    schedule: weekly\n");
+  assert.match(dependabotProblems({ config: scalar, expected: ["npm"] }).join("\n"), /schedule: must be a map/);
+});
+
+test("fixture: the dead-entry rule leaves alone ecosystems without a root marker and entries below the root", () => {
+  const cfg = parseDependabot("version: 2\nupdates:\n  - package-ecosystem: github-actions\n    directory: /\n    schedule:\n      interval: weekly\n  - package-ecosystem: terraform\n    directory: /\n    schedule:\n      interval: weekly\n  - package-ecosystem: npm\n    directory: /site\n    schedule:\n      interval: weekly\n");
+  assert.deepEqual(dependabotProblems({ config: cfg, expected: ["github-actions"] }), []);
+  assert.ok(!MARKED_ECOSYSTEMS.has("terraform"));
 });
 
 test("fixture: two entries for the same ecosystem and directory are reported once, against the first", () => {
