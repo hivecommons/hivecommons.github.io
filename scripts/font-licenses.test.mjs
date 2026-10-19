@@ -1,24 +1,20 @@
 #!/usr/bin/env node
-// Static gate over the licence files that must travel with the self-hosted
-// fonts under assets/fonts/. Fraunces and IBM Plex Sans are SIL Open Font
-// License 1.1 fonts; the OFL requires that the licence text (with its
-// copyright notice and Reserved Font Name) accompany every copy of the Font
-// Software, so each family ships an `OFL-<Family>.txt` next to its .woff2
-// files. style-contract.test.mjs checks that every @font-face url() resolves
-// to real font bytes and that no font file is unreferenced; nothing checks
-// the licence files. Delete OFL-Fraunces.txt or add a third family without
-// its licence and CI is green. Each rule has a fixture self-test. Zero
-// dependencies.
+// Static gate over the licence files shipped with self-hosted fonts. Each
+// family has a licence beside its font bytes; the filename selects the text
+// checks. Existing OFL filenames stay valid. Each rule has fixture self-tests.
+// Zero dependencies.
 //
 // Rules:
 //   1. Every font family under assets/fonts/ (the file name up to the first
-//      `-`: Fraunces-normal-560.woff2 -> Fraunces) has an OFL-<Family>.txt.
-//   2. Every OFL-*.txt names a family that still has at least one font file
-//      (a licence for a font that was removed is stale and misleading).
-//   3. Each licence file is the OFL 1.1 text: it opens with a Copyright
-//      notice, says the Font Software is under the SIL Open Font License
-//      Version 1.1, and carries the licence body's own heading.
-//   4. assets/fonts/ contains nothing but font files and OFL-*.txt.
+//      `-`: Fraunces-normal-560.woff2 -> Fraunces) has a supported licence:
+//      OFL-<Family>.txt, Apache-2.0-<Family>.txt or UFL-<Family>.txt.
+//   2. Every licence names a family that still has at least one font file.
+//   3. Each licence carries the markers for its type (OFL 1.1, Apache 2.0,
+//      or Ubuntu Font Licence 1.0). These are sanity checks, not verification
+//      of the entire text or the font's actual licence. Keep the upstream
+//      licence text and notices intact; include attribution in the same file.
+//   4. assets/fonts/ contains only font files and supported licence files.
+// To support another licence, add a LICENSE_TYPES entry and fixture coverage.
 // Usage: node --test scripts/font-licenses.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -31,7 +27,45 @@ const ROOT = join(HERE, "..");
 const FONT_DIR = join(ROOT, "assets", "fonts");
 
 const FONT_RE = /\.(?:woff2?|ttf|otf)$/i;
-const LICENSE_RE = /^OFL-(.+)\.txt$/;
+// Filename patterns and text markers live together so a new licence type
+// participates in classification, family matching and validation at once.
+const LICENSE_TYPES = [
+  {
+    pattern: /^OFL-(.+)\.txt$/,
+    copyrightFirst: true,
+    checks: [
+      [/licensed under the SIL Open Font License, Version 1\.1/, 'the "licensed under the SIL Open Font License, Version 1.1" statement'],
+      [/SIL OPEN FONT LICENSE Version 1\.1/, "the OFL 1.1 licence body heading"],
+    ],
+  },
+  {
+    // https://www.apache.org/licenses/LICENSE-2.0.txt
+    pattern: /^Apache-2\.0-(.+)\.txt$/,
+    checks: [
+      [/Apache License\s+Version 2\.0, January 2004/, "the Apache 2.0 licence body heading"],
+      [/TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION/, "the Apache terms heading"],
+      [/END OF TERMS AND CONDITIONS/, "the Apache end-of-terms marker"],
+    ],
+  },
+  {
+    // https://canonical.com/legal/font-licence
+    pattern: /^UFL-(.+)\.txt$/,
+    checks: [
+      [/UBUNTU FONT LICEN[CS]E\s+Version 1\.0\b/i, "the Ubuntu Font Licence 1.0 heading"],
+      [/PERMISSION & CONDITIONS/i, "the Ubuntu permission and conditions heading"],
+      [/DISCLAIMER/i, "the Ubuntu disclaimer heading"],
+    ],
+  },
+];
+const LICENSE_NAMES = "OFL-<Family>.txt, Apache-2.0-<Family>.txt or UFL-<Family>.txt";
+
+function licenseOf(name) {
+  for (const type of LICENSE_TYPES) {
+    const match = type.pattern.exec(name);
+    if (match) return { family: match[1], type };
+  }
+  return null;
+}
 
 // Family a font file name belongs to: the segment before the first `-`.
 export function familyOf(fileName) {
@@ -46,20 +80,25 @@ export function classify(names) {
   const other = [];
   for (const n of [...names].sort()) {
     if (FONT_RE.test(n)) fonts.push(n);
-    else if (LICENSE_RE.test(n)) licenses.push(n);
+    else if (licenseOf(n)) licenses.push(n);
     else other.push(n);
   }
   return { fonts, licenses, other };
 }
 
-// Checks the text of one OFL-<Family>.txt. Returns [] when it is the OFL 1.1
-// text with a copyright notice, else one message per missing piece.
+// Check markers for the licence type named by the file, not OFL markers for
+// every file. Unsupported names fail closed even when called directly.
 export function licenseTextProblems(name, text) {
+  const license = licenseOf(name);
+  if (!license) return [`${name}: unsupported licence filename (expected ${LICENSE_NAMES})`];
   const problems = [];
-  const first = (text.split(/\r?\n/).find((l) => l.trim()) ?? "").trim();
-  if (!/^Copyright\b/.test(first)) problems.push(`${name}: first line must be the Copyright notice (found ${JSON.stringify(first)})`);
-  if (!/licensed under the SIL Open Font License, Version 1\.1/.test(text)) problems.push(`${name}: lacks the "licensed under the SIL Open Font License, Version 1.1" statement`);
-  if (!/SIL OPEN FONT LICENSE Version 1\.1/.test(text)) problems.push(`${name}: lacks the OFL 1.1 licence body heading`);
+  if (license.type.copyrightFirst) {
+    const first = (text.split(/\r?\n/).find((l) => l.trim()) ?? "").trim();
+    if (!/^Copyright\b/.test(first)) problems.push(`${name}: first line must be the Copyright notice (found ${JSON.stringify(first)})`);
+  }
+  for (const [pattern, description] of license.type.checks) {
+    if (!pattern.test(text)) problems.push(`${name}: lacks ${description}`);
+  }
   return problems;
 }
 
@@ -73,16 +112,16 @@ export function fontLicenseProblems({ names, read }) {
     if (!fam) { problems.push(`${f}: font file name is not <Family>-<style>-<weight>.<ext>, so its licence cannot be matched`); continue; }
     families.add(fam);
   }
-  const licensed = new Set(licenses.map((l) => LICENSE_RE.exec(l)[1]));
+  const licensed = new Set(licenses.map((l) => licenseOf(l).family));
   for (const fam of [...families].sort()) {
-    if (!licensed.has(fam)) problems.push(`${fam}: font files are shipped but assets/fonts/OFL-${fam}.txt is missing`);
+    if (!licensed.has(fam)) problems.push(`${fam}: font files are shipped but a licence file is missing (expected ${LICENSE_NAMES.replaceAll("<Family>", fam)})`);
   }
   for (const l of licenses) {
-    const fam = LICENSE_RE.exec(l)[1];
+    const fam = licenseOf(l).family;
     if (!families.has(fam)) problems.push(`${l}: no font file of family ${fam} is shipped (stale licence)`);
     problems.push(...licenseTextProblems(l, read(l)));
   }
-  for (const o of other) problems.push(`${o}: assets/fonts/ may hold only font files and OFL-<Family>.txt`);
+  for (const o of other) problems.push(`${o}: assets/fonts/ may hold only font files and ${LICENSE_NAMES}`);
   return problems;
 }
 
@@ -91,6 +130,17 @@ export function fontLicenseProblems({ names, read }) {
 const OFL = "Copyright 2018 The Fixture Project Authors\n\nThis Font Software is licensed under the SIL Open Font License, Version 1.1.\n\n-----\nSIL OPEN FONT LICENSE Version 1.1 - 26 February 2007\n-----\n";
 const GOOD_NAMES = ["Alpha-normal-400.woff2", "Alpha-italic-400.woff2", "Beta-normal-500.woff2", "OFL-Alpha.txt", "OFL-Beta.txt"];
 const readGood = () => OFL;
+// Minimal marker fixture, like OFL above; not a distributable licence text.
+const UFL = "Ubuntu Font Licence Version 1.0\n\nPREAMBLE\n\nPERMISSION & CONDITIONS\n\nDISCLAIMER\n";
+// This repository's own licence provides a real Apache text with the licence
+// heading first (unlike the copyright-first OFL convention).
+const APACHE = readFileSync(join(ROOT, "LICENSE"), "utf8");
+const MIXED = {
+  "OFL-Alpha.txt": OFL,
+  "Apache-2.0-Beta.txt": APACHE,
+  "UFL-Gamma.txt": UFL,
+};
+const MIXED_NAMES = ["Alpha-normal-400.woff2", "Beta-normal-500.woff2", "Gamma-normal-400.ttf", ...Object.keys(MIXED)];
 
 test("fixture: familyOf takes the segment before the first dash and rejects names without one", () => {
   assert.equal(familyOf("Fraunces-normal-560.woff2"), "Fraunces");
@@ -98,7 +148,7 @@ test("fixture: familyOf takes the segment before the first dash and rejects name
   assert.equal(familyOf("logo.woff2"), null);
 });
 
-test("fixture: classify sorts a listing into fonts, OFL licences and everything else", () => {
+test("fixture: classify sorts a listing into fonts, supported licences and everything else", () => {
   assert.deepEqual(classify(["z.txt", "OFL-A.txt", "A-normal-400.woff2", "A-normal-400.ttf", "readme.md"]), {
     fonts: ["A-normal-400.ttf", "A-normal-400.woff2"],
     licenses: ["OFL-A.txt"],
@@ -110,9 +160,62 @@ test("fixture: two licensed families pass", () => {
   assert.deepEqual(fontLicenseProblems({ names: GOOD_NAMES, read: readGood }), []);
 });
 
-test("fixture: a family without its OFL file is reported, naming the file to add", () => {
+test("fixture: OFL, Apache and Ubuntu licences coexist and match their font families", () => {
+  assert.deepEqual(classify(MIXED_NAMES).licenses, ["Apache-2.0-Beta.txt", "OFL-Alpha.txt", "UFL-Gamma.txt"]);
+  assert.deepEqual(fontLicenseProblems({ names: MIXED_NAMES, read: (n) => MIXED[n] }), []);
+});
+
+test("fixture: every supported licence type rejects missing, stale and mismatched files", () => {
+  for (const [name, text] of Object.entries(MIXED)) {
+    const family = licenseOf(name).family;
+    const font = `${family}-normal-400.woff2`;
+    assert.deepEqual(fontLicenseProblems({ names: [font, name], read: () => text }), []);
+    const missing = fontLicenseProblems({ names: [font], read: () => assert.fail("no licence to read") });
+    assert.equal(missing.length, 1);
+    assert.ok(missing[0].includes(family) && missing[0].includes(name), missing[0]);
+    const stale = fontLicenseProblems({ names: ["Other-normal-400.woff2", "OFL-Other.txt", name], read: (n) => n === name ? text : OFL });
+    assert.deepEqual(stale, [`${name}: no font file of family ${family} is shipped (stale licence)`]);
+    assert.ok(licenseTextProblems(name, "").length > 0, `${name}: empty text must fail`);
+    for (const [otherName, otherText] of Object.entries(MIXED)) {
+      if (otherName === name) continue;
+      assert.ok(fontLicenseProblems({ names: [font, name], read: () => otherText }).length > 0,
+        `${name}: must reject text from ${otherName}`);
+    }
+  }
+});
+
+test("fixture: non-OFL text checks tolerate line endings and leading copyright notices", () => {
+  for (const [name, text] of [["Apache-2.0-X.txt", APACHE], ["UFL-X.txt", UFL]]) {
+    assert.deepEqual(licenseTextProblems(name, text), []);
+    assert.deepEqual(licenseTextProblems(name, `Copyright 2026 Fixture Authors\n\n${text}`.replaceAll("\n", "\r\n")), []);
+  }
+});
+
+test("fixture: non-OFL licences require their own version and body markers", () => {
+  for (const marker of ["Apache License", "Version 2.0", "TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION", "END OF TERMS AND CONDITIONS"]) {
+    assert.ok(licenseTextProblems("Apache-2.0-X.txt", APACHE.replaceAll(marker, "removed")).length > 0, marker);
+  }
+  for (const marker of ["Ubuntu Font Licence", "Version 1.0", "PERMISSION & CONDITIONS", "DISCLAIMER"]) {
+    assert.ok(licenseTextProblems("UFL-X.txt", UFL.replaceAll(marker, "removed")).length > 0, marker);
+  }
+  assert.ok(licenseTextProblems("Apache-2.0-X.txt", APACHE.replaceAll("Version 2.0", "Version 1.1")).length > 0);
+  assert.ok(licenseTextProblems("UFL-X.txt", UFL.replace("Version 1.0", "Version 2.0")).length > 0);
+});
+
+test("fixture: unsupported and malformed licence names do not satisfy a font's licence", () => {
+  for (const name of ["MIT-Alpha.txt", "Apache-1.1-Alpha.txt", "Apache-2.0-.txt", "OFL-.txt", "UFL-.txt", "UFL-Alpha.md"]) {
+    assert.deepEqual(classify([name]), { fonts: [], licenses: [], other: [name] });
+    assert.match(licenseTextProblems(name, OFL)[0], /unsupported licence filename/);
+    const problems = fontLicenseProblems({ names: ["Alpha-normal-400.woff2", name], read: () => assert.fail("unsupported file must not be read") });
+    assert.equal(problems.length, 2);
+    assert.match(problems[0], /Alpha:.*licence file is missing/);
+    assert.match(problems[1], /may hold only font files/);
+  }
+});
+
+test("fixture: a family without its licence is reported, naming the supported files", () => {
   const p = fontLicenseProblems({ names: GOOD_NAMES.filter((n) => n !== "OFL-Beta.txt"), read: readGood });
-  assert.deepEqual(p, ["Beta: font files are shipped but assets/fonts/OFL-Beta.txt is missing"]);
+  assert.deepEqual(p, ["Beta: font files are shipped but a licence file is missing (expected OFL-Beta.txt, Apache-2.0-Beta.txt or UFL-Beta.txt)"]);
 });
 
 test("fixture: a licence whose family no longer ships is reported as stale", () => {
@@ -140,7 +243,7 @@ test("fixture: a stray file in assets/fonts/, an unnamed font file and an empty 
 
 // --- live tree ----------------------------------------------------------------
 
-test("assets/fonts/: every shipped font family carries its OFL 1.1 licence file and nothing else is in the directory", () => {
+test("assets/fonts/: every shipped font family carries a supported licence file and nothing else is in the directory", () => {
   const names = readdirSync(FONT_DIR);
   const read = (n) => readFileSync(join(FONT_DIR, n), "utf8");
   assert.deepEqual(fontLicenseProblems({ names, read }), []);
