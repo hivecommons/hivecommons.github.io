@@ -189,6 +189,7 @@ p { margin: 0; }
 }
 .no-js .hero-slide:not(:first-child) { display: none; }
 .no-js .hero-controls { display: none; }
+.no-js [data-story-open] { display: none; }
 .kicker { color: var(--honey); font-weight: 500; font-size: 1rem; margin-bottom: 1rem; }
 h1 {
   font-size: clamp(2.25rem, 5vw, 3.65rem);
