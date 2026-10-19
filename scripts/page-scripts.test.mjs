@@ -70,12 +70,98 @@ for (const page of pages) {
   });
 }
 
-test("index.html ships the expected interactive scripts (hero carousel, ACMM levels, project carousel)", () => {
-  const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const bodies = scriptBlocks(html).filter((b) => b.type === "").map((b) => b.body);
-  for (const hook of ["[data-hero-carousel]", "[data-acmm-levels]", "[data-carousel]"]) {
-    assert.equal(bodies.filter((b) => b.includes(hook)).length, 1, `exactly one script block wires ${hook}`);
+// --- every inline behaviour script has a harness --------------------------
+// The loop above only checks that an inline script parses. What each one does
+// is pinned by a dedicated harness (scripts/*.test.mjs) that extracts the block
+// from the page by a hook string and runs it against a stub DOM. A new inline
+// script has to be registered here with its harness, or it ships with nothing
+// but a syntax check; the only block exempt is the one-statement no-js toggle.
+const NO_JS_TOGGLE = "document.documentElement.classList.replace('no-js', 'js');";
+
+const HARNESSED_SCRIPTS = {
+  "index.html": [
+    { hook: "[data-hero-carousel]", harness: "scripts/carousels.test.mjs" },
+    { hook: "[data-acmm-levels]", harness: "scripts/acmm-levels.test.mjs" },
+    { hook: "[data-carousel]", harness: "scripts/carousels.test.mjs" },
+  ],
+  "stories/index.html": [
+    { hook: 'getElementById("story-dialog")', harness: "scripts/story-dialog.test.mjs" },
+  ],
+};
+
+function isBehaviourScript(b) {
+  return !b.external && (b.type === "" || b.type === "text/javascript" || b.type === "module");
+}
+
+// Problems with the inline behaviour scripts of one page against its registry
+// entries: an unregistered block, a registered hook matched by zero or several
+// blocks, or a block matched by more than one hook.
+function harnessProblems(rel, blocks, registry = HARNESSED_SCRIPTS) {
+  const entries = registry[rel] || [];
+  const problems = [];
+  const scripts = blocks.filter(isBehaviourScript).filter((b) => b.body.trim() !== NO_JS_TOGGLE);
+  for (const b of scripts) {
+    const hooks = entries.filter((e) => b.body.includes(e.hook)).map((e) => e.hook);
+    if (hooks.length === 0) problems.push(`${rel}:${b.line}: inline script has no harness (register it in HARNESSED_SCRIPTS with the scripts/*.test.mjs that runs it)`);
+    if (hooks.length > 1) problems.push(`${rel}:${b.line}: inline script matches several hooks (${hooks.join(", ")})`);
   }
+  for (const e of entries) {
+    const n = scripts.filter((b) => b.body.includes(e.hook)).length;
+    if (n !== 1) problems.push(`${rel}: expected exactly one inline script mentioning ${e.hook}, found ${n}`);
+  }
+  return problems;
+}
+
+for (const page of pages) {
+  const rel = relative(ROOT, page);
+  test(`${rel}: every inline behaviour script is registered with a harness test`, () => {
+    assert.deepEqual(harnessProblems(rel, scriptBlocks(readFileSync(page, "utf8"))), []);
+  });
+}
+
+test("every registered page exists and every harness file extracts its block by the registered hook", () => {
+  for (const [rel, entries] of Object.entries(HARNESSED_SCRIPTS)) {
+    assert.ok(pages.includes(join(ROOT, rel)), `${rel} is registered in HARNESSED_SCRIPTS but is not a committed page`);
+    for (const { hook, harness } of entries) {
+      const file = join(ROOT, harness);
+      assert.ok(existsSync(file), `${harness} (harness for ${rel} ${hook}) does not exist`);
+      const src = readFileSync(file, "utf8");
+      assert.ok(src.includes("new Function("), `${harness} does not run the extracted script (no new Function(...))`);
+      assert.ok(src.includes(hook), `${harness} never mentions ${hook}, so it cannot be extracting that block from ${rel}`);
+    }
+  }
+});
+
+test("fixture: an inline script without a registered hook is reported, the no-js toggle is not", () => {
+  const html = `<!doctype html><html class="no-js"><head>
+<script>${NO_JS_TOGGLE}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Thing"}</script>
+<script>
+(function () { var root = document.querySelector('[data-widget]'); if (!root) return; })();
+</script>
+</head><body></body></html>`;
+  assert.deepEqual(harnessProblems("widget.html", scriptBlocks(html), {}), [
+    "widget.html:4: inline script has no harness (register it in HARNESSED_SCRIPTS with the scripts/*.test.mjs that runs it)",
+  ]);
+  assert.deepEqual(harnessProblems("widget.html", scriptBlocks(html), { "widget.html": [{ hook: "[data-widget]", harness: "x" }] }), []);
+});
+
+test("fixture: a registered hook matched by no block or by two blocks is reported", () => {
+  const registry = { "p.html": [{ hook: "[data-a]", harness: "x" }, { hook: "[data-b]", harness: "y" }] };
+  const none = `<script>document.querySelector('[data-a]');</script>`;
+  assert.deepEqual(harnessProblems("p.html", scriptBlocks(none), registry), [
+    "p.html: expected exactly one inline script mentioning [data-b], found 0",
+  ]);
+  const twice = `<script>document.querySelector('[data-a]');</script>
+<script>document.querySelector('[data-a]');</script>
+<script>document.querySelector('[data-b]');</script>`;
+  assert.deepEqual(harnessProblems("p.html", scriptBlocks(twice), registry), [
+    "p.html: expected exactly one inline script mentioning [data-a], found 2",
+  ]);
+  const both = `<script>document.querySelector('[data-a]'); document.querySelector('[data-b]');</script>`;
+  assert.deepEqual(harnessProblems("p.html", scriptBlocks(both), registry), [
+    "p.html:1: inline script matches several hooks ([data-a], [data-b])",
+  ]);
 });
 
 // --- sitemap.xml <-> canonical top-level pages ------------------------------

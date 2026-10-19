@@ -56,8 +56,11 @@ red PR job against.
   IntersectionObserver). Zero dependencies.
 - `node --test scripts/page-scripts.test.mjs` — static gate over every committed HTML
   page: each inline `<script>` parses, each JSON-LD block is valid schema.org JSON, no
-  external `<script src>` is introduced, and `sitemap.xml` lists exactly the canonical
-  top-level pages (redirect shortcuts excluded, new pages required). Zero dependencies.
+  external `<script src>` is introduced, every inline behaviour script (other than the
+  one-line `no-js` toggle) is registered in `HARNESSED_SCRIPTS` with the harness test
+  that extracts and runs it — so a new inline script cannot ship with only a syntax
+  check — and `sitemap.xml` lists exactly the canonical top-level pages (redirect
+  shortcuts excluded, new pages required). Zero dependencies.
 - `node --test scripts/page-markup.test.mjs` — static markup gate over every committed
   non-redirect HTML page: `id`s are unique, every ARIA idref (`aria-controls`,
   `aria-labelledby`, `aria-describedby`, …) and `label for` resolves to an `id` on the
