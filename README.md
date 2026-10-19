@@ -91,12 +91,16 @@ red PR job against.
   is referenced by some `url()`. Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/font-licenses.test.mjs` — static gate over the licence files that
   must travel with the self-hosted fonts: every font family under `assets/fonts/` (the file
-  name up to the first `-`) has an `OFL-<Family>.txt`, every `OFL-*.txt` still matches a
-  shipped family, each is the SIL Open Font License 1.1 text opening with its Copyright
-  notice, and the directory holds nothing else. `style-contract.test.mjs` checks the font
-  bytes, not the licence the OFL requires to accompany them, so a deleted licence or a new
-  family added without one would otherwise merge green. Each rule has a fixture
-  self-test. Zero dependencies.
+  name up to the first `-`) has an `OFL-<Family>.txt`, `Apache-2.0-<Family>.txt` or
+  `UFL-<Family>.txt`. Every licence still matches a shipped family and carries the
+  markers for its type (SIL Open Font License 1.1, Apache License 2.0 or Ubuntu Font
+  Licence 1.0); OFL files also open with a Copyright notice. The directory holds only
+  fonts and these licence files. Preserve the upstream licence text and notices,
+  including attribution in the same file. The gate checks markers, not the complete
+  text or whether the licence applies to the font. Additional licence types need a
+  `LICENSE_TYPES` entry and fixtures in the script. `style-contract.test.mjs` checks
+  font bytes; this gate catches a deleted licence or a new family added without one.
+  Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/page-images.test.mjs` — static gate over every local image the pages
   embed (`<img src>`/`srcset`, icon and `preload as="image"` `<link>`s, `og:image`): each is
   a committed, non-empty file whose magic bytes match its extension (a PNG re-exported as
