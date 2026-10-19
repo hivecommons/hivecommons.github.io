@@ -86,10 +86,15 @@ export function scriptOnlyButtons(html) {
 // ---------------------------------------------------------------------------
 // CSS: `display: none` rules keyed by whether they apply without JavaScript.
 // Selectors are read as compound selectors joined by descendant/child
-// combinators; `:not(…)`, pseudo-classes and pseudo-elements are dropped from
-// each compound so a rule can only ever match MORE than the browser would,
-// which keeps the gate conservative in the direction of "hidden" only where
-// the selector's tail genuinely names the control or an ancestor.
+// combinators. Matching MORE than the browser would is only conservative for
+// the `.no-js` bucket (a missed match there reports a control that is in fact
+// hidden); for the unscoped `always` bucket it is inverted — over-matching
+// judges controls hidden that the browser shows. So a `display: none` on a
+// pseudo-element (`.ladder::before`) is never a hiding rule for the element
+// itself and is skipped outright, and an unscoped selector with any
+// pseudo-class (`.dialog:not([open])`) describes a state the static matcher
+// cannot honour and is skipped too. Under `.no-js`, pseudo-classes are
+// dropped from each compound so the rule can only over-match.
 // ---------------------------------------------------------------------------
 
 function stripComments(css) {
@@ -180,6 +185,17 @@ function isJsCompound(part) {
   return part.classes.includes("js");
 }
 
+const PSEUDO_ELEMENT = /::|:(?:before|after|marker|placeholder|selection|first-line|first-letter|backdrop)\b/i;
+const PSEUDO_CLASS = /:[a-zA-Z-]+/;
+
+function hasPseudoElement(selector) {
+  return PSEUDO_ELEMENT.test(selector);
+}
+
+function hasPseudoClass(selector) {
+  return PSEUDO_CLASS.test(selector.replace(/\[[^\]]*\]/g, ""));
+}
+
 // `display: none` selectors that apply without JavaScript, split into those
 // scoped under `.no-js` (which hide script-only controls) and those unscoped
 // (which hide content in both modes). `.js`-scoped rules are JavaScript-only.
@@ -189,11 +205,12 @@ export function noJsHidingSelectors(css) {
   for (const rule of rules(css)) {
     if (!hidesByDisplay(rule.body)) continue;
     for (const selector of rule.selectors) {
+      if (hasPseudoElement(selector)) continue;
       const parts = parseSelector(selector);
       if (parts.length === 0) continue;
       if (parts.some(isJsCompound)) continue;
       if (isNoJsCompound(parts[0])) noJs.push({ selector, parts: parts.slice(1), line: rule.line });
-      else always.push({ selector, parts, line: rule.line });
+      else if (!hasPseudoClass(selector)) always.push({ selector, parts, line: rule.line });
     }
   }
   return { noJs, always };
@@ -355,6 +372,21 @@ test("fixture: a .no-js compound carrying extra qualifiers is not the html toggl
   const { noJs, always } = noJsHidingSelectors(`.no-js .a { display: none; } html.no-js .b { display: none; } .c.no-js .d { display: none; }`);
   assert.deepEqual(noJs.map((s) => s.selector), [".no-js .a"]);
   assert.deepEqual(always.map((s) => s.selector), ["html.no-js .b", ".c.no-js .d"]);
+});
+
+test("fixture: display:none on a pseudo-element or a negated/stateful unscoped selector does not hide the element", () => {
+  const css = `.x::before { display: none; } .x:not([open]) { display: none; } .x:hover { display: none; } .x:after { display: none; } .y[data-k="a:b"] { display: none; } .no-js .z:not(.keep) { display: none; }`;
+  const { noJs, always } = noJsHidingSelectors(css);
+  assert.deepEqual(always.map((s) => s.selector), ['.y[data-k="a:b"]'], "a colon inside an attribute value is not a pseudo");
+  assert.deepEqual(noJs.map((s) => s.selector), [".no-js .z:not(.keep)"], ".no-js rules keep over-matching through dropped pseudo-classes");
+  assert.equal(deadWithoutScript(`<div class="x"><button type="button" data-a>a</button></div>`, css, "p").length, 1, "::before / :not() / :hover never hide the control itself");
+  assert.deepEqual(deadWithoutScript(`<div class="z"><button type="button" data-a>a</button></div>`, css), []);
+  // The ACMM ladder: `.ladder::before { display: none }` must not swallow the tab check.
+  const ladder = (panel) => `<ol class="ladder"><li><button type="button" role="tab" aria-controls="p1" data-tab>t</button></li></ol>${panel}`;
+  const ladderCss = `@media (max-width: 56.25rem) { .ladder::before { display: none; } }`;
+  assert.deepEqual(deadWithoutScript(ladder(`<article id="p1">x</article>`), ladderCss), []);
+  assert.match(deadWithoutScript(ladder(``), ladderCss, "p")[0], /controls "p1" which is not on the page/);
+  assert.match(deadWithoutScript(`<ol class="ladder"><button type="button" data-rogue>t</button></ol>`, ladderCss, "p")[0], /\(data-rogue\) is reachable without JavaScript/);
 });
 
 test("fixture: a tab is no-js safe only when its panel is on the page and visible without JavaScript", () => {
