@@ -306,6 +306,18 @@ red PR job against.
   valid but silently rotting — Scorecard's Dependency-Update-Tool check reads the same file
   but only on `main`, and a lower score fails nothing. Each rule has a fixture self-test.
   Zero dependencies.
+- `node --test scripts/owners-file.test.mjs` — static gate over every `OWNERS` file in the
+  tree and `OWNERS_ALIASES` when present, the files prow's `approve` plugin and tide read to
+  decide who may `/approve` and whether a PR merges: the root `OWNERS` exists; every file is
+  flat YAML of `key:` blocks of `- item` lines indented with spaces; only keys prow knows
+  (`approvers`, `reviewers`, `emeritus_approvers`, `emeritus_reviewers`, `labels`, `options`
+  with its boolean flags); the root file names at least one approver; every entry is a
+  syntactically valid GitHub login (no `@`, no email) or an alias declared in
+  `OWNERS_ALIASES`; and no list repeats an entry or names someone as both active and
+  emeritus for the same role. Prow treats every one of those mistakes as "no approvers
+  here", so without the gate a typo would land green and surface only as PRs that never
+  merge. Login syntax only — the gate has no network access. Each rule has a fixture
+  self-test. Zero dependencies.
 - `node --test scripts/doc-paths.test.mjs` — static gate over the repository paths named
   in backticks by `README.md` and `runbooks/*.md`: a word in an inline code span is a
   path claim when it starts with `./`, or when its first segment is a committed top-level
