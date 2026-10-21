@@ -117,7 +117,7 @@ function makeDocument() {
   add("story-status", { scope: dialog });
   const fallback = add("story-fallback", { scope: dialog });
   fallback.hidden = true;
-  inDialog("story-fallback-link", { href: "https://github.com/hivecommons/hive/issues/new?labels=contributor-story" });
+  inDialog("story-fallback-link", { href: "https://github.com/hivecommons/hive/issues/new?template=contributor-story.yml" });
   inDialog("story-copy");
   inDialog("story-cancel", { attrs: { "data-story-close": "" } });
   void text;
@@ -157,6 +157,12 @@ function boot({ popupBlocked = false } = {}) {
   };
 }
 
+async function copied(t) {
+  t.el("story-copy").dispatch("click");
+  await Promise.resolve();
+  return t.clipboard.written[0];
+}
+
 const VALID = {
   "story-name": "  Ada Lovelace ",
   "story-project": "Dibs",
@@ -173,7 +179,7 @@ test("page contains exactly one dialog script and the stub can boot it", () => {
   assert.equal(t.el("story-count").textContent, "0", "counter initialised on load");
 });
 
-test("submit opens a blank GitHub issue prefilled via title/labels/body — not the removed template params", () => {
+test("submit opens the hive contributor-story issue form prefilled via field ids — labels come from the template", () => {
   const t = boot();
   t.fill(VALID);
   const ev = t.submit();
@@ -181,20 +187,24 @@ test("submit opens a blank GitHub issue prefilled via title/labels/body — not 
   const url = t.issueUrl();
   assert.equal(url.origin + url.pathname, "https://github.com/hivecommons/hive/issues/new");
   const p = url.searchParams;
-  assert.equal(p.get("title"), "Contributor story: Ada Lovelace on Dibs", "title uses trimmed name and project");
-  assert.equal(p.get("labels"), "contributor-story");
-  assert.equal(p.get("template"), null, "template param must not come back (#54)");
-  for (const stale of ["name", "profile", "project", "role", "story", "quote_ok", "link"]) {
-    assert.equal(p.get(stale), null, `issue-form field param ${stale} must not be sent on a blank issue (#54)`);
-  }
-  assert.deepEqual([...p.keys()].sort(), ["body", "labels", "title"]);
+  assert.equal(p.get("template"), "contributor-story.yml");
+  assert.equal(p.get("labels"), null, "labels= is ignored for non-maintainers; the template applies them (#223)");
+  assert.equal(p.get("body"), null, "issue forms ignore body=");
+  assert.equal(p.get("title"), "📖 contributor story: Ada Lovelace on Dibs", "title uses trimmed name and project");
+  assert.equal(p.get("name"), "Ada Lovelace");
+  assert.equal(p.get("profile"), "https://github.com/ada");
+  assert.equal(p.get("project"), "Dibs");
+  assert.equal(p.get("role"), "first-time contributor");
+  assert.equal(p.get("story"), VALID["story-text"]);
+  assert.equal(p.get("link"), "https://github.com/hivecommons/dibs/pull/7");
+  assert.deepEqual([...p.keys()].sort(), ["link", "name", "profile", "project", "role", "story", "template", "title"]);
 });
 
-test("issue body is the markdown summary with every field, in order", () => {
+test("copied text is the markdown summary with every field, in order", async () => {
   const t = boot();
   t.fill(VALID);
   t.submit();
-  const body = t.issueUrl().searchParams.get("body");
+  const body = await copied(t);
   assert.deepEqual(body.split("\n"), [
     "## Contributor story",
     "",
@@ -210,11 +220,13 @@ test("issue body is the markdown summary with every field, in order", () => {
   ]);
 });
 
-test("optional fields fall back to 'Not provided' and quote defaults to No", () => {
+test("optional fields are omitted from the form URL; copied text says 'Not provided' and quote defaults to No", async () => {
   const t = boot();
   t.fill({ ...VALID, "story-profile": "", "story-link": "", "story-quote": false });
   t.submit();
-  const body = t.issueUrl().searchParams.get("body");
+  assert.equal(t.issueUrl().searchParams.has("profile"), false);
+  assert.equal(t.issueUrl().searchParams.has("link"), false);
+  const body = await copied(t);
   assert.match(body, /\*\*Profile:\*\* Not provided\n/);
   assert.match(body, /\*\*PR \/ issue:\*\* Not provided\n/);
   assert.match(body, /\*\*Can quote by name:\*\* No\n/);
@@ -228,6 +240,31 @@ test("opened tab is detached from the opener before navigation", () => {
   assert.equal(t.opened[0].target, "_blank");
   assert.equal(t.opened[0].opener, null, "opener nulled (reverse-tabnabbing guard)");
   assert.match(t.el("story-status").textContent, /opened as a draft issue in a new tab/);
+});
+
+test("success note tells the contributor to re-pick Role and re-tick quote consent — GitHub forms only prefill text fields (#223)", () => {
+  const t = boot();
+  t.fill(VALID);
+  t.submit();
+  const note = t.el("story-status").textContent;
+  assert.match(note, /pick your Role again/);
+  assert.match(note, /re-tick Can we quote you by name\?/);
+  assert.match(note, /Submit new issue/);
+});
+
+test("success note skips the quote reminder when the contributor did not consent", () => {
+  const t = boot();
+  t.fill({ ...VALID, "story-quote": false });
+  t.submit();
+  const note = t.el("story-status").textContent;
+  assert.match(note, /pick your Role again/);
+  assert.doesNotMatch(note, /quote you by name/);
+});
+
+test("popup-blocked fallback copy also says Role and quote consent must be re-entered on GitHub", () => {
+  const html = readFileSync(PAGE, "utf8");
+  const fallback = html.match(/<div class="story-fallback"[\s\S]*?<\/div>/)[0];
+  assert.match(fallback, /pick your Role and tick Can we quote you by name\? again there/);
 });
 
 test("required fields block submission and flag the first invalid field", () => {
@@ -258,13 +295,12 @@ test("profile and PR links must be absolute http(s) URLs", () => {
   assert.equal(t.opened.length, 1, "plain http link accepted");
 });
 
-test("story over 1500 chars is trimmed in the issue body and the user is told", () => {
+test("story over 1500 chars is trimmed in the form URL and the user is told", () => {
   const t = boot();
   const long = "x".repeat(STORY_MAX - 3) + "   tail-that-gets-cut";
   t.fill({ ...VALID, "story-text": long });
   t.submit();
-  const body = t.issueUrl().searchParams.get("body");
-  const story = body.split("### Story\n")[1];
+  const story = t.issueUrl().searchParams.get("story");
   assert.equal(story, "x".repeat(STORY_MAX - 3), "sliced at 1500 then trailing whitespace trimmed");
   assert.match(t.el("story-status").textContent, /^Your story was trimmed to 1500 characters/);
 });
@@ -273,7 +309,7 @@ test("story at exactly 1500 chars is not trimmed", () => {
   const t = boot();
   t.fill({ ...VALID, "story-text": "y".repeat(STORY_MAX) });
   t.submit();
-  assert.equal(t.issueUrl().searchParams.get("body").split("### Story\n")[1].length, STORY_MAX);
+  assert.equal(t.issueUrl().searchParams.get("story").length, STORY_MAX);
   assert.doesNotMatch(t.el("story-status").textContent, /trimmed/);
 });
 
@@ -299,12 +335,12 @@ test("popup blocked: fallback link gets the prefilled URL and copy button yields
   t.submit();
   assert.equal(t.el("story-fallback").hidden, false, "fallback revealed");
   const href = new URL(t.el("story-fallback-link").href);
-  assert.equal(href.searchParams.get("title"), "Contributor story: Ada Lovelace on Dibs");
+  assert.equal(href.searchParams.get("title"), "📖 contributor story: Ada Lovelace on Dibs");
   assert.equal(t.el("story-status").textContent, "", "no success note when nothing opened");
   t.el("story-copy").dispatch("click");
   await Promise.resolve();
   assert.equal(t.clipboard.written.length, 1);
-  assert.equal(t.clipboard.written[0], href.searchParams.get("body"), "clipboard text equals issue body");
+  assert.equal(t.clipboard.written[0].split("### Story\n")[1], href.searchParams.get("story"), "clipboard markdown carries the same story");
   assert.match(t.el("story-status").textContent, /^Copied\./);
 });
 
