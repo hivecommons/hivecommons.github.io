@@ -275,7 +275,7 @@ What changed for you afterward?"></textarea>
       <p class="story-helper">Opens a prefilled GitHub issue in a new tab.</p>
       <p class="story-status" id="story-status" role="status" aria-live="polite"></p>
       <div class="story-fallback" id="story-fallback" hidden>
-        <p>Browser blocked the new tab — <a id="story-fallback-link" href="https://github.com/hivecommons/hive/issues/new?labels=contributor-story" target="_blank" rel="noopener">open the prefilled issue</a>.</p>
+        <p>Browser blocked the new tab — <a id="story-fallback-link" href="https://github.com/hivecommons/hive/issues/new?template=contributor-story.yml" target="_blank" rel="noopener">open the prefilled issue</a>.</p>
         <button class="btn btn-quiet" type="button" id="story-copy">Copy issue text</button>
       </div>
       <p class="story-publish-note">Issues labelled <code>contributor-story</code> are reviewed by maintainers and promoted to this page after public links are verified. Not signed in to GitHub? <a href="/join">Email us</a> or <a href="https://hivecommons.dev/discord">join Discord</a>.</p>
@@ -404,10 +404,15 @@ What changed for you afterward?"></textarea>
 
   function buildIssue(data) {
     var params = [
-      ["title", "Contributor story: " + data.name + " on " + data.project],
-      ["labels", "contributor-story"],
-      ["body", markdown(data)]
+      ["template", "contributor-story.yml"],
+      ["title", "📖 contributor story: " + data.name + " on " + data.project],
+      ["name", data.name],
+      ["project", data.project],
+      ["role", data.role],
+      ["story", data.story]
     ];
+    if (data.profile) params.push(["profile", data.profile]);
+    if (data.link) params.push(["link", data.link]);
     return ISSUE_URL + "?" + buildQuery(params);
   }
 
