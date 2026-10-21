@@ -242,6 +242,31 @@ test("opened tab is detached from the opener before navigation", () => {
   assert.match(t.el("story-status").textContent, /opened as a draft issue in a new tab/);
 });
 
+test("success note tells the contributor to re-pick Role and re-tick quote consent — GitHub forms only prefill text fields (#223)", () => {
+  const t = boot();
+  t.fill(VALID);
+  t.submit();
+  const note = t.el("story-status").textContent;
+  assert.match(note, /pick your Role again/);
+  assert.match(note, /re-tick Can we quote you by name\?/);
+  assert.match(note, /Submit new issue/);
+});
+
+test("success note skips the quote reminder when the contributor did not consent", () => {
+  const t = boot();
+  t.fill({ ...VALID, "story-quote": false });
+  t.submit();
+  const note = t.el("story-status").textContent;
+  assert.match(note, /pick your Role again/);
+  assert.doesNotMatch(note, /quote you by name/);
+});
+
+test("popup-blocked fallback copy also says Role and quote consent must be re-entered on GitHub", () => {
+  const html = readFileSync(PAGE, "utf8");
+  const fallback = html.match(/<div class="story-fallback"[\s\S]*?<\/div>/)[0];
+  assert.match(fallback, /pick your Role and tick Can we quote you by name\? again there/);
+});
+
 test("required fields block submission and flag the first invalid field", () => {
   const t = boot();
   t.fill({ ...VALID, "story-name": "   ", "story-text": "" });

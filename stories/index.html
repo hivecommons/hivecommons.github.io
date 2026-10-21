@@ -2,7 +2,7 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-GSOWmxg0zsyEJjyopDZBUhQQJJK3J43j0zdQO8piAsY=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-gEvZ6T0QnNWBGz8fWmcIfjrO0GU6p/GcPMHx3Mni/tE=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contributor Stories — Hive Commons</title>
 <meta name="description" content="Real Hive Commons contributor progression stories and public Contributor Relay metrics for event organisers, mentors, and contributors.">
@@ -275,7 +275,7 @@ What changed for you afterward?"></textarea>
       <p class="story-helper">Opens a prefilled GitHub issue in a new tab.</p>
       <p class="story-status" id="story-status" role="status" aria-live="polite"></p>
       <div class="story-fallback" id="story-fallback" hidden>
-        <p>Browser blocked the new tab — <a id="story-fallback-link" href="https://github.com/hivecommons/hive/issues/new?template=contributor-story.yml" target="_blank" rel="noopener">open the prefilled issue</a>.</p>
+        <p>Browser blocked the new tab — <a id="story-fallback-link" href="https://github.com/hivecommons/hive/issues/new?template=contributor-story.yml" target="_blank" rel="noopener">open the prefilled issue</a>. GitHub only prefills text fields — pick your Role and tick Can we quote you by name? again there.</p>
         <button class="btn btn-quiet" type="button" id="story-copy">Copy issue text</button>
       </div>
       <p class="story-publish-note">Issues labelled <code>contributor-story</code> are reviewed by maintainers and promoted to this page after public links are verified. Not signed in to GitHub? <a href="/join">Email us</a> or <a href="https://hivecommons.dev/discord">join Discord</a>.</p>
@@ -507,7 +507,7 @@ What changed for you afterward?"></textarea>
     }
     opened.opener = null;
     opened.location = issueUrl;
-    var note = "Thanks — your story opened as a draft issue in a new tab. Hit Submit new issue there to finish. Not signed in to GitHub? Email us or use the Discord link below.";
+    var note = "Thanks — your story opened as a draft issue in a new tab. GitHub only prefills text fields, so pick your Role again" + (data.quote_ok ? " and re-tick Can we quote you by name?" : "") + ", then hit Submit new issue there to finish. Not signed in to GitHub? Email us or use the Discord link below.";
     if (data.story_truncated) note = "Your story was trimmed to 1500 characters for the GitHub form. " + note;
     status.textContent = note;
   });
