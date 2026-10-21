@@ -129,7 +129,8 @@ red PR job against.
   at, `og:url` equal to it, the full Open Graph + Twitter card set with `og:*`/`twitter:*`
   pairs in agreement, no duplicated meta, no `noindex`; `og:image` is a committed file
   whose PNG header matches any declared `og:image:width`/`height`; each redirect page is
-  `noindex` with a `canonical` equal to its refresh target; and every relative Markdown link
+  `noindex` with a `canonical` equal to its refresh target, carries `viewport` and a
+  Content-Security-Policy with `script-src 'none'`; and every relative Markdown link
   and `hivecommons.dev` URL in `README.md`, `runbooks/*.md` and `llms.txt` resolves to a
   committed file. Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/page-404.test.mjs` — static gate over the custom error page, which

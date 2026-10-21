@@ -190,6 +190,9 @@ export function redirectPageProblems(html) {
   const problems = [];
   if (h.titles.length !== 1 || !h.titles[0]) problems.push("redirect page needs exactly one non-empty <title>");
   if (!/\bnoindex\b/i.test(first(h.meta, "robots") ?? "")) problems.push('redirect page lacks <meta name="robots" content="noindex">');
+  if (!first(h.meta, "viewport")) problems.push('missing <meta name="viewport">');
+  const csp = first(h.meta, "http-equiv:content-security-policy") ?? "";
+  if (!csp || !/\bscript-src\s+'none'/i.test(csp)) problems.push('redirect page lacks or misconfigures Content-Security-Policy: script-src must be \'none\'');
   const target = h.refresh.find((t) => t);
   if (!target) problems.push("refresh meta has no url=");
   if (h.canonical.length !== 1) problems.push(`expected exactly one <link rel="canonical">, found ${h.canonical.length}`);
@@ -281,6 +284,8 @@ test("fixture: pngDimensions reads IHDR and rejects non-PNG bytes", () => {
 });
 
 const GOOD_REDIRECT = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <meta http-equiv="refresh" content="0; url=https://example.test/x">
 <meta name="robots" content="noindex">
 <link rel="canonical" href="https://example.test/x"><title>Redirect</title></head><body></body></html>`;
@@ -291,6 +296,8 @@ test("fixture: a well-formed redirect page passes; missing noindex or canonical 
   assert.ok(redirectPageProblems(GOOD_REDIRECT.replace(/<meta name="robots"[^>]*>/, "")).some((x) => x.includes("noindex")));
   assert.ok(redirectPageProblems(GOOD_REDIRECT.replace('href="https://example.test/x"', 'href="https://example.test/y"')).some((x) => x.startsWith("canonical (")));
   assert.ok(redirectPageProblems(GOOD_REDIRECT.replace("<title>Redirect</title>", "")).some((x) => x.includes("<title>")));
+  assert.ok(redirectPageProblems(GOOD_REDIRECT.replace(/<meta name="viewport"[^>]*>/, "")).some((x) => x.includes("viewport")));
+  assert.ok(redirectPageProblems(GOOD_REDIRECT.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, "")).some((x) => x.includes("Content-Security-Policy")));
 });
 
 test("fixture: an HTML-escaped query string in the refresh url and canonical compares on the decoded URL", () => {
