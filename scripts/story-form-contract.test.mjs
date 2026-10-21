@@ -119,7 +119,7 @@ export function parseIssueForm(text) {
       if (m[1] === "title") form.title = unquote(m[2]);
       else if (m[1] === "labels") {
         if (/^\[.*\]$/.test(m[2])) form.labels = m[2].slice(1, -1).split(",").map((s) => unquote(s)).filter(Boolean);
-        else if (m[2]) form.labels = [unquote(m[2])];
+        else if (m[2]) form.labels = m[2].split(",").map((s) => unquote(s)).filter(Boolean);
         else section = "labels";
       } else if (m[1] === "body") section = "body";
       continue;
@@ -318,6 +318,8 @@ test("parseIssueForm reads title, labels and the body fields it needs; markdown 
   assert.deepEqual([block.title, block.labels, block.fields], ["It's", ["a", "b"], [{ type: "input", id: "x", required: false, options: [] }]]);
   assert.deepEqual(parseIssueForm("labels: contributor-story\n").labels, ["contributor-story"]);
   assert.deepEqual(parseIssueForm('labels: "contributor-story"\n').labels, ["contributor-story"]);
+  assert.deepEqual(parseIssueForm("labels: contributor-story, reviewer\n").labels, ["contributor-story", "reviewer"]);
+  assert.deepEqual(parseIssueForm('labels: "bug", "enhancement"\n').labels, ["bug", "enhancement"]);
 });
 
 test("parseIssueForm: a checkbox option's own `required:` belongs to the option, not the field, and does not end the option list", () => {
