@@ -300,6 +300,21 @@ test("fixture: a well-formed redirect page passes; missing noindex or canonical 
   assert.ok(redirectPageProblems(GOOD_REDIRECT.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, "")).some((x) => x.includes("Content-Security-Policy")));
 });
 
+test("fixture: a redirect page whose CSP is present but lets scripts run is flagged", () => {
+  // The "missing" arm is pinned above; this pins the "present but misconfigured" arm,
+  // which a header-only check (meta exists) would silently pass.
+  for (const bad of ["script-src 'self'", "script-src 'unsafe-inline'", "script-src https://example.test"]) {
+    const html = GOOD_REDIRECT.replace("script-src 'none'", bad);
+    assert.ok(
+      redirectPageProblems(html).some((x) => x.includes("Content-Security-Policy")),
+      `CSP with ${bad} must be flagged`,
+    );
+  }
+  const noScriptSrc = GOOD_REDIRECT.replace("script-src 'none'; ", "");
+  assert.ok(redirectPageProblems(noScriptSrc).some((x) => x.includes("Content-Security-Policy")), "CSP without an explicit script-src must be flagged");
+  assert.deepEqual(redirectPageProblems(GOOD_REDIRECT), [], "the canonical CSP must still pass");
+});
+
 test("fixture: an HTML-escaped query string in the refresh url and canonical compares on the decoded URL", () => {
   const escaped = GOOD_REDIRECT.replaceAll("https://example.test/x", "https://example.test/x?a=1&amp;b=2");
   assert.deepEqual(parseHead(escaped).refresh, ["https://example.test/x?a=1&b=2"]);
