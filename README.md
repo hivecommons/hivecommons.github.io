@@ -150,6 +150,24 @@ red PR job against.
   is `https://github.com/…` (the page promises public GitHub evidence only); every
   `Month D, YYYY` is a real date; no handle has two cards. Each rule has a fixture
   self-test. Zero dependencies.
+- `node --test scripts/story-form-contract.test.mjs` — contract gate between the
+  Share-your-story dialog and the GitHub issue form it prefills in `hivecommons/hive`
+  (its `contributor-story.yml` issue template), which `story-dialog.test.mjs`
+  cannot see: GitHub silently ignores an unknown `template=` (blank-issue chooser, no
+  `contributor-story` label) and silently drops unknown field ids. The gate reads the
+  `template=`, title prefix and field ids `buildIssue()` sends, the `<select
+  id="story-role">` options, the fallback link and the promised label from
+  `stories/index.html`, fetches the template from the hive's default branch
+  (`raw.githubusercontent.com/…/HEAD/…`, 10 s timeout) and requires: the promised label
+  is one the template applies; the template `title:` equals the page's prefix; every id
+  sent is a template field; every template `input`/`textarea` and every required
+  non-checkbox field is sent (GitHub never prefills checkboxes from the URL); the `role`
+  dropdown options equal the page's options in order; the fallback link opens the same
+  template. A transport failure or a non-404 HTTP status (429 rate limit, 5xx outage)
+  skips only the live test (offline `node --test` stays green and a
+  `raw.githubusercontent.com` hiccup never reads as drift); a 404 on every template
+  directory fails it. `STORY_FORM_TEMPLATE=<path>` checks a local copy with no network.
+  Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/page-csp.test.mjs` — static gate over the
   `<meta http-equiv="Content-Security-Policy">` on every non-redirect page. GitHub Pages
   cannot send response headers, so the policy ships as a `<meta>` tag and inline scripts
