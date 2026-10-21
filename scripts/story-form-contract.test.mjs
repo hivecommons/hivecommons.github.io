@@ -96,7 +96,8 @@ export function pageContract(html) {
 // --- template side -------------------------------------------------------------
 
 // Minimal reader for the subset of GitHub's issue-form schema this gate needs:
-// top-level `title:` / `labels:` (scalar, flow list or block list) and the
+// top-level `title:` / `labels:` (comma-delimited scalar, flow list or block
+// list — GitHub's "array or comma-delimited string") and the
 // `body:` list of `- type:` entries with `id:`, `attributes: { options: [...] }`
 // and `validations: { required: … }`. Keys nested inside an option map (a
 // checkbox option's own `label:` / `required:`) belong to the option, not the
@@ -119,7 +120,7 @@ export function parseIssueForm(text) {
       if (m[1] === "title") form.title = unquote(m[2]);
       else if (m[1] === "labels") {
         if (/^\[.*\]$/.test(m[2])) form.labels = m[2].slice(1, -1).split(",").map((s) => unquote(s)).filter(Boolean);
-        else if (m[2]) form.labels = m[2].split(",").map((s) => unquote(s)).filter(Boolean);
+        else if (m[2]) form.labels = unquote(m[2]).split(",").map((s) => s.trim()).filter(Boolean);
         else section = "labels";
       } else if (m[1] === "body") section = "body";
       continue;
@@ -319,7 +320,7 @@ test("parseIssueForm reads title, labels and the body fields it needs; markdown 
   assert.deepEqual(parseIssueForm("labels: contributor-story\n").labels, ["contributor-story"]);
   assert.deepEqual(parseIssueForm('labels: "contributor-story"\n').labels, ["contributor-story"]);
   assert.deepEqual(parseIssueForm("labels: contributor-story, reviewer\n").labels, ["contributor-story", "reviewer"]);
-  assert.deepEqual(parseIssueForm('labels: "bug", "enhancement"\n').labels, ["bug", "enhancement"]);
+  assert.deepEqual(parseIssueForm('labels: "bug, enhancement"\n').labels, ["bug", "enhancement"]);
 });
 
 test("parseIssueForm: a checkbox option's own `required:` belongs to the option, not the field, and does not end the option list", () => {
