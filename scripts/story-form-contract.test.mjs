@@ -21,7 +21,9 @@
 //   3. Every field id the page sends is a field of the template.
 //   4. Every `input`/`textarea` field of the template is sent by the page —
 //      a text field GitHub *could* prefill but the dialog leaves blank.
-//   5. Every field the template requires is sent by the page.
+//   5. Every field the template requires is sent by the page. `checkboxes`
+//      are exempt: GitHub never prefills them from the URL, and a `required:`
+//      under a checkbox *option* belongs to that option, not the field.
 //   6. The page's `<select id="story-role">` option values equal the template's
 //      `role` dropdown options, in order.
 //   7. The popup-blocked fallback `<a href>` opens the same template.
@@ -29,8 +31,10 @@
 // The live rule fetches the template from the hive's default branch
 // (`raw.githubusercontent.com/<owner>/<repo>/HEAD/…`, 10 s timeout, falling back
 // through the three directories GitHub reads issue templates from). A transport
-// failure (offline, DNS, timeout) *skips* that one test so the offline suite
-// stays runnable; an HTTP 404 on every directory is a real finding and fails.
+// failure (offline, DNS, timeout) or a non-404 HTTP status (429 rate limit, 5xx
+// outage) *skips* that one test so the offline suite stays runnable and a
+// raw.githubusercontent.com hiccup never reads as template drift; an HTTP 404
+// on every directory is a real finding and fails.
 // `STORY_FORM_TEMPLATE=<path>` reads a local copy instead (no network).
 // Each rule has a fixture self-test. Zero dependencies.
 // Usage: node --test scripts/story-form-contract.test.mjs
@@ -92,16 +96,19 @@ export function pageContract(html) {
 // --- template side -------------------------------------------------------------
 
 // Minimal reader for the subset of GitHub's issue-form schema this gate needs:
-// top-level `title:` / `labels:` (flow list or block list) and the `body:` list
-// of `- type:` entries with `id:`, `attributes: { options: [...] }` and
-// `validations: { required: … }`. Anything else is skipped, not rejected — the
-// hive owns the template; this gate only reads the keys the page depends on.
+// top-level `title:` / `labels:` (scalar, flow list or block list) and the
+// `body:` list of `- type:` entries with `id:`, `attributes: { options: [...] }`
+// and `validations: { required: … }`. Keys nested inside an option map (a
+// checkbox option's own `label:` / `required:`) belong to the option, not the
+// field. Anything else is skipped, not rejected — the hive owns the template;
+// this gate only reads the keys the page depends on.
 export function parseIssueForm(text) {
   const form = { title: undefined, labels: [], fields: [] };
   const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+$/, ""));
   let section = null; // "labels" | "body" | null
   let field = null;
   let listKey = null; // which key inside a field a bare `- item` belongs to
+  let listIndent = 0; // indent of that key; deeper lines are list content
   for (const line of lines) {
     if (!line.trim() || /^\s*#/.test(line)) continue;
     const indent = /^\s*/.exec(line)[0].length;
@@ -112,6 +119,7 @@ export function parseIssueForm(text) {
       if (m[1] === "title") form.title = unquote(m[2]);
       else if (m[1] === "labels") {
         if (/^\[.*\]$/.test(m[2])) form.labels = m[2].slice(1, -1).split(",").map((s) => unquote(s)).filter(Boolean);
+        else if (m[2]) form.labels = [unquote(m[2])];
         else section = "labels";
       } else if (m[1] === "body") section = "body";
       continue;
@@ -134,13 +142,15 @@ export function parseIssueForm(text) {
     if (!field) continue;
     const kv = /^\s*([A-Za-z_]+):\s*(.*)$/.exec(line);
     if (kv) {
+      // `- label: …` / `required: …` inside an option map describe the option
+      if (listKey === "options" && indent > listIndent) continue;
       listKey = null;
       if (kv[1] === "type" && indent === 4) field.type = unquote(kv[2]);
       else if (kv[1] === "id" && indent === 4) field.id = unquote(kv[2]);
       else if (kv[1] === "required") field.required = unquote(kv[2]) === "true";
       else if (kv[1] === "options") {
         if (/^\[.*\]$/.test(kv[2])) field.options = kv[2].slice(1, -1).split(",").map((s) => unquote(s)).filter(Boolean);
-        else listKey = "options";
+        else { listKey = "options"; listIndent = indent; }
       }
       continue;
     }
@@ -174,7 +184,8 @@ export function contractProblems(page, form) {
     if (TEXT_FIELD_TYPES.has(f.type) && !page.sent.includes(f.id)) {
       problems.push(`template ${f.type} \`${f.id}\` could be prefilled but the page never sends it`);
     }
-    if (f.required && !page.sent.includes(f.id)) {
+    // GitHub never prefills checkboxes from the URL, so the page cannot satisfy them
+    if (f.required && f.type !== "checkboxes" && !page.sent.includes(f.id)) {
       problems.push(`template requires \`${f.id}\` but the page never sends it`);
     }
   }
@@ -200,12 +211,15 @@ export function templateUrls(issueUrl, templateFile) {
 }
 
 // Resolves to { text } on the first 200, { missing: [urls] } when every
-// directory 404s, and throws on a transport failure.
+// directory 404s, and throws on a transport failure or any other HTTP status
+// (429 / 5xx say nothing about whether the template exists, so the caller
+// treats them like being offline rather than as drift).
 export async function fetchTemplate(urls, fetchImpl = globalThis.fetch) {
   const missing = [];
   for (const url of urls) {
     const res = await fetchImpl(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), headers: { "user-agent": "hivecommons.github.io story-form-contract" } });
     if (res.status === 200) return { text: await res.text(), url };
+    if (res.status !== 404) throw Object.assign(new Error(`HTTP ${res.status} from ${url}`), { name: "HttpStatusError", status: res.status });
     missing.push(`${url} (HTTP ${res.status})`);
   }
   return { missing };
@@ -302,6 +316,30 @@ test("parseIssueForm reads title, labels and the body fields it needs; markdown 
   assert.deepEqual(form.fields[4].options, ["Yes"]);
   const block = parseIssueForm("title: 'It''s'\nlabels:\n  - a\n  - \"b\"\nbody:\n  - id: x\n    type: input\n");
   assert.deepEqual([block.title, block.labels, block.fields], ["It's", ["a", "b"], [{ type: "input", id: "x", required: false, options: [] }]]);
+  assert.deepEqual(parseIssueForm("labels: contributor-story\n").labels, ["contributor-story"]);
+  assert.deepEqual(parseIssueForm('labels: "contributor-story"\n').labels, ["contributor-story"]);
+});
+
+test("parseIssueForm: a checkbox option's own `required:` belongs to the option, not the field, and does not end the option list", () => {
+  const boxes = parseIssueForm(`body:
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Consent
+      options:
+        - label: "Quote me"
+          required: true
+        - label: "Credit me"
+          required: false
+    validations:
+      required: true
+  - type: input
+    id: after
+`);
+  assert.deepEqual(boxes.fields[0], { type: "checkboxes", id: "consent", required: true, options: ["Quote me", "Credit me"] });
+  assert.deepEqual(boxes.fields[1], { type: "input", id: "after", required: false, options: [] });
+  const optionOnly = parseIssueForm(FORM_FIXTURE.replace('          required: false', '          required: true'));
+  assert.equal(optionOnly.fields[4].required, false);
 });
 
 test("a matching page and template produce no problems", () => {
@@ -327,6 +365,10 @@ test("rule 3-5: sent ids must exist; template text fields and required fields mu
   ]);
   const newRequired = FORM_FIXTURE + "  - type: dropdown\n    id: consent\n    validations:\n      required: true\n";
   assert.deepEqual(contractProblems(pageContract(PAGE_FIXTURE), parseIssueForm(newRequired)), ["template requires `consent` but the page never sends it"]);
+  // a required checkbox is not a page problem: GitHub cannot prefill it from the URL
+  const requiredBoxes = FORM_FIXTURE.replace("  - type: input\n    id: link", "    validations:\n      required: true\n  - type: input\n    id: link");
+  assert.equal(parseIssueForm(requiredBoxes).fields[4].required, true);
+  assert.deepEqual(contractProblems(pageContract(PAGE_FIXTURE), parseIssueForm(requiredBoxes)), []);
 });
 
 test("rule 6: role options must match the dropdown exactly and in order", () => {
@@ -354,7 +396,7 @@ test("templateUrls targets the default branch of the ISSUE_URL repository across
   assert.throws(() => templateUrls("https://gitlab.com/o/r/issues/new", "x.yml"), /not a github\.com/);
 });
 
-test("fetchTemplate returns the first 200, lists every 404, and lets transport errors propagate", async () => {
+test("fetchTemplate returns the first 200, lists every 404, and lets transport errors and other HTTP statuses propagate", async () => {
   const fake = (statuses) => async (url) => {
     const status = statuses[url] ?? 404;
     return { status, text: async () => `body of ${url}` };
@@ -363,6 +405,9 @@ test("fetchTemplate returns the first 200, lists every 404, and lets transport e
   assert.deepEqual(await fetchTemplate(urls, fake({ "https://x/b": 200 })), { text: "body of https://x/b", url: "https://x/b" });
   assert.deepEqual(await fetchTemplate(urls, fake({})), { missing: ["https://x/a (HTTP 404)", "https://x/b (HTTP 404)"] });
   await assert.rejects(fetchTemplate(urls, async () => { throw new TypeError("fetch failed"); }), /fetch failed/);
+  for (const status of [403, 429, 500, 503]) {
+    await assert.rejects(fetchTemplate(urls, fake({ "https://x/a": status })), { name: "HttpStatusError", status, message: `HTTP ${status} from https://x/a` });
+  }
 });
 
 // --- the real page against the real template -------------------------------------
@@ -381,7 +426,8 @@ test("stories/index.html sends only ids that exist, in the shape of the hive's c
     try {
       fetched = await fetchTemplate(templateUrls(page.issueUrl, page.templateFile));
     } catch (error) {
-      t.skip(`cannot reach raw.githubusercontent.com (${error?.cause?.code ?? error?.name ?? error}); set STORY_FORM_TEMPLATE=<path> to check a local copy`);
+      const why = error?.name === "HttpStatusError" ? error.message : (error?.cause?.code ?? error?.name ?? error);
+      t.skip(`cannot read the template from raw.githubusercontent.com (${why}); set STORY_FORM_TEMPLATE=<path> to check a local copy`);
       return;
     }
     if (fetched.text === undefined) {
