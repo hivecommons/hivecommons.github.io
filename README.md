@@ -175,11 +175,23 @@ red PR job against.
   are allow-listed by `sha256-` hash: the test recomputes the hash of every inline
   `<script>` body and `on*=` handler and fails when the policy is missing one or carries a
   stale one (a drifted hash silently disables that script in every browser — **after
-  editing any inline script, update its hash in the page's CSP meta**). It also requires
+  editing any inline script, run `node scripts/update-csp-hashes.mjs` to regenerate the
+  hashes in the page's CSP meta**; the failure message says so). It also requires
   `default-src 'none'`, rejects `'unsafe-inline'`/`'unsafe-eval'` in `script-src`,
   requires the meta to precede every `<script>`/`<link>` in `<head>`, and requires every
   external `<img>` origin to appear in `img-src`. Each rule has a fixture self-test. Zero
   dependencies.
+- `node --test scripts/update-csp-hashes.test.mjs` — fixture self-test of
+  `scripts/update-csp-hashes.mjs`, the tool that regenerates the `sha256-` allow-list the
+  CSP gate checks: a drifted hash is replaced and the gate then passes; non-hash
+  `script-src` tokens, the other directives, their order and the `; ` separators are kept
+  byte-for-byte; `'unsafe-hashes'` plus the handler hashes appear exactly when a page has
+  inline `on*=` handlers; redirect pages and pages with no policy or no `script-src` are
+  skipped, never rewritten; token order is not enforced (a policy the gate accepts is
+  never rewritten); `--check` reports stale pages and exits 1 without writing.
+  Then pins the live tree: every committed content page is already up to date, so the
+  tool and `page-csp.test.mjs` agree on what correct means, and a failure names the
+  regenerate command. Zero dependencies.
 - `node --test scripts/llms-txt.test.mjs` — static gate keeping `llms.txt` in step with
   `index.html`: the agent CLIs it names must equal the Agent CLIs chips, the inference
   engines/gateways it names must equal the engine and gateway chips (classifier chips
@@ -360,6 +372,7 @@ node --test scripts/*.test.mjs  # every Node gate (what CI runs)
 scripts/check-links.test.sh     # link-checker self-test (offline)
 scripts/check-redirects.test.sh # redirect-gate self-test (offline)
 scripts/check-redirects.sh      # redirect-page drift gate
+node scripts/update-csp-hashes.mjs  # after editing an inline <script>: refresh its CSP hash
 ```
 
 Run these from the repository root before opening a PR. The previewed pages are served
