@@ -70,7 +70,7 @@ export function parseCsp(html) {
 }
 
 // Pointer appended to every hash problem: the fix is one command, not arithmetic.
-const REGEN_HINT = "run `node scripts/update-csp-hashes.mjs` to regenerate";
+export const REGEN_HINT = "run `node scripts/update-csp-hashes.mjs` to regenerate";
 
 // Every way a page's policy falls short of the gate's rules; empty when correct.
 export function problemsOf(html) {

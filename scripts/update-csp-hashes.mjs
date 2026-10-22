@@ -41,6 +41,16 @@ export function wantedScriptSrc(html, current) {
   return out;
 }
 
+// Same tokens regardless of order or repetition. The gate (problemsOf) checks
+// set membership only, so a page whose tokens merely sit in a different order
+// than wantedScriptSrc would produce is already correct and must not be
+// rewritten; the canonical order applies only when a token is added or removed.
+function sameTokens(a, b) {
+  const sa = [...new Set(a)].sort();
+  const sb = [...new Set(b)].sort();
+  return sa.length === sb.length && sa.every((t, i) => t === sb[i]);
+}
+
 // Rewrite only the script-src directive inside the policy's content attribute,
 // preserving directive order and the `; ` separators the pages use.
 export function updatedCsp(html) {
@@ -51,7 +61,7 @@ export function updatedCsp(html) {
 
   const current = csp.directives["script-src"];
   const wanted = wantedScriptSrc(html, current);
-  if (wanted.length === current.length && wanted.every((t, i) => t === current[i])) return { html, changed: false };
+  if (sameTokens(wanted, current)) return { html, changed: false };
 
   const content = attrs(csp.tag).content ?? "";
   const rebuilt = content.split(";").map((p) => p.trim()).filter(Boolean).map((part) => {

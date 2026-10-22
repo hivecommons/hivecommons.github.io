@@ -9,7 +9,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { ROOT, htmlFiles, isRedirectPage } from "./html-pages.mjs";
-import { problemsOf, sha256Source } from "./page-csp.mjs";
+import { REGEN_HINT, problemsOf, sha256Source } from "./page-csp.mjs";
 import { UNSAFE_HASHES, run, updatedCsp, wantedScriptSrc } from "./update-csp-hashes.mjs";
 
 const BASE = "default-src 'none'; img-src 'self'; base-uri 'none'; form-action 'none'";
@@ -44,6 +44,14 @@ test("fixture: non-hash tokens keep their order; only the managed tokens are rew
   const before = page({ csp: `${BASE}; script-src 'self' ${STALE} https://cdn.example 'strict-dynamic'` });
   const { html } = updatedCsp(before);
   assert.equal(scriptSrcOf(html), `'self' https://cdn.example 'strict-dynamic' ${OK}`);
+});
+
+test("fixture: token order is not enforced; a policy the gate accepts is never rewritten", () => {
+  const h1 = sha256Source("console.log(1)");
+  const h2 = sha256Source("console.log(2)");
+  const html = `<html><head><meta http-equiv="Content-Security-Policy" content="${BASE}; script-src ${h2} 'self' ${h1}"></head><body><script>console.log(1)</script><script>console.log(2)</script></body></html>`;
+  assert.deepEqual(problemsOf(html), []);
+  assert.deepEqual(updatedCsp(html), { html, changed: false });
 });
 
 test("fixture: other directives, their order and the `; ` separators are preserved", () => {
@@ -126,5 +134,5 @@ test("live tree: every committed content page is already up to date (`--check` w
     if (changed || skipped) stale.push(`${relative(ROOT, file)}${skipped ? ` (${skipped})` : ""}`);
   }
   assert.ok(pages > 0, "no content pages found");
-  assert.deepEqual(stale, []);
+  assert.deepEqual(stale, [], `pages whose CSP script-src is stale: ${stale.join(", ")} — ${REGEN_HINT}`);
 });
