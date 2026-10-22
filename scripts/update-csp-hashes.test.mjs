@@ -49,6 +49,29 @@ test("leaves correct policies byte-identical regardless of token order", () => {
   assert.equal(updateCspHashes(html), html);
 });
 
+test("bare script-src directives are unchanged without scripts and populated with a separator", () => {
+  for (const suffix of ["", "; style-src 'self'", "   ; style-src 'self'"]) {
+    const policy = `${BASE}; script-src${suffix}`;
+    const empty = fixture({ policy, body: "" });
+    assert.deepEqual(problemsOf(empty), []);
+    assert.equal(updateCspHashes(empty), empty);
+    const before = fixture({ policy });
+    const after = updateCspHashes(before);
+    const separator = suffix.startsWith(" ") ? suffix.match(/^\s*/)[0] : " ";
+    assert.equal(after, before.replace(`script-src${suffix}`, `script-src${separator}${sha256Source(SOURCE)}${suffix.trimStart()}`));
+    assert.deepEqual(scriptSrc(after), [sha256Source(SOURCE)]);
+    assert.deepEqual(problemsOf(after), []);
+    assert.equal(updateCspHashes(after), after);
+  }
+  assert.throws(() => updateCspHashes(fixture({ policy: `${BASE}; script-src-elem 'self'` })), /exactly one script-src/);
+});
+
+test("incompatible single-quoted attributes fail without rewriting their quoting", () => {
+  const html = fixture({ policy: "default-src https:; script-src https:" })
+    .replace('content="default-src https:; script-src https:"', "content='default-src https:; script-src https:'");
+  assert.throws(() => updateCspHashes(html), /quote conflicts/);
+});
+
 test("does not relax unsafe policy tokens or invent missing policies", () => {
   const html = updateCspHashes(fixture({ policy: `${BASE}; script-src 'unsafe-inline' 'unsafe-eval' 'sha256-old'` }));
   assert.ok(problemsOf(html).includes("script-src must not contain 'unsafe-inline'"));

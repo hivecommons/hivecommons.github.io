@@ -1,11 +1,21 @@
 #!/usr/bin/env node
 // Regenerate only script-src hashes; never relax or invent a page's policy.
+// Rewrites sha256- tokens (and 'unsafe-hashes') on non-redirect pages;
+// preserves every other token, directive and surrounding byte. Missing or
+// duplicate policies/directives and incompatible attribute quotes are errors.
 // Usage: node scripts/update-csp-hashes.mjs [--check] [page.html ...]
+//   (no files)  every committed non-redirect .html page
+//   --check     report stale pages and exit 1; write nothing
 import { readFileSync, writeFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ROOT, htmlFiles, isRedirectPage } from "./html-pages.mjs";
 import { parseCsp, inlineScriptSources, inlineHandlerSources, sha256Source } from "./page-csp.mjs";
+
+// Token order has no meaning in CSP. Don't churn already-correct policies.
+function sameTokens(a, b) {
+  return a.length === b.length && a.every((token) => b.includes(token)) && b.every((token) => a.includes(token));
+}
 
 export function updateCspHashes(html) {
   if (isRedirectPage(html)) return html;
@@ -13,22 +23,21 @@ export function updateCspHashes(html) {
   if (!csp || csp.count !== 1 || csp.content === null) {
     throw new Error("expected exactly one CSP meta with a content attribute; fix the policy manually");
   }
-  const directives = [...csp.content.matchAll(/(^|;)(\s*script-src\s+)([^;]*)/gi)];
+  const directives = [...csp.content.matchAll(/(^|;)(\s*script-src(?=\s|;|$))(\s*)([^;]*)/gi)];
   if (directives.length !== 1) throw new Error("expected exactly one script-src directive; fix the policy manually");
   const directive = directives[0];
-  const oldTokens = directive[3].trim().split(/\s+/).filter(Boolean);
+  const oldTokens = directive[4].trim().split(/\s+/).filter(Boolean);
   const scripts = inlineScriptSources(html).map(sha256Source);
   const handlers = inlineHandlerSources(html).map(sha256Source);
   const tokens = [
     ...oldTokens.filter((t) => !/^'sha(?:256|384|512)-/.test(t) && t !== "'unsafe-hashes'"),
     ...new Set([...scripts, ...(handlers.length ? ["'unsafe-hashes'", ...handlers] : [])]),
   ];
-  // Token order has no meaning in CSP. Don't churn already-correct policies.
-  if (oldTokens.length === tokens.length && oldTokens.every((t) => tokens.includes(t)) && tokens.every((t) => oldTokens.includes(t))) return html;
-  const value = tokens.join(" ");
+  if (sameTokens(oldTokens, tokens)) return html;
+  const value = (directive[3] ? "" : " ") + tokens.join(" ");
   if (value.includes(csp.contentQuote)) throw new Error("CSP attribute quote conflicts with source tokens; use double quotes");
-  const start = csp.contentAt + directive.index + directive[1].length + directive[2].length;
-  const end = start + directive[3].trimEnd().length;
+  const start = csp.contentAt + directive.index + directive[1].length + directive[2].length + directive[3].length;
+  const end = start + directive[4].trimEnd().length;
   return html.slice(0, start) + value + html.slice(end);
 }
 
