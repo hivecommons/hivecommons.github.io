@@ -51,7 +51,8 @@ export function externalImageOrigins(html) {
 // The first CSP <meta> in <head>: its full tag text, parsed directives (in
 // source order), and where it and the first fetch-triggering tag sit in <head>.
 export function parseCsp(html) {
-  const head = (/<head\b[^>]*>([\s\S]*?)<\/head>/i.exec(html) ?? [, ""])[1];
+  const headMatch = /<head\b[^>]*>([\s\S]*?)<\/head>/i.exec(html);
+  const head = headMatch?.[1] ?? "";
   const metas = [...head.matchAll(/<meta\b[^>]*>/gi)];
   const cspMetas = metas.filter((m) => (attrs(m[0])["http-equiv"] ?? "").toLowerCase() === "content-security-policy");
   if (cspMetas.length === 0) return null;
@@ -66,7 +67,17 @@ export function parseCsp(html) {
   // only governs content that follows it.
   const policyAt = head.indexOf(cspMetas[0][0]);
   const firstFetch = /<(script|link|img|style)\b/i.exec(head);
-  return { tag: cspMetas[0][0], count: cspMetas.length, directives, policyAt, firstFetchAt: firstFetch ? firstFetch.index : -1 };
+  // Absolute offsets allow edits to just the attribute value, preserving all
+  // other policy directives and surrounding markup byte-for-byte.
+  const content = /\bcontent\s*=\s*("([^"]*)"|'([^']*)')/i.exec(cspMetas[0][0]);
+  const headAt = headMatch.index + headMatch[0].indexOf(">") + 1;
+  const contentAt = content ? headAt + policyAt + content.index + content[0].indexOf(content[1]) + 1 : -1;
+  return {
+    tag: cspMetas[0][0], count: cspMetas.length, directives, policyAt,
+    firstFetchAt: firstFetch ? firstFetch.index : -1,
+    content: content ? content[2] ?? content[3] : null, contentAt,
+    contentQuote: content ? content[1][0] : null,
+  };
 }
 
 // Pointer appended to every hash problem: the fix is one command, not arithmetic.

@@ -186,8 +186,9 @@ red PR job against.
   CSP gate checks: a drifted hash is replaced and the gate then passes; non-hash
   `script-src` tokens, the other directives, their order and the `; ` separators are kept
   byte-for-byte; `'unsafe-hashes'` plus the handler hashes appear exactly when a page has
-  inline `on*=` handlers; redirect pages and pages with no policy or no `script-src` are
-  skipped, never rewritten; token order is not enforced (a policy the gate accepts is
+  inline `on*=` handlers; redirect pages are skipped, while missing or duplicate policies
+  and `script-src` directives are reported as errors, never invented or rewritten;
+  token order is not enforced (a policy the gate accepts is
   never rewritten); `--check` reports stale pages and exits 1 without writing.
   Then pins the live tree: every committed content page is already up to date, so the
   tool and `page-csp.test.mjs` agree on what correct means, and a failure names the

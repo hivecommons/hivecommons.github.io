@@ -1,138 +1,109 @@
-// Fixture self-test for scripts/update-csp-hashes.mjs, the tool that rewrites a
-// page's CSP script-src allow-list after an inline script changes, plus a pin
-// on the live tree: every committed page must already be up to date, so the
-// tool and the page-csp.test.mjs gate agree on what "correct" means.
-// Zero dependencies. Usage: node --test scripts/update-csp-hashes.test.mjs
-import { test } from "node:test";
+// Fixture tests for the CSP regeneration command. Zero dependencies.
+import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import { ROOT, htmlFiles, isRedirectPage } from "./html-pages.mjs";
-import { REGEN_HINT, problemsOf, sha256Source } from "./page-csp.mjs";
-import { UNSAFE_HASHES, run, updatedCsp, wantedScriptSrc } from "./update-csp-hashes.mjs";
+import { REGEN_HINT, sha256Source, parseCsp, problemsOf } from "./page-csp.mjs";
+import { updateCspHashes } from "./update-csp-hashes.mjs";
 
 const BASE = "default-src 'none'; img-src 'self'; base-uri 'none'; form-action 'none'";
-const OK = sha256Source("console.log(1)");
-const STALE = sha256Source("console.log(0)");
-const HANDLER = sha256Source("this.hidden=true");
-
-function page({ csp, script = "console.log(1)", handler = "", quote = '"' } = {}) {
-  const meta = csp === null ? "" : `<meta http-equiv=${quote}Content-Security-Policy${quote} content=${quote}${csp}${quote}>`;
-  return `<!doctype html><html><head><meta charset="utf-8">${meta}<title>x</title></head><body><p${handler ? ` onerror="${handler}"` : ""}></p><script type="application/ld+json">{"@type":"Thing"}</script><script>${script}</script></body></html>`;
+const SOURCE = "\n  console.log('exact whitespace');\n";
+function fixture({ policy = `${BASE}; script-src 'self' 'sha256-stale'`, body = `<script>${SOURCE}</script>` } = {}) {
+  return `<!doctype html><html><head><meta charset="utf-8"><META content="${policy}" HTTP-EQUIV="Content-Security-Policy"><title>x</title></head><body>${body}</body></html>`;
 }
+const scriptSrc = (html) => parseCsp(html).directives["script-src"];
 
-function scriptSrcOf(html) {
-  return /script-src ([^;"]*)/.exec(html)[1];
-}
-
-test("fixture: an up-to-date policy is left byte-identical", () => {
-  const html = page({ csp: `${BASE}; script-src ${OK}` });
-  assert.deepEqual(updatedCsp(html), { html, changed: false });
+test("rewrites stale hashes, preserves non-hash tokens and all surrounding bytes, and is idempotent", () => {
+  const before = fixture({ policy: `${BASE};  SCRIPT-SRC   'self' 'nonce-keep' https://example.org 'sha256-stale' 'sha384-old' 'sha512-old'  ; object-src 'none'` });
+  const after = updateCspHashes(before);
+  assert.equal(after, before.replace("'sha256-stale' 'sha384-old' 'sha512-old'", sha256Source(SOURCE)));
+  assert.equal(updateCspHashes(after), after);
+  assert.deepEqual(problemsOf(after), []);
 });
 
-test("fixture: a drifted hash is replaced and the gate then passes", () => {
-  const before = page({ csp: `${BASE}; script-src ${STALE}` });
-  assert.ok(problemsOf(before).length > 0);
-  const { html, changed } = updatedCsp(before);
-  assert.equal(changed, true);
-  assert.equal(scriptSrcOf(html), OK);
-  assert.deepEqual(problemsOf(html), []);
+test("hashes executable scripts only, deduplicates, and adds/removes handler authorization", () => {
+  const script = `<script>${SOURCE}</script>`;
+  const ignored = '<script src="/external.js"></script><script type="application/ld+json">{}</script><script type="application/json">{}</script><script type="importmap">{}</script>';
+  const handlers = '<img onerror="this.hidden=true"><p onclick=\'this.hidden=true\'></p>';
+  const before = fixture({ body: script + script + ignored + handlers });
+  const after = updateCspHashes(before);
+  assert.deepEqual(scriptSrc(after), ["'self'", sha256Source(SOURCE), "'unsafe-hashes'", sha256Source("this.hidden=true")]);
+  assert.deepEqual(problemsOf(after), []);
+  const removed = updateCspHashes(after.replace(handlers, ""));
+  assert.deepEqual(scriptSrc(removed), ["'self'", sha256Source(SOURCE)]);
+  const noScripts = updateCspHashes(removed.replaceAll(script, ""));
+  assert.deepEqual(scriptSrc(noScripts), ["'self'"]);
 });
 
-test("fixture: non-hash tokens keep their order; only the managed tokens are rewritten", () => {
-  const before = page({ csp: `${BASE}; script-src 'self' ${STALE} https://cdn.example 'strict-dynamic'` });
-  const { html } = updatedCsp(before);
-  assert.equal(scriptSrcOf(html), `'self' https://cdn.example 'strict-dynamic' ${OK}`);
+test("duplicate old hashes cannot hide a newly added script", () => {
+  const hash = sha256Source(SOURCE);
+  const html = fixture({ policy: `${BASE}; script-src ${hash} ${hash}`, body: `<script>${SOURCE}</script><script>newScript()</script>` });
+  assert.deepEqual(scriptSrc(updateCspHashes(html)), [hash, sha256Source("newScript()")]);
 });
 
-test("fixture: token order is not enforced; a policy the gate accepts is never rewritten", () => {
-  const h1 = sha256Source("console.log(1)");
-  const h2 = sha256Source("console.log(2)");
-  const html = `<html><head><meta http-equiv="Content-Security-Policy" content="${BASE}; script-src ${h2} 'self' ${h1}"></head><body><script>console.log(1)</script><script>console.log(2)</script></body></html>`;
-  assert.deepEqual(problemsOf(html), []);
-  assert.deepEqual(updatedCsp(html), { html, changed: false });
+test("leaves correct policies byte-identical regardless of token order", () => {
+  const html = fixture({ policy: `${BASE}; script-src ${sha256Source(SOURCE)}   'self'` });
+  assert.equal(updateCspHashes(html), html);
 });
 
-test("fixture: other directives, their order and the `; ` separators are preserved", () => {
-  const before = page({ csp: `style-src 'self' 'unsafe-inline'; ${BASE}; script-src ${STALE}; font-src 'self'` });
-  const { html } = updatedCsp(before);
-  assert.ok(html.includes(`content="style-src 'self' 'unsafe-inline'; ${BASE}; script-src ${OK}; font-src 'self'"`), html);
+test("does not relax unsafe policy tokens or invent missing policies", () => {
+  const html = updateCspHashes(fixture({ policy: `${BASE}; script-src 'unsafe-inline' 'unsafe-eval' 'sha256-old'` }));
+  assert.ok(problemsOf(html).includes("script-src must not contain 'unsafe-inline'"));
+  assert.ok(problemsOf(html).includes("script-src must not contain 'unsafe-eval'"));
+  assert.throws(() => updateCspHashes("<html><head></head></html>"), /exactly one CSP/);
+  assert.throws(() => updateCspHashes(fixture({ policy: BASE })), /exactly one script-src/);
+  assert.throws(() => updateCspHashes(fixture({ policy: `${BASE}; script-src 'self'; script-src 'none'` })), /exactly one script-src/);
+  assert.throws(() => updateCspHashes(fixture().replace("<title>", '<meta http-equiv="Content-Security-Policy" content=""><title>')), /exactly one CSP/);
 });
 
-test("fixture: an inline handler adds 'unsafe-hashes' and its hash; removing the handler drops both", () => {
-  const withHandler = updatedCsp(page({ csp: `${BASE}; script-src ${OK}`, handler: "this.hidden=true" }));
-  assert.equal(withHandler.changed, true);
-  assert.equal(scriptSrcOf(withHandler.html), `${OK} ${UNSAFE_HASHES} ${HANDLER}`);
-  assert.deepEqual(problemsOf(withHandler.html), []);
-
-  const without = updatedCsp(page({ csp: `${BASE}; script-src ${OK} ${UNSAFE_HASHES} ${HANDLER}` }));
-  assert.equal(without.changed, true);
-  assert.equal(scriptSrcOf(without.html), OK);
-  assert.deepEqual(problemsOf(without.html), []);
-});
-
-test("fixture: wantedScriptSrc never repeats a hash two identical scripts share", () => {
-  const html = `<html><head><meta http-equiv="Content-Security-Policy" content="script-src 'self'"></head><body><script>a()</script><script>a()</script></body></html>`;
-  assert.deepEqual(wantedScriptSrc(html, ["'self'"]), ["'self'", sha256Source("a()")]);
-});
-
-test("fixture: a single-quoted content attribute is rewritten too", () => {
-  const before = `<html><head><meta http-equiv='Content-Security-Policy' content='default-src "none"; script-src ${STALE}'></head><body><script>console.log(1)</script></body></html>`;
-  const { html, changed } = updatedCsp(before);
-  assert.equal(changed, true);
-  assert.ok(html.includes(`script-src ${OK}`), html);
-});
-
-test("fixture: redirect pages and pages without a policy or script-src are skipped, not rewritten", () => {
-  const redirect = `<html><head><meta http-equiv="refresh" content="0; url=/x/"><script>console.log(1)</script></head></html>`;
-  assert.deepEqual(updatedCsp(redirect), { html: redirect, changed: false, skipped: "redirect page" });
-  const none = page({ csp: null, script: "console.log(0)" });
-  assert.deepEqual(updatedCsp(none), { html: none, changed: false, skipped: "no CSP meta" });
-  const noScriptSrc = page({ csp: BASE, script: "console.log(0)" });
-  assert.deepEqual(updatedCsp(noScriptSrc), { html: noScriptSrc, changed: false, skipped: "no script-src directive" });
-});
-
-test("fixture: --check reports stale pages and exits 1 without writing; a plain run rewrites and exits 0", () => {
-  const dir = mkdtempSync(join(tmpdir(), "csp-hashes-"));
-  const stale = join(dir, "stale.html");
-  const fresh = join(dir, "fresh.html");
-  writeFileSync(stale, page({ csp: `${BASE}; script-src ${STALE}` }));
-  writeFileSync(fresh, page({ csp: `${BASE}; script-src ${OK}` }));
-
-  const checkLog = [];
-  const writes = [];
-  assert.equal(run(["--check", stale, fresh], { root: dir, write: (f, c) => writes.push(f), log: (l) => checkLog.push(l) }), 1);
-  assert.deepEqual(writes, []);
-  assert.deepEqual(checkLog, ["stale stale.html: script-src hashes do not match its inline scripts (run node scripts/update-csp-hashes.mjs)"]);
-
-  const log = [];
-  assert.equal(run([stale, fresh], { root: dir, log: (l) => log.push(l) }), 0);
-  assert.deepEqual(log, ["updated stale.html"]);
-  assert.deepEqual(problemsOf(readFileSync(stale, "utf8")), []);
-  assert.equal(run(["--check", stale, fresh], { root: dir, log: () => {} }), 0);
-});
-
-test("fixture: with no files a plain run says every page is current and exits 0", () => {
-  const dir = mkdtempSync(join(tmpdir(), "csp-hashes-"));
-  writeFileSync(join(dir, "a.html"), page({ csp: `${BASE}; script-src ${OK}` }));
-  const log = [];
-  assert.equal(run([], { root: dir, log: (l) => log.push(l) }), 0);
-  assert.deepEqual(log, ["every CSP meta already matches its inline scripts"]);
-});
-
-// --- live tree --------------------------------------------------------------
-
-test("live tree: every committed content page is already up to date (`--check` would exit 0)", () => {
+test("live tree: every committed content page is already up to date", () => {
   const stale = [];
   let pages = 0;
   for (const file of htmlFiles()) {
     const html = readFileSync(file, "utf8");
     if (isRedirectPage(html)) continue;
     pages += 1;
-    const { changed, skipped } = updatedCsp(html);
-    if (changed || skipped) stale.push(`${relative(ROOT, file)}${skipped ? ` (${skipped})` : ""}`);
+    if (updateCspHashes(html) !== html) stale.push(file);
   }
   assert.ok(pages > 0, "no content pages found");
-  assert.deepEqual(stale, [], `pages whose CSP script-src is stale: ${stale.join(", ")} — ${REGEN_HINT}`);
+  assert.deepEqual(stale, [], `stale pages: ${stale.join(", ")} — ${REGEN_HINT}`);
+});
+
+test("CLI check is read-only, update reports recursive pages, redirects are skipped, and a second run is clean", () => {
+  const dir = mkdtempSync(join(tmpdir(), "update-csp-"));
+  try {
+    mkdirSync(join(dir, "scripts"));
+    mkdirSync(join(dir, "nested"));
+    for (const name of ["update-csp-hashes.mjs", "page-csp.mjs", "html-pages.mjs"]) {
+      copyFileSync(join(ROOT, "scripts", name), join(dir, "scripts", name));
+    }
+    const page = join(dir, "nested", "index.html");
+    const before = fixture();
+    const redirect = '<meta http-equiv="refresh" content="0;url=/">';
+    writeFileSync(page, before);
+    writeFileSync(join(dir, "index.html"), redirect);
+    const run = (...args) => spawnSync(process.execPath, [join(dir, "scripts/update-csp-hashes.mjs"), ...args], { encoding: "utf8", cwd: tmpdir() });
+    let result = run("--check");
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stdout, /Stale: nested[/\\]index.html/);
+    assert.match(result.stdout, /node scripts\/update-csp-hashes.mjs/);
+    assert.equal(readFileSync(page, "utf8"), before);
+    result = run();
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Updated: nested[/\\]index.html/);
+    assert.equal(readFileSync(page, "utf8"), updateCspHashes(before));
+    assert.equal(readFileSync(join(dir, "index.html"), "utf8"), redirect);
+    assert.equal(run("--check").status, 0);
+    assert.equal(run().stdout, "");
+    assert.equal(run("--unknown").status, 1);
+    writeFileSync(page, "<head></head>");
+    result = run("--check");
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /Error: nested[/\\]index.html: expected exactly one CSP/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
