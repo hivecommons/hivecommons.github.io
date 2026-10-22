@@ -94,3 +94,51 @@ test("fixture: default-src other than 'none' is reported", () => {
   const problems = problemsOf(fixture({ csp: `default-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; script-src ${h}` }));
   assert.deepEqual(problems, ["default-src must be 'none' so every fetch type is allow-listed explicitly"]);
 });
+
+test("fixture: a second CSP meta is reported (only the first one is enforced by browsers)", () => {
+  const h = sha256Source("console.log(1)");
+  const html = fixture({ csp: `${BASE}; script-src ${h}` }).replace("<title>", `<meta http-equiv="Content-Security-Policy" content="${BASE}; script-src ${h}"><title>`);
+  assert.deepEqual(problemsOf(html), ["expected exactly one CSP meta, found 2"]);
+});
+
+test("fixture: a policy without script-src is reported instead of passing vacuously", () => {
+  assert.deepEqual(problemsOf(fixture({ csp: BASE })), ["script-src directive missing"]);
+});
+
+test("fixture: wildcard and scheme sources in script-src are rejected", () => {
+  const h = sha256Source("console.log(1)");
+  const problems = problemsOf(fixture({ csp: `${BASE}; script-src * http: https: data: ${h}` }));
+  assert.deepEqual(problems, [
+    "script-src must not contain *",
+    "script-src must not contain http:",
+    "script-src must not contain https:",
+    "script-src must not contain data:",
+  ]);
+});
+
+test("fixture: 'unsafe-hashes' left behind after the last inline handler is removed is reported", () => {
+  const h = sha256Source("console.log(1)");
+  const problems = problemsOf(fixture({ csp: `${BASE}; script-src ${h} 'unsafe-hashes'` }));
+  assert.deepEqual(problems, ["'unsafe-hashes' present but no inline event handlers remain"]);
+});
+
+test("fixture: base-uri and form-action are required", () => {
+  const h = sha256Source("console.log(1)");
+  assert.deepEqual(problemsOf(fixture({ csp: `default-src 'none'; img-src 'self'; script-src ${h}` })), [
+    "base-uri must be 'none' or 'self'",
+    "form-action directive missing",
+  ]);
+  assert.deepEqual(problemsOf(fixture({ csp: `default-src 'none'; img-src 'self'; base-uri https://example.com; form-action 'none'; script-src ${h}` })), [
+    "base-uri must be 'none' or 'self'",
+  ]);
+  assert.deepEqual(problemsOf(fixture({ csp: `default-src 'none'; img-src 'self'; base-uri 'self'; form-action 'none'; script-src ${h}` })), []);
+});
+
+test("fixture: img-src https: allows any external origin, and a missing img-src falls back to default-src", () => {
+  const h = sha256Source("console.log(1)");
+  const img = '<img src="https://github.com/octocat.png" alt="">';
+  assert.deepEqual(problemsOf(fixture({ csp: `default-src 'none'; img-src https:; base-uri 'none'; form-action 'none'; script-src ${h}`, img })), []);
+  assert.deepEqual(problemsOf(fixture({ csp: `default-src 'none'; base-uri 'none'; form-action 'none'; script-src ${h}`, img })), [
+    "img-src does not allow external <img> origin https://github.com",
+  ]);
+});

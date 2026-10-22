@@ -122,6 +122,24 @@ test("CLI check is read-only, update reports recursive pages, redirects are skip
     assert.equal(run("--check").status, 0);
     assert.equal(run().stdout, "");
     assert.equal(run("--unknown").status, 1);
+    // Explicit page arguments limit the run to those files, with or without --check.
+    const other = join(dir, "nested", "other.html");
+    writeFileSync(page, before);
+    writeFileSync(other, before);
+    result = run("--check", page);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stdout, /Stale: nested[/\\]index.html/);
+    assert.doesNotMatch(result.stdout, /other.html/);
+    result = run(page);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Updated: nested[/\\]index.html/);
+    assert.doesNotMatch(result.stdout, /other.html/);
+    assert.equal(readFileSync(page, "utf8"), updateCspHashes(before));
+    assert.equal(readFileSync(other, "utf8"), before);
+    result = run("--check");
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /Stale: nested[/\\]other.html/);
+    rmSync(other);
     writeFileSync(page, "<head></head>");
     result = run("--check");
     assert.equal(result.status, 1);

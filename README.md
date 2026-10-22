@@ -177,9 +177,11 @@ red PR job against.
   stale one (a drifted hash silently disables that script in every browser — **after
   editing any inline script, run `node scripts/update-csp-hashes.mjs` to regenerate the
   hashes in the page's CSP meta**; the failure message says so). It also requires
-  `default-src 'none'`, rejects `'unsafe-inline'`/`'unsafe-eval'` in `script-src`,
-  requires the meta to precede every `<script>`/`<link>` in `<head>`, and requires every
-  external `<img>` origin to appear in `img-src`. Each rule has a fixture self-test. Zero
+  exactly one policy meta with `default-src 'none'`, `base-uri 'none'`/`'self'` and a
+  `form-action` directive, rejects `'unsafe-inline'`/`'unsafe-eval'`/`*`/`http:`/`https:`/
+  `data:` in `script-src` and `'unsafe-hashes'` once no handler remains, requires the meta
+  to precede every `<script>`/`<link>` in `<head>`, and requires every external `<img>`
+  origin to appear in `img-src` (or `https:`). Each rule has a fixture self-test. Zero
   dependencies.
 - `node --test scripts/update-csp-hashes.test.mjs` — fixture self-test of
   `scripts/update-csp-hashes.mjs`, the tool that regenerates the `sha256-` allow-list the
@@ -189,7 +191,8 @@ red PR job against.
   inline `on*=` handlers; redirect pages are skipped, while missing or duplicate policies
   and `script-src` directives are reported as errors, never invented or rewritten;
   token order is not enforced (a policy the gate accepts is
-  never rewritten); `--check` reports stale pages and exits 1 without writing.
+  never rewritten); `--check` reports stale pages and exits 1 without writing; explicit
+  page arguments limit a run to those files.
   Then pins the live tree: every committed content page is already up to date, so the
   tool and `page-csp.test.mjs` agree on what correct means, and a failure names the
   regenerate command. Zero dependencies.
