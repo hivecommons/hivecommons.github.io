@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { ROOT, htmlFiles, isRedirectPage } from "./html-pages.mjs";
 import { REGEN_HINT, sha256Source, parseCsp, problemsOf } from "./page-csp.mjs";
@@ -109,7 +109,24 @@ test("CLI check is read-only, update reports recursive pages, redirects are skip
     writeFileSync(page, before);
     writeFileSync(join(dir, "index.html"), redirect);
     const run = (...args) => spawnSync(process.execPath, [join(dir, "scripts/update-csp-hashes.mjs"), ...args], { encoding: "utf8", cwd: tmpdir() });
-    let result = run("--check");
+    const untouched = join(dir, "other.html");
+    writeFileSync(untouched, before);
+    // Resolve the explicit path relative to the caller, not the script root.
+    const selected = relative(tmpdir(), page);
+    let result = run("--check", selected);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stdout, /Stale: nested[/\\]index.html/);
+    assert.equal(readFileSync(page, "utf8"), before);
+    result = run(selected);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Updated: nested[/\\]index.html/);
+    assert.equal(readFileSync(page, "utf8"), updateCspHashes(before));
+    assert.equal(readFileSync(untouched, "utf8"), before);
+    assert.equal(run("--check", selected).status, 0);
+    assert.equal(run("--check").status, 1, "the unselected page must still be stale");
+    // Reset so the recursive run below exercises both stale pages.
+    writeFileSync(page, before);
+    result = run("--check");
     assert.equal(result.status, 1, result.stderr);
     assert.match(result.stdout, /Stale: nested[/\\]index.html/);
     assert.match(result.stdout, /node scripts\/update-csp-hashes.mjs/);
@@ -118,6 +135,7 @@ test("CLI check is read-only, update reports recursive pages, redirects are skip
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /Updated: nested[/\\]index.html/);
     assert.equal(readFileSync(page, "utf8"), updateCspHashes(before));
+    assert.equal(readFileSync(untouched, "utf8"), updateCspHashes(before));
     assert.equal(readFileSync(join(dir, "index.html"), "utf8"), redirect);
     assert.equal(run("--check").status, 0);
     assert.equal(run().stdout, "");

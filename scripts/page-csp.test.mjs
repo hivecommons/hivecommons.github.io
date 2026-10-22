@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import { ROOT, htmlFiles, isRedirectPage } from "./html-pages.mjs";
-import { inlineScriptSources, problemsOf, sha256Source } from "./page-csp.mjs";
+import { REGEN_HINT, inlineScriptSources, problemsOf, sha256Source } from "./page-csp.mjs";
 
 // --- per-page gates ---------------------------------------------------------
 
@@ -48,12 +48,64 @@ test("fixture: missing meta is reported", () => {
   assert.deepEqual(problemsOf(fixture({ csp: null })), ['missing <meta http-equiv="Content-Security-Policy">']);
 });
 
+test("fixture: duplicate CSP metas are reported", () => {
+  const csp = `${BASE}; script-src ${sha256Source("console.log(1)")}`;
+  const html = fixture({ csp }).replace("</head>", `<meta http-equiv="Content-Security-Policy" content="${csp}"></head>`);
+  assert.deepEqual(problemsOf(html), ["expected exactly one CSP meta, found 2"]);
+});
+
+test("fixture: missing script-src is reported", () => {
+  assert.deepEqual(problemsOf(fixture({ csp: BASE })), ["script-src directive missing"]);
+});
+
+for (const bad of ["*", "http:", "https:", "data:"]) {
+  test(`fixture: script-src rejects ${bad}`, () => {
+    const h = sha256Source("console.log(1)");
+    assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; script-src ${h} ${bad}` })), [`script-src must not contain ${bad}`]);
+  });
+}
+
+test("fixture: unused 'unsafe-hashes' is reported", () => {
+  const h = sha256Source("console.log(1)");
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; script-src ${h} 'unsafe-hashes'` })), ["'unsafe-hashes' present but no inline event handlers remain"]);
+});
+
+for (const baseUri of ["", "; base-uri https://example.org"]) {
+  test(`fixture: missing or invalid base-uri is reported (${baseUri || "missing"})`, () => {
+    const h = sha256Source("console.log(1)");
+    const csp = `default-src 'none'; img-src 'self'; form-action 'none'; script-src ${h}${baseUri}`;
+    assert.deepEqual(problemsOf(fixture({ csp })), ["base-uri must be 'none' or 'self'"]);
+  });
+}
+
+test("fixture: base-uri 'self' is accepted", () => {
+  const h = sha256Source("console.log(1)");
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE.replace("base-uri 'none'", "base-uri 'self'")}; script-src ${h}` })), []);
+});
+
+test("fixture: missing form-action is reported", () => {
+  const h = sha256Source("console.log(1)");
+  assert.deepEqual(problemsOf(fixture({ csp: `default-src 'none'; img-src 'self'; base-uri 'none'; script-src ${h}` })), ["form-action directive missing"]);
+});
+
+test("fixture: img-src accepts the https: scheme and overrides default-src", () => {
+  const h = sha256Source("console.log(1)");
+  const img = '<img src="https://github.com/octocat.png" alt="">';
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE.replace("img-src 'self'", "img-src https:")}; script-src ${h}`, img })), []);
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE.replace("img-src 'self'; ", "")}; script-src ${h}`, img })), ["img-src does not allow external <img> origin https://github.com"]);
+  // A permissive fallback lets the image through, but still violates the
+  // independent default-src 'none' rule.
+  assert.deepEqual(problemsOf(fixture({ csp: `default-src https:; base-uri 'none'; form-action 'none'; script-src ${h}`, img })), ["default-src must be 'none' so every fetch type is allow-listed explicitly"]);
+});
+
 test("fixture: drifted script body is reported with both the missing and the stale hash", () => {
   const stale = sha256Source("console.log(0)");
   const want = sha256Source("console.log(1)");
   const problems = problemsOf(fixture({ csp: `${BASE}; script-src ${stale}` }));
-  assert.ok(problems.some((p) => p.includes(`lacks ${want}`)), problems.join("\n"));
-  assert.ok(problems.some((p) => p.includes(`stale hash ${stale}`)), problems.join("\n"));
+  assert.deepEqual(problems, [
+    `script-src lacks ${want} for an inline script or event handler (body edited without updating the policy? ${REGEN_HINT})`,
+    `script-src has stale hash ${stale} that matches no inline script or handler (${REGEN_HINT})`,
+  ]);
 });
 
 test("fixture: JSON-LD blocks are not hashed", () => {
@@ -72,8 +124,10 @@ test("fixture: inline event handler requires 'unsafe-hashes' plus its hash", () 
   const hh = sha256Source("this.hidden=true");
   assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; script-src ${h} 'unsafe-hashes' ${hh}`, handler: "this.hidden=true" })), []);
   const problems = problemsOf(fixture({ csp: `${BASE}; script-src ${h}`, handler: "this.hidden=true" }));
-  assert.ok(problems.some((p) => p.includes(`lacks ${hh}`)), problems.join("\n"));
-  assert.ok(problems.includes("inline event handlers present but script-src lacks 'unsafe-hashes'"), problems.join("\n"));
+  assert.deepEqual(problems, [
+    `script-src lacks ${hh} for an inline script or event handler (body edited without updating the policy? ${REGEN_HINT})`,
+    "inline event handlers present but script-src lacks 'unsafe-hashes'",
+  ]);
 });
 
 test("fixture: external <img> origin must be in img-src", () => {

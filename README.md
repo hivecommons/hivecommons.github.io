@@ -177,10 +177,14 @@ red PR job against.
   stale one (a drifted hash silently disables that script in every browser — **after
   editing any inline script, run `node scripts/update-csp-hashes.mjs` to regenerate the
   hashes in the page's CSP meta**; the failure message says so). It also requires
-  `default-src 'none'`, rejects `'unsafe-inline'`/`'unsafe-eval'` in `script-src`,
-  requires the meta to precede every `<script>`/`<link>` in `<head>`, and requires every
-  external `<img>` origin to appear in `img-src`. Each rule has a fixture self-test. Zero
-  dependencies.
+  exactly one CSP meta and a `script-src` directive, requires `default-src 'none'`,
+  and rejects `'unsafe-inline'`, `'unsafe-eval'`, `*`, `http:`, `https:` and `data:` in
+  `script-src`. Inline event handlers require `'unsafe-hashes'` plus their hashes;
+  `'unsafe-hashes'` without handlers is rejected. The meta must precede every
+  `<script>`/`<link>`/`<img>`/`<style>` in `<head>`. Every external `<img>` origin must
+  be allowed by `img-src` (or `default-src` when `img-src` is absent), either explicitly
+  or via `https:`. `base-uri` must contain `'none'` or `'self'`, and `form-action` must
+  be present. Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/update-csp-hashes.test.mjs` — fixture self-test of
   `scripts/update-csp-hashes.mjs`, the tool that regenerates the `sha256-` allow-list the
   CSP gate checks: a drifted hash is replaced and the gate then passes; non-hash
@@ -190,6 +194,8 @@ red PR job against.
   and `script-src` directives are reported as errors, never invented or rewritten;
   token order is not enforced (a policy the gate accepts is
   never rewritten); `--check` reports stale pages and exits 1 without writing.
+  Explicit `[page.html ...]` arguments update only the selected files, leaving other
+  stale pages untouched.
   Then pins the live tree: every committed content page is already up to date, so the
   tool and `page-csp.test.mjs` agree on what correct means, and a failure names the
   regenerate command. Zero dependencies.
