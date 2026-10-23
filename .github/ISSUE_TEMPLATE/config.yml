@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/hivecommons/.github/blob/main/SECURITY.md
+    about: Please do not file vulnerabilities as public issues. Follow the Hive Commons security policy instead.
+  - name: Report a problem with Hive
+    url: https://github.com/hivecommons/hive/issues/new/choose
+    about: Bugs and feature requests for Hive itself belong in the hivecommons/hive repository.
+  - name: Join our Discord
+    url: https://hivecommons.dev/discord
+    about: Ask questions and talk with the Hive Commons community.
+  - name: Propose a project to join Hive Commons
+    url: https://github.com/hivecommons/.github/issues/new?template=join-hive-commons.yml
+    about: Project proposals for the Hive Commons family are handled in the hivecommons/.github repository.

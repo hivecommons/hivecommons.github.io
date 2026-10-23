@@ -1,0 +1,51 @@
+name: Website problem
+description: Report a broken link, broken redirect, rendering problem or wrong content on hivecommons.dev
+title: "site: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem with hivecommons.dev. This form is for the website only.
+        For problems with Hive itself, use the [hive issue tracker](https://github.com/hivecommons/hive/issues/new/choose).
+
+        **Security issues:** do not file them here. Follow the
+        [Hive Commons security policy](https://github.com/hivecommons/.github/blob/main/SECURITY.md).
+  - type: input
+    id: url
+    attributes:
+      label: Page URL
+      description: The full address of the page or shortcut link with the problem.
+      placeholder: https://hivecommons.dev/stories/
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Problem type
+      options:
+        - Broken link or shortcut redirect
+        - Page doesn't load or looks broken
+        - Content is wrong or out of date
+        - Accessibility problem
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened?
+      description: What you expected to see, and what you saw instead. Paste the broken link target or the wrong text if there is one.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      description: Only needed for display or loading problems.
+      placeholder: Firefox 131 on Linux desktop
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Optional. Drag an image here if it helps show the problem.
