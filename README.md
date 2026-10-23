@@ -367,6 +367,18 @@ red PR job against.
   that every existing gate is described here, not that every described path still exists,
   so a renamed script or dropped workflow would otherwise leave the prose pointing at the
   old name. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/issue-forms.test.mjs` — static gate over `.github/ISSUE_TEMPLATE/`:
+  `config.yml` and every form parse and `blank_issues_enabled` is boolean; every
+  `contact_links[].url` is `https` and a `hivecommons.dev` URL resolves to a committed
+  page; `body[].id` is unique within a form and every `type` is one of GitHub's five
+  form element types; every `labels[]` entry is in `KNOWN_LABELS`. GitHub silently falls
+  back to a blank issue when a form fails to parse, so CI would otherwise stay green on a
+  broken form. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/artifact-registry.test.mjs` — advisory (report-only) registry
+  check: every tracked file should be covered by a page/asset/script class gate or named
+  literally in a `scripts/*.test.mjs` or `scripts/check-*.sh`; unregistered files are
+  printed as a warning and do not fail the run yet. Add a file to `UNGATED_OK` to exempt
+  it (a reviewed diff, not silence). Zero dependencies.
 
 ## Local preview and running the checks
 
