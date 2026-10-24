@@ -306,6 +306,14 @@ test("story over 1500 chars is trimmed in the form URL and the user is told", ()
   assert.match(t.el("story-status").textContent, /^Your story was trimmed to 1500 characters/);
 });
 
+test("story cut inside an emoji drops the half pair so the form URL still opens", () => {
+  const t = boot();
+  t.fill({ ...VALID, "story-text": "a".repeat(STORY_MAX - 1) + "😀 tail" });
+  t.submit();
+  assert.equal(t.opened.length, 1, "submit opens the draft issue instead of throwing URIError");
+  assert.equal(t.issueUrl().searchParams.get("story"), "a".repeat(STORY_MAX - 1));
+});
+
 test("story at exactly 1500 chars is not trimmed", () => {
   const t = boot();
   t.fill({ ...VALID, "story-text": "y".repeat(STORY_MAX) });
