@@ -201,6 +201,17 @@ red PR job against.
   Then pins the live tree: every committed content page is already up to date, so the
   tool and `page-csp.test.mjs` agree on what correct means, and a failure names the
   regenerate command. Zero dependencies.
+- `node --test scripts/coverage-floor.test.mjs` — branch-coverage floor over the
+  `scripts/*.mjs` helpers the other gates import (`page-csp.mjs`, `html-pages.mjs`,
+  `actions-if.mjs`, `update-csp-hashes.mjs`): runs the rest of the suite once more as a
+  child with `NODE_V8_COVERAGE`, reads the raw V8 block-coverage ranges for every helper
+  (`*.test.mjs` excluded) and fails naming each range no process executed — file, line
+  and the quoted source slice — so a helper branch that runs under the suite without a
+  test asserting what it decides cannot merge green. A range counts as executed if any
+  child process ran it; a tool's main-module guard (`if (process.argv[1] …
+  import.meta.url)`) is excluded because its self-test runs it via `spawnSync` against a
+  copy. Each rule has a fixture self-test, including a real child run over a tmp helper
+  with one dead branch. Zero dependencies.
 - `node --test scripts/llms-txt.test.mjs` — static gate keeping `llms.txt` in step with
   `index.html`: the agent CLIs it names must equal the Agent CLIs chips, the inference
   engines/gateways it names must equal the engine and gateway chips (classifier chips
