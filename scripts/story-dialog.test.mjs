@@ -124,7 +124,7 @@ function makeDocument() {
   return doc;
 }
 
-function boot({ popupBlocked = false } = {}) {
+function boot({ popupBlocked = false, clipboardOverride } = {}) {
   const html = readFileSync(PAGE, "utf8");
   const src = extractDialogScript(html);
   const doc = makeDocument();
@@ -141,6 +141,7 @@ function boot({ popupBlocked = false } = {}) {
   };
   const clipboard = { written: [] };
   const navigator = { clipboard: { writeText(t) { clipboard.written.push(t); return Promise.resolve(); } } };
+  if (clipboardOverride !== undefined) navigator.clipboard = clipboardOverride.clipboard;
   const timers = [];
   const setTimeoutStub = (fn) => { timers.push(fn); return timers.length; };
   const run = new Function("document", "window", "navigator", "setTimeout", src);
@@ -342,6 +343,26 @@ test("popup blocked: fallback link gets the prefilled URL and copy button yields
   assert.equal(t.clipboard.written.length, 1);
   assert.equal(t.clipboard.written[0].split("### Story\n")[1], href.searchParams.get("story"), "clipboard markdown carries the same story");
   assert.match(t.el("story-status").textContent, /^Copied\./);
+});
+
+test("copy button tells the user to use the prefilled link when the clipboard write is rejected", async () => {
+  const t = boot({ popupBlocked: true, clipboardOverride: { clipboard: { writeText() { return Promise.reject(new Error("denied")); } } } });
+  t.el("opener-hero").dispatch("click");
+  t.fill(VALID);
+  t.submit();
+  t.el("story-copy").dispatch("click");
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.match(t.el("story-status").textContent, /^Copy did not work\..*prefilled issue link above/);
+});
+
+test("copy button tells the user to use the prefilled link when navigator.clipboard is unavailable", () => {
+  const t = boot({ popupBlocked: true, clipboardOverride: { clipboard: undefined } });
+  t.el("opener-hero").dispatch("click");
+  t.fill(VALID);
+  t.submit();
+  t.el("story-copy").dispatch("click");
+  assert.match(t.el("story-status").textContent, /^Copy did not work\..*prefilled issue link above/);
 });
 
 test("open/close lifecycle: showModal, focus to name, Escape closes and restores focus", () => {
