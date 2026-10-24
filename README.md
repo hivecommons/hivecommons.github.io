@@ -195,7 +195,9 @@ red PR job against.
   token order is not enforced (a policy the gate accepts is
   never rewritten); `--check` reports stale pages and exits 1 without writing.
   Explicit `[page.html ...]` arguments update only the selected files, leaving other
-  stale pages untouched.
+  stale pages untouched. The `updatePages` walk is exercised in-process (injected root
+  and log) so each branch — stale, up to date, written, per-page error — is asserted
+  directly; one subprocess run then pins the CLI argument handling and exit codes.
   Then pins the live tree: every committed content page is already up to date, so the
   tool and `page-csp.test.mjs` agree on what correct means, and a failure names the
   regenerate command. Zero dependencies.
