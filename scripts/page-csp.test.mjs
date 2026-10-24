@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import { ROOT, htmlFiles, isRedirectPage } from "./html-pages.mjs";
-import { REGEN_HINT, inlineScriptSources, problemsOf, sha256Source } from "./page-csp.mjs";
+import { REGEN_HINT, externalImageOrigins, inlineScriptSources, parseCsp, problemsOf, sha256Source } from "./page-csp.mjs";
 
 // --- per-page gates ---------------------------------------------------------
 
@@ -117,6 +117,55 @@ test("fixture: 'unsafe-inline' and 'unsafe-eval' in script-src are rejected", ()
   const h = sha256Source("console.log(1)");
   const problems = problemsOf(fixture({ csp: `${BASE}; script-src 'unsafe-inline' 'unsafe-eval' ${h}` }));
   assert.deepEqual(problems, ["script-src must not contain 'unsafe-inline'", "script-src must not contain 'unsafe-eval'"]);
+});
+
+test("fixture: a page without <head> has no policy", () => {
+  assert.equal(parseCsp("<html><body><p>x</p></body></html>"), null);
+  assert.deepEqual(problemsOf("<html><body><p>x</p></body></html>"), ['missing <meta http-equiv="Content-Security-Policy">']);
+});
+
+test("fixture: a CSP meta without a content attribute parses to no directives and a null content offset", () => {
+  const html = fixture({ csp: null }).replace("<title>", '<meta http-equiv="Content-Security-Policy"><title>');
+  const csp = parseCsp(html);
+  assert.deepEqual(csp.directives, {});
+  assert.equal(csp.count, 1);
+  assert.equal(csp.content, null);
+  assert.equal(csp.contentAt, -1);
+  assert.equal(csp.contentQuote, null);
+  assert.deepEqual(problemsOf(html), [
+    "script-src directive missing",
+    "base-uri must be 'none' or 'self'",
+    "form-action directive missing",
+  ]);
+});
+
+test("fixture: empty directive segments (`;;`, trailing `;`) are ignored", () => {
+  const h = sha256Source("console.log(1)");
+  const html = fixture({ csp: `${BASE};; script-src ${h};` });
+  assert.deepEqual(Object.keys(parseCsp(html).directives), ["default-src", "img-src", "base-uri", "form-action", "script-src"]);
+  assert.deepEqual(problemsOf(html), []);
+});
+
+test("fixture: script-src present but default-src missing is reported", () => {
+  const h = sha256Source("console.log(1)");
+  assert.deepEqual(problemsOf(fixture({ csp: `img-src 'self'; base-uri 'none'; form-action 'none'; script-src ${h}` })), [
+    "default-src must be 'none' so every fetch type is allow-listed explicitly",
+  ]);
+});
+
+test("fixture: with neither img-src nor default-src, an external <img> origin is not allowed", () => {
+  const h = sha256Source("console.log(1)");
+  const img = '<img src="https://github.com/octocat.png" alt="">';
+  assert.deepEqual(problemsOf(fixture({ csp: `base-uri 'none'; form-action 'none'; script-src ${h}`, img })), [
+    "default-src must be 'none' so every fetch type is allow-listed explicitly",
+    "img-src does not allow external <img> origin https://github.com",
+  ]);
+});
+
+test("fixture: <img> without src and relative src contribute no external origin", () => {
+  assert.deepEqual(externalImageOrigins('<img alt=""><img src="/og.png" alt=""><IMG SRC="HTTPS://Example.org/a.png">'), ["https://example.org"]);
+  const h = sha256Source("console.log(1)");
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; script-src ${h}`, img: '<img alt="">' })), []);
 });
 
 test("fixture: inline event handler requires 'unsafe-hashes' plus its hash", () => {

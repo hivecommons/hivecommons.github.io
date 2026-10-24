@@ -80,6 +80,11 @@ test("does not relax unsafe policy tokens or invent missing policies", () => {
   assert.throws(() => updateCspHashes(fixture({ policy: BASE })), /exactly one script-src/);
   assert.throws(() => updateCspHashes(fixture({ policy: `${BASE}; script-src 'self'; script-src 'none'` })), /exactly one script-src/);
   assert.throws(() => updateCspHashes(fixture().replace("<title>", '<meta http-equiv="Content-Security-Policy" content=""><title>')), /exactly one CSP/);
+  // A single policy meta with no content attribute at all: parseCsp reports
+  // content === null and the tool must refuse rather than invent a policy.
+  const contentless = fixture().replace(/<META [^>]*>/, '<meta http-equiv="Content-Security-Policy">');
+  assert.equal(parseCsp(contentless).content, null);
+  assert.throws(() => updateCspHashes(contentless), /exactly one CSP meta with a content attribute/);
 });
 
 test("live tree: every committed content page is already up to date", () => {
