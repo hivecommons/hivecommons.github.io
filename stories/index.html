@@ -2,7 +2,7 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-CopZnncCKanV2SsMcCJvI3+3dnyMsvxzc3p4UWbNXkc=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-ycRNP2kNHazBu8LXdhFNDrNJfr5JYNooQIqUE+oWqyE=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contributor Stories — Hive Commons</title>
 <meta name="description" content="Real Hive Commons contributor progression stories and public Contributor Relay metrics for event organisers, mentors, and contributors.">
@@ -378,7 +378,10 @@ What changed for you afterward?"></textarea>
 
   function truncateStory(story) {
     if (story.length <= STORY_MAX) return { text: story, truncated: false };
-    return { text: story.slice(0, STORY_MAX).trimEnd(), truncated: true };
+    var cut = story.slice(0, STORY_MAX);
+    // A cut inside a surrogate pair leaves a lone surrogate that encodeURIComponent rejects.
+    if (/[\uD800-\uDBFF]$/.test(cut)) cut = cut.slice(0, -1);
+    return { text: cut.trimEnd(), truncated: true };
   }
 
   function markdown(data) {
