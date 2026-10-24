@@ -7,7 +7,7 @@ import { join, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { ROOT, htmlFiles, isRedirectPage } from "./html-pages.mjs";
 import { REGEN_HINT, sha256Source, parseCsp, problemsOf } from "./page-csp.mjs";
-import { updateCspHashes } from "./update-csp-hashes.mjs";
+import { updateCspHashes, updatePages } from "./update-csp-hashes.mjs";
 
 const BASE = "default-src 'none'; img-src 'self'; base-uri 'none'; form-action 'none'";
 const SOURCE = "\n  console.log('exact whitespace');\n";
@@ -93,6 +93,72 @@ test("live tree: every committed content page is already up to date", () => {
   }
   assert.ok(pages > 0, "no content pages found");
   assert.deepEqual(stale, [], `stale pages: ${stale.join(", ")} — ${REGEN_HINT}`);
+});
+
+test("updatePages in-process: --check is read-only and names every stale page, update writes only stale pages, errors are reported per page without aborting the walk", () => {
+  const dir = mkdtempSync(join(tmpdir(), "update-csp-pages-"));
+  try {
+    mkdirSync(join(dir, "nested"));
+    const stale = join(dir, "nested", "index.html");
+    const fresh = join(dir, "fresh.html");
+    const broken = join(dir, "broken.html");
+    const redirect = join(dir, "index.html");
+    const before = fixture();
+    const upToDate = updateCspHashes(before);
+    const redirectHtml = '<meta http-equiv="refresh" content="0;url=/">';
+    writeFileSync(stale, before);
+    writeFileSync(fresh, upToDate);
+    writeFileSync(redirect, redirectHtml);
+    const run = (options) => {
+      const lines = [];
+      const code = updatePages({ root: dir, log: (line) => lines.push(line), ...options });
+      return { code, lines };
+    };
+
+    // --check over the whole root: the stale page is named, the hint is printed once, nothing is written.
+    let result = run({ check: true });
+    assert.equal(result.code, 1);
+    assert.deepEqual(result.lines, ["Stale: nested/index.html", "Regenerate hashes with: node scripts/update-csp-hashes.mjs"]);
+    assert.equal(readFileSync(stale, "utf8"), before);
+
+    // Explicit file selection narrows the walk; an already-correct page is silent and exits 0.
+    result = run({ check: true, files: [fresh] });
+    assert.deepEqual(result, { code: 0, lines: [] });
+
+    // Update mode rewrites only the stale page; fresh and redirect pages are byte-identical.
+    result = run({});
+    assert.deepEqual(result, { code: 0, lines: ["Updated: nested/index.html"] });
+    assert.equal(readFileSync(stale, "utf8"), upToDate);
+    assert.equal(readFileSync(fresh, "utf8"), upToDate);
+    assert.equal(readFileSync(redirect, "utf8"), redirectHtml);
+
+    // A second run is clean in both modes.
+    assert.deepEqual(run({ check: true }), { code: 0, lines: [] });
+    assert.deepEqual(run({}), { code: 0, lines: [] });
+
+    // A page the tool refuses is reported with its message and fails the run, but
+    // the walk continues: a stale sibling is still updated in the same pass.
+    writeFileSync(broken, "<head></head>");
+    writeFileSync(stale, before);
+    result = run({});
+    assert.equal(result.code, 1);
+    assert.deepEqual(result.lines, ["Error: broken.html: expected exactly one CSP meta with a content attribute; fix the policy manually", "Updated: nested/index.html"]);
+    assert.equal(readFileSync(stale, "utf8"), upToDate);
+    assert.equal(readFileSync(broken, "utf8"), "<head></head>");
+
+    // In --check mode an error alone also prints the regenerate hint.
+    result = run({ check: true });
+    assert.equal(result.code, 1);
+    assert.deepEqual(result.lines, ["Error: broken.html: expected exactly one CSP meta with a content attribute; fix the policy manually", "Regenerate hashes with: node scripts/update-csp-hashes.mjs"]);
+
+    // A missing explicit file is an error for that file, not an uncaught exception.
+    result = run({ check: true, files: [join(dir, "missing.html")] });
+    assert.equal(result.code, 1);
+    assert.equal(result.lines.length, 2);
+    assert.match(result.lines[0], /^Error: missing\.html: ENOENT/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("CLI check is read-only, update reports recursive pages, redirects are skipped, and a second run is clean", () => {
