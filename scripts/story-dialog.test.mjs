@@ -558,3 +558,35 @@ test("cancel event (browser Escape) is intercepted so cleanup always runs", () =
   assert.ok(ev.defaultPrevented);
   assert.equal(t.dialog.closeCalls, 1);
 });
+
+const URL_MAX = 6000;
+
+test("1500 CJK chars are trimmed so the form URL stays within the byte budget", async () => {
+  const t = boot();
+  const long = "界".repeat(STORY_MAX);
+  t.fill({ ...VALID, "story-text": long });
+  t.submit();
+  assert.equal(t.opened.length, 1);
+  assert.ok(t.issueUrl().href.length <= URL_MAX, "encoded URL within budget");
+  const story = t.issueUrl().searchParams.get("story");
+  assert.ok(story.length > 0 && story.length < STORY_MAX);
+  assert.ok(long.startsWith(story), "story is a prefix of the input");
+  assert.doesNotMatch(story, /[\uD800-\uDBFF]$/);
+  assert.match(t.el("story-status").textContent, /^Your story was trimmed to fit GitHub's URL limit/);
+});
+
+test("popup blocked: fallback link obeys the URL byte budget and clipboard keeps the full story", async () => {
+  const t = boot({ popupBlocked: true });
+  const long = "😀".repeat(700);
+  t.el("opener-hero").dispatch("click");
+  t.fill({ ...VALID, "story-text": long });
+  t.submit();
+  assert.equal(t.el("story-fallback").hidden, false);
+  const href = t.el("story-fallback-link").href;
+  assert.ok(href.length <= URL_MAX, "fallback URL within budget");
+  assert.ok(long.startsWith(new URL(href).searchParams.get("story")));
+  assert.match(t.el("story-status").textContent, /^Your story was trimmed to fit GitHub's URL limit/);
+  t.el("story-copy").dispatch("click");
+  await Promise.resolve();
+  assert.equal(t.clipboard.written[0].split("### Story\n")[1], long, "clipboard markdown carries the full story");
+});
