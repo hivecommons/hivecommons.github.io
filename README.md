@@ -443,6 +443,14 @@ requirements first (see [issue #73](https://github.com/hivecommons/hivecommons.g
 
 **Incident response** — When a bad deploy or incident impacts visitors of `hivecommons.dev` (broken pages, dead redirects, domain issues), use the [postmortem template](runbooks/postmortem-template.md) to document it blamelessly and fact-based. Coordinate recovery using the [release-rollback runbook](runbooks/release-rollback.md).
 
+## Contributing
+
+Contributions follow the org-wide [CONTRIBUTING.md](https://github.com/hivecommons/.github/blob/main/CONTRIBUTING.md);
+every commit needs a DCO sign-off (`git commit -s`). Opening a pull request pre-fills
+`.github/pull_request_template.md`, whose checklist covers this repository's own rules: the
+checks under [Local preview and running the checks](#local-preview-and-running-the-checks),
+generated [shortcut redirects](#shortcut-redirects), CSP hashes, `sitemap.xml` and `llms.txt`.
+
 ## Code of Conduct
 
 Hive Commons website contributors are expected to follow the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
