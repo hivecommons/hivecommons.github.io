@@ -2,7 +2,7 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-fqaSlc/mYehO2SKM+k6zUFkHrNm5dXfP1C6LhHKcToQ=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-D+MA4Kw6ReaUtgOvUTEDy2F6wjHX8c9dgo723LdyqQA=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contributor Stories — Hive Commons</title>
 <meta name="description" content="Real Hive Commons contributor progression stories and public Contributor Relay metrics for event organisers, mentors, and contributors.">
@@ -310,6 +310,8 @@ What changed for you afterward?"></textarea>
 <script>
 (function () {
   var STORY_MAX = 1500;
+  // GitHub 500s signed-out visitors above ~6 KB of encoded URL (and 414s above ~8 KB).
+  var URL_MAX = 6000;
   var ISSUE_URL = "https://github.com/hivecommons/hive/issues/new";
   var dialog = document.getElementById("story-dialog");
   var form = document.getElementById("story-form");
@@ -378,10 +380,14 @@ What changed for you afterward?"></textarea>
 
   function truncateStory(story) {
     if (story.length <= STORY_MAX) return { text: story, truncated: false };
-    var cut = story.slice(0, STORY_MAX);
+    return { text: cutStory(story, STORY_MAX), truncated: true };
+  }
+
+  function cutStory(story, length) {
+    var cut = story.slice(0, length);
     // A cut inside a surrogate pair leaves a lone surrogate that encodeURIComponent rejects.
     if (/[\uD800-\uDBFF]$/.test(cut)) cut = cut.slice(0, -1);
-    return { text: cut.trimEnd(), truncated: true };
+    return cut.trimEnd();
   }
 
   function markdown(data) {
@@ -422,6 +428,24 @@ What changed for you afterward?"></textarea>
 
   function collectData() {
     var trimmed = truncateStory(getValue("story-text"));
+    var data = collectDataWith(trimmed);
+    if (buildIssue(data).length > URL_MAX) {
+      var full = trimmed.text;
+      var lo = 0;
+      var hi = full.length;
+      while (lo < hi) {
+        var mid = Math.ceil((lo + hi) / 2);
+        data.story = cutStory(full, mid);
+        if (buildIssue(data).length <= URL_MAX) lo = mid; else hi = mid - 1;
+      }
+      data.story = cutStory(full, lo);
+      data.story_truncated = true;
+      data.story_url_trimmed = true;
+    }
+    return data;
+  }
+
+  function collectDataWith(trimmed) {
     return {
       name: getValue("story-name"),
       profile: getValue("story-profile"),
@@ -505,7 +529,9 @@ What changed for you afterward?"></textarea>
     var issueUrl = buildIssue(data);
     issueText = markdown(data);
     var opened = window.open("", "_blank");
-    var trimmedNotice = "Your story was trimmed to 1500 characters for the GitHub form. ";
+    var trimmedNotice = data.story_url_trimmed
+      ? "Your story was trimmed to fit GitHub's URL limit for the GitHub form. "
+      : "Your story was trimmed to 1500 characters for the GitHub form. ";
     if (!opened) {
       fallbackLink.href = issueUrl;
       fallback.hidden = false;
