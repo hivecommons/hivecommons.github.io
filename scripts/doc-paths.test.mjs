@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Static gate over the repository paths named in backticks by README.md and
-// runbooks/*.md. The prose there is how a contributor (or an on-call reader at
+// Static gate over the repository paths named in backticks by README.md,
+// runbooks/*.md and the pull request template (every committed *.md). The prose there is how a contributor (or an on-call reader at
 // 3am) finds `scripts/check-links.sh`, `.github/workflows/scorecard.yml` or
 // `.well-known/security.txt`; nothing else notices when a script is renamed,
 // a workflow dropped or a runbook moved while the prose keeps pointing at the
@@ -196,6 +196,10 @@ test("README.md and runbooks/*.md are present and name at least one repository p
   assert.ok(Object.keys(DOCS).some((n) => n.startsWith("runbooks/")), "no runbooks/*.md found");
   const claims = Object.values(DOCS).flatMap((t) => codeSpans(t).flatMap((s) => pathClaims(s.text, TOP_DIRS)));
   assert.ok(claims.length > 0, "no backticked repository paths found — the gate has nothing to check");
+});
+
+test(".github/pull_request_template.md is scanned, so the paths its checklist names stay live", () => {
+  assert.ok(".github/pull_request_template.md" in DOCS, ".github/pull_request_template.md missing");
 });
 
 for (const name of Object.keys(DOCS)) {
