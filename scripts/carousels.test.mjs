@@ -500,6 +500,21 @@ test("hero swipe: touch swipe past threshold navigates; mouse drags, short and v
   assertHeroSlide(t, 0);
 });
 
+test("hero swipe: pointercancel clears the swipe start; mouse pointerup never completes a touch gesture", () => {
+  const t = bootHero();
+  t.root.dispatch("pointerdown", { pointerType: "touch", clientX: 300, clientY: 100 });
+  t.root.dispatch("pointercancel", { pointerType: "touch" });
+  t.root.dispatch("pointerup", { pointerType: "mouse", clientX: -500, clientY: 100 });
+  assertHeroSlide(t, 0, "mouse pointerup after a cancelled touch is not a swipe");
+  t.root.dispatch("pointerdown", { pointerType: "touch", clientX: 300, clientY: 100 });
+  t.root.dispatch("pointercancel", { pointerType: "touch" });
+  t.root.dispatch("pointerup", { pointerType: "touch", clientX: 300 - HERO_SWIPE_PX, clientY: 100 });
+  assertHeroSlide(t, 0, "cancelled gesture does not complete");
+  t.root.dispatch("pointerdown", { pointerType: "touch", clientX: 300, clientY: 100 });
+  t.root.dispatch("pointerup", { pointerType: "mouse", clientX: 300 - HERO_SWIPE_PX, clientY: 100 });
+  assertHeroSlide(t, 0, "mouse pointerup beyond threshold is ignored");
+});
+
 test("hero deep link: location.hash selects the initial slide; unknown hash falls back to the first", () => {
   const t = bootHero({ hash: "#" + HERO_IDS[2] });
   assertHeroSlide(t, 2);

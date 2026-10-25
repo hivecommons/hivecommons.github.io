@@ -2,7 +2,7 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-IXrNMFsbjAXC+sX1T0IOFqUecOh3LhlgUUWZ9hH5IFw=' 'sha256-QSGzxNSepdjMBRwnovEOJlbbTDp+rqYlcPfhcB+fgnQ=' 'sha256-yDk9g0p1zFFAzRAKzvh9BO3odtKg96amzKsWG0jpax4='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-NgUcRWqgRxmvoXsdf9DJT4dQ5AOna/qzI6dDicudC9k=' 'sha256-QSGzxNSepdjMBRwnovEOJlbbTDp+rqYlcPfhcB+fgnQ=' 'sha256-yDk9g0p1zFFAzRAKzvh9BO3odtKg96amzKsWG0jpax4='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hive Commons</title>
 <meta name="description" content="Hive Commons supports Hive: governed AI-agent fleets with Jira Data Center work sources, The Commons, swarms, Claude Code, GitHub Copilot, vLLM, llm-d and more.">
@@ -817,7 +817,12 @@
     pointerStartX = e.clientX;
     pointerStartY = e.clientY;
   }, { passive: true });
+  root.addEventListener('pointercancel', function () {
+    pointerStartX = null;
+    pointerStartY = null;
+  }, { passive: true });
   root.addEventListener('pointerup', function (e) {
+    if (e.pointerType === 'mouse') return;
     if (pointerStartX === null || pointerStartY === null) return;
     var dx = e.clientX - pointerStartX;
     var dy = e.clientY - pointerStartY;
