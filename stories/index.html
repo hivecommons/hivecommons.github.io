@@ -2,7 +2,7 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-zCrCZyj808KIt7bDf+IVXtfCUKHuEuIRSeqpB1Esw/w=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-fqaSlc/mYehO2SKM+k6zUFkHrNm5dXfP1C6LhHKcToQ=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contributor Stories — Hive Commons</title>
 <meta name="description" content="Real Hive Commons contributor progression stories and public Contributor Relay metrics for event organisers, mentors, and contributors.">
@@ -396,7 +396,7 @@ What changed for you afterward?"></textarea>
       "**PR / issue:** " + (data.link || "Not provided"),
       "",
       "### Story",
-      data.story
+      data.story_full
     ].join("\n");
   }
 
@@ -428,6 +428,7 @@ What changed for you afterward?"></textarea>
       project: getValue("story-project"),
       role: document.getElementById("story-role").value,
       story: trimmed.text,
+      story_full: getValue("story-text"),
       story_truncated: trimmed.truncated,
       quote_ok: document.getElementById("story-quote").checked,
       link: getValue("story-link")
@@ -508,7 +509,7 @@ What changed for you afterward?"></textarea>
     if (!opened) {
       fallbackLink.href = issueUrl;
       fallback.hidden = false;
-      if (data.story_truncated) status.textContent = trimmedNotice;
+      if (data.story_truncated) status.textContent = trimmedNotice + "Copy issue text carries the full story.";
       return;
     }
     opened.opener = null;

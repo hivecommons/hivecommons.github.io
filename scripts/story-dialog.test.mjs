@@ -366,6 +366,20 @@ test("popup blocked with truncated story: fallback revealed and trimmed-story no
   assert.equal(story, "x".repeat(STORY_MAX - 3), "fallback link carries the trimmed story");
 });
 
+test("popup blocked with truncated story: copy issue text carries the full story", async () => {
+  const t = boot({ popupBlocked: true });
+  const long = "x".repeat(STORY_MAX - 3) + "   tail-that-gets-cut";
+  t.el("opener-hero").dispatch("click");
+  t.fill({ ...VALID, "story-text": long });
+  t.submit();
+  const href = new URL(t.el("story-fallback-link").href);
+  assert.equal(href.searchParams.get("story"), "x".repeat(STORY_MAX - 3), "fallback link carries the trimmed story");
+  assert.match(t.el("story-status").textContent, /Copy issue text carries the full story\./);
+  t.el("story-copy").dispatch("click");
+  await Promise.resolve();
+  assert.equal(t.clipboard.written[0].split("### Story\n")[1], long, "clipboard markdown carries the full story");
+});
+
 test("popup blocked with non-truncated story: fallback revealed but no notice shown", () => {
   const t = boot({ popupBlocked: true });
   t.el("opener-hero").dispatch("click");
