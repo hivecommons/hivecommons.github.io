@@ -353,6 +353,28 @@ test("popup blocked: fallback link gets the prefilled URL and copy button yields
   assert.match(t.el("story-status").textContent, /^Copied\./);
 });
 
+test("popup blocked with truncated story: fallback revealed and trimmed-story notice shown", async () => {
+  const t = boot({ popupBlocked: true });
+  const long = "x".repeat(STORY_MAX - 3) + "   tail-that-gets-cut";
+  t.el("opener-hero").dispatch("click");
+  t.fill({ ...VALID, "story-text": long });
+  t.submit();
+  assert.equal(t.el("story-fallback").hidden, false, "fallback revealed");
+  assert.match(t.el("story-status").textContent, /^Your story was trimmed to 1500 characters/, "trimmed-story notice shown when popup blocked");
+  const href = new URL(t.el("story-fallback-link").href);
+  const story = href.searchParams.get("story");
+  assert.equal(story, "x".repeat(STORY_MAX - 3), "fallback link carries the trimmed story");
+});
+
+test("popup blocked with non-truncated story: fallback revealed but no notice shown", () => {
+  const t = boot({ popupBlocked: true });
+  t.el("opener-hero").dispatch("click");
+  t.fill(VALID);
+  t.submit();
+  assert.equal(t.el("story-fallback").hidden, false, "fallback revealed");
+  assert.equal(t.el("story-status").textContent, "", "no truncation notice when story not truncated");
+});
+
 test("copy button tells the user to use the prefilled link when the clipboard write is rejected", async () => {
   const t = boot({ popupBlocked: true, clipboardOverride: { clipboard: { writeText() { return Promise.reject(new Error("denied")); } } } });
   t.el("opener-hero").dispatch("click");

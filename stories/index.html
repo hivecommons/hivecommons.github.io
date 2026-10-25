@@ -2,7 +2,7 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-ycRNP2kNHazBu8LXdhFNDrNJfr5JYNooQIqUE+oWqyE=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-zCrCZyj808KIt7bDf+IVXtfCUKHuEuIRSeqpB1Esw/w=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contributor Stories — Hive Commons</title>
 <meta name="description" content="Real Hive Commons contributor progression stories and public Contributor Relay metrics for event organisers, mentors, and contributors.">
@@ -504,15 +504,17 @@ What changed for you afterward?"></textarea>
     var issueUrl = buildIssue(data);
     issueText = markdown(data);
     var opened = window.open("", "_blank");
+    var trimmedNotice = "Your story was trimmed to 1500 characters for the GitHub form. ";
     if (!opened) {
       fallbackLink.href = issueUrl;
       fallback.hidden = false;
+      if (data.story_truncated) status.textContent = trimmedNotice;
       return;
     }
     opened.opener = null;
     opened.location = issueUrl;
     var note = "Thanks — your story opened as a draft issue in a new tab. GitHub only prefills text fields, so pick your Role again" + (data.quote_ok ? " and re-tick Can we quote you by name?" : "") + ", then hit Submit new issue there to finish. Not signed in to GitHub? Email us or use the Discord link below.";
-    if (data.story_truncated) note = "Your story was trimmed to 1500 characters for the GitHub form. " + note;
+    if (data.story_truncated) note = trimmedNotice + note;
     status.textContent = note;
   });
 
