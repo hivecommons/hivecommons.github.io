@@ -2,7 +2,7 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-D+MA4Kw6ReaUtgOvUTEDy2F6wjHX8c9dgo723LdyqQA=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-TWGQ+kJ/4EnF2FiU6LsyyQxkCmPtJnACkpcCIUK04xs=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contributor Stories — Hive Commons</title>
 <meta name="description" content="Real Hive Commons contributor progression stories and public Contributor Relay metrics for event organisers, mentors, and contributors.">
@@ -277,6 +277,8 @@ What changed for you afterward?"></textarea>
       <p class="story-status" id="story-status" role="status" aria-live="polite"></p>
       <div class="story-fallback" id="story-fallback" hidden>
         <p>Browser blocked the new tab — <a id="story-fallback-link" href="https://github.com/hivecommons/hive/issues/new?template=contributor-story.yml" target="_blank" rel="noopener">open the prefilled issue</a>. GitHub only prefills text fields — pick your Role and tick Can we quote you by name? again there.</p>
+      </div>
+      <div class="story-fallback" id="story-recover" hidden>
         <button class="btn btn-quiet" type="button" id="story-copy">Copy issue text</button>
       </div>
       <p class="story-publish-note">Issues labelled <code>contributor-story</code> are reviewed by maintainers and promoted to this page after public links are verified. Not signed in to GitHub? <a href="/join">Email us</a> or <a href="https://hivecommons.dev/discord">join Discord</a>.</p>
@@ -321,6 +323,7 @@ What changed for you afterward?"></textarea>
   var closers = dialog.querySelectorAll("[data-story-close]");
   var status = document.getElementById("story-status");
   var fallback = document.getElementById("story-fallback");
+  var recover = document.getElementById("story-recover");
   var fallbackLink = document.getElementById("story-fallback-link");
   var storyText = document.getElementById("story-text");
   var storyCount = document.getElementById("story-count");
@@ -463,6 +466,7 @@ What changed for you afterward?"></textarea>
     lastFocus = document.activeElement;
     status.textContent = "";
     fallback.hidden = true;
+    recover.hidden = true;
     fallbackLink.removeAttribute("href");
     issueText = "";
     if (typeof dialog.showModal === "function") {
@@ -524,6 +528,7 @@ What changed for you afterward?"></textarea>
     event.preventDefault();
     status.textContent = "";
     fallback.hidden = true;
+    recover.hidden = true;
     if (!validate()) return;
     var data = collectData();
     var issueUrl = buildIssue(data);
@@ -532,6 +537,7 @@ What changed for you afterward?"></textarea>
     var trimmedNotice = data.story_url_trimmed
       ? "Your story was trimmed to fit GitHub's URL limit for the GitHub form. "
       : "Your story was trimmed to 1500 characters for the GitHub form. ";
+    if (data.story_truncated || !opened) recover.hidden = false;
     if (!opened) {
       fallbackLink.href = issueUrl;
       fallback.hidden = false;
@@ -541,12 +547,14 @@ What changed for you afterward?"></textarea>
     opened.opener = null;
     opened.location = issueUrl;
     var note = "Thanks — your story opened as a draft issue in a new tab. GitHub only prefills text fields, so pick your Role again" + (data.quote_ok ? " and re-tick Can we quote you by name?" : "") + ", then hit Submit new issue there to finish. Not signed in to GitHub? Email us or use the Discord link below.";
-    if (data.story_truncated) note = trimmedNotice + note;
+    if (data.story_truncated) note = trimmedNotice + "Copy issue text carries the full story. " + note;
     status.textContent = note;
   });
 
   copyButton.addEventListener("click", function () {
-    var copyFailed = "Copy did not work. Use the prefilled issue link above instead.";
+    var copyFailed = fallback.hidden
+      ? "Copy did not work. Select the story text and copy it by hand, or finish in the GitHub tab that just opened."
+      : "Copy did not work. Use the prefilled issue link above instead.";
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(issueText).then(function () {
         status.textContent = "Copied. Paste it into the contributor story issue form to finish.";

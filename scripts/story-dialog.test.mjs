@@ -118,6 +118,8 @@ function makeDocument() {
   const fallback = add("story-fallback", { scope: dialog });
   fallback.hidden = true;
   inDialog("story-fallback-link", { href: "https://github.com/hivecommons/hive/issues/new?template=contributor-story.yml" });
+  const recover = add("story-recover", { scope: dialog });
+  recover.hidden = true;
   inDialog("story-copy");
   inDialog("story-cancel", { attrs: { "data-story-close": "" } });
   void text;
@@ -380,13 +382,50 @@ test("popup blocked with truncated story: copy issue text carries the full story
   assert.equal(t.clipboard.written[0].split("### Story\n")[1], long, "clipboard markdown carries the full story");
 });
 
-test("popup blocked with non-truncated story: fallback revealed but no notice shown", () => {
+test("popup allowed with truncated story: copy control is revealed and the notice points to the full story", async () => {
+  const t = boot();
+  const long = "x".repeat(STORY_MAX - 3) + "   tail-that-gets-cut";
+  t.el("opener-hero").dispatch("click");
+  assert.equal(t.el("story-recover").hidden, true);
+  t.fill({ ...VALID, "story-text": long });
+  t.submit();
+  assert.equal(t.opened.length, 1, "popup opened");
+  assert.equal(t.el("story-fallback").hidden, true, "popup-blocked link stays hidden");
+  assert.equal(t.el("story-recover").hidden, false, "copy control revealed");
+  assert.match(t.el("story-status").textContent, /^Your story was trimmed to 1500 characters/);
+  assert.match(t.el("story-status").textContent, /Copy issue text carries the full story\./);
+  assert.equal((await copied(t)).split("### Story\n")[1], long, "clipboard markdown carries the full story");
+});
+
+test("popup allowed with non-truncated story: copy control stays hidden", () => {
+  const t = boot();
+  t.fill(VALID);
+  t.submit();
+  assert.equal(t.el("story-recover").hidden, true);
+});
+
+test("popup blocked with non-truncated story: fallback and copy control revealed but no notice shown", () => {
   const t = boot({ popupBlocked: true });
   t.el("opener-hero").dispatch("click");
   t.fill(VALID);
   t.submit();
   assert.equal(t.el("story-fallback").hidden, false, "fallback revealed");
+  assert.equal(t.el("story-recover").hidden, false, "copy control revealed on popup-blocked path");
   assert.equal(t.el("story-status").textContent, "", "no truncation notice when story not truncated");
+});
+
+test("copy failure on the popup-opened path does not point at the hidden prefilled link", async () => {
+  const t = boot({ clipboardOverride: { clipboard: { writeText() { return Promise.reject(new Error("denied")); } } } });
+  t.el("opener-hero").dispatch("click");
+  t.fill({ ...VALID, "story-text": "x".repeat(STORY_MAX + 100) });
+  t.submit();
+  assert.equal(t.el("story-fallback").hidden, true, "fallback stays hidden when popup opened");
+  assert.equal(t.el("story-recover").hidden, false, "copy control revealed for truncated story");
+  t.el("story-copy").dispatch("click");
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.match(t.el("story-status").textContent, /^Copy did not work\./);
+  assert.doesNotMatch(t.el("story-status").textContent, /prefilled issue link above/);
 });
 
 test("copy button tells the user to use the prefilled link when the clipboard write is rejected", async () => {
