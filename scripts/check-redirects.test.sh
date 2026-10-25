@@ -21,15 +21,18 @@ fail() { echo "  FAIL: $1"; failures=$((failures + 1)); }
 
 # Fixture generator: the real script's body with a two-entry MAP, so the test
 # exercises the same page template the site ships.
+# write_generator DEST [MAP_ENTRY...] — extra entries are appended to the MAP
+# verbatim, so a case can feed the real template a URL or label of its choosing.
 write_generator() {
-  local dest="$1"
+  local dest="$1"; shift
   {
     sed -n '1,/^declare -A MAP=(/p' "$REAL_GEN"
     cat <<'MAP'
   [tv]="https://example.test/tv|the test channel"
   [code]="https://example.test/code|the test code"
-)
 MAP
+    printf '  %s\n' "$@"
+    echo ')'
     sed -n '/^)$/,$p' "$REAL_GEN" | sed '1d'
   } > "$dest"
   chmod +x "$dest"
@@ -74,6 +77,30 @@ if grep -Fq '<meta name="robots" content="noindex">' "$root/tv/index.html"; then
 else
   fail "fixture generator lost the noindex tag"
 fi
+
+echo "case: generator HTML-escapes & < > \" in URLs and labels"
+root="$(new_site escape)"
+write_generator "$root/make-redirects.sh" \
+  '[esc]="https://example.test/q?a=1&b=<x>|Tom & Jerry \"show\" <live>"'
+(cd "$root" && ./make-redirects.sh >/dev/null)
+page="$root/esc/index.html"
+if grep -Fq 'url=https://example.test/q?a=1&amp;b=&lt;x&gt;"' "$page" && grep -Fq 'href="https://example.test/q?a=1&amp;b=&lt;x&gt;"' "$page"; then
+  pass "URL is escaped in the refresh, canonical and anchor attributes"
+else
+  fail "URL not escaped in generated page"; sed 's/^/      /' "$page"
+fi
+if grep -Fq 'Tom &amp; Jerry &quot;show&quot; &lt;live&gt;</a>' "$page" && grep -Fq '<title>Hive Commons — Tom &amp; Jerry &quot;show&quot; &lt;live&gt;</title>' "$page"; then
+  pass "label is escaped in the title and link text"
+else
+  fail "label not escaped in generated page"; sed 's/^/      /' "$page"
+fi
+if grep -Eq '<x>|<live>|"show"|&b=<|& Jerry' "$page"; then
+  fail "raw < > \" or & survived into the page"; sed 's/^/      /' "$page"
+else
+  pass "no raw special characters leak into markup"
+fi
+run_gate "$root"
+expect_rc "escaped page is byte-stable under regeneration" 0
 
 echo "case: clean site passes"
 root="$(new_site clean)"
