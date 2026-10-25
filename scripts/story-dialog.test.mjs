@@ -404,13 +404,28 @@ test("popup allowed with non-truncated story: copy control stays hidden", () => 
   assert.equal(t.el("story-recover").hidden, true);
 });
 
-test("popup blocked with non-truncated story: fallback revealed but no notice shown", () => {
+test("popup blocked with non-truncated story: fallback and copy control revealed but no notice shown", () => {
   const t = boot({ popupBlocked: true });
   t.el("opener-hero").dispatch("click");
   t.fill(VALID);
   t.submit();
   assert.equal(t.el("story-fallback").hidden, false, "fallback revealed");
+  assert.equal(t.el("story-recover").hidden, false, "copy control revealed on popup-blocked path");
   assert.equal(t.el("story-status").textContent, "", "no truncation notice when story not truncated");
+});
+
+test("copy failure on the popup-opened path does not point at the hidden prefilled link", async () => {
+  const t = boot({ clipboardOverride: { clipboard: { writeText() { return Promise.reject(new Error("denied")); } } } });
+  t.el("opener-hero").dispatch("click");
+  t.fill({ ...VALID, "story-text": "x".repeat(STORY_MAX + 100) });
+  t.submit();
+  assert.equal(t.el("story-fallback").hidden, true, "fallback stays hidden when popup opened");
+  assert.equal(t.el("story-recover").hidden, false, "copy control revealed for truncated story");
+  t.el("story-copy").dispatch("click");
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.match(t.el("story-status").textContent, /^Copy did not work\./);
+  assert.doesNotMatch(t.el("story-status").textContent, /prefilled issue link above/);
 });
 
 test("copy button tells the user to use the prefilled link when the clipboard write is rejected", async () => {

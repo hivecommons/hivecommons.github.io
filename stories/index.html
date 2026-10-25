@@ -2,7 +2,7 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-8eUvZeE/+tTMvQo8k9W9KGVBAJON6+BkRRpRp5lh858=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-TWGQ+kJ/4EnF2FiU6LsyyQxkCmPtJnACkpcCIUK04xs=' 'unsafe-hashes' 'sha256-Kkh0ufQbkIVTWPYjIGk2bAJsmDwjmUuIAt2LyPfNr3g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://github.com https://avatars.githubusercontent.com; font-src 'self'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contributor Stories — Hive Commons</title>
 <meta name="description" content="Real Hive Commons contributor progression stories and public Contributor Relay metrics for event organisers, mentors, and contributors.">
@@ -537,7 +537,7 @@ What changed for you afterward?"></textarea>
     var trimmedNotice = data.story_url_trimmed
       ? "Your story was trimmed to fit GitHub's URL limit for the GitHub form. "
       : "Your story was trimmed to 1500 characters for the GitHub form. ";
-    if (data.story_truncated) recover.hidden = false;
+    if (data.story_truncated || !opened) recover.hidden = false;
     if (!opened) {
       fallbackLink.href = issueUrl;
       fallback.hidden = false;
@@ -552,7 +552,9 @@ What changed for you afterward?"></textarea>
   });
 
   copyButton.addEventListener("click", function () {
-    var copyFailed = "Copy did not work. Use the prefilled issue link above instead.";
+    var copyFailed = fallback.hidden
+      ? "Copy did not work. Select the story text and copy it by hand, or finish in the GitHub tab that just opened."
+      : "Copy did not work. Use the prefilled issue link above instead.";
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(issueText).then(function () {
         status.textContent = "Copied. Paste it into the contributor story issue form to finish.";
