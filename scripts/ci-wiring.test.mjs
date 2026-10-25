@@ -6,8 +6,9 @@
 // that nobody wires in is committed, documented, green locally and never run
 // in CI. Likewise a `.mjs` file that uses node:test but is not named
 // `*.test.mjs` is skipped by the glob without a word, a shell script whose
-// executable bit was lost fails only at run time, and README `## Checks` is the
-// only inventory a contributor reads. Each rule has a fixture self-test.
+// executable bit was lost fails only at run time, and README `## Checks` and the
+// pull request template's `## Checks run locally` are the only inventories a
+// contributor reads. Each rule has a fixture self-test.
 // Zero dependencies.
 // Usage: node --test scripts/ci-wiring.test.mjs
 import { test } from "node:test";
@@ -21,6 +22,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 const WORKFLOW = join(ROOT, ".github", "workflows", "links.yml");
 const README = join(ROOT, "README.md");
+const PR_TEMPLATE = join(ROOT, ".github", "pull_request_template.md");
 const NODE_GLOB = "node --test scripts/*.test.mjs";
 
 // --- parsing ---------------------------------------------------------------
@@ -85,7 +87,7 @@ function invocations(jobs, script) {
   return out;
 }
 
-export function wiringProblems(yaml, { scripts, readme, nodeSources = {} }) {
+export function wiringProblems(yaml, { scripts, readme, prTemplate, nodeSources = {} }) {
   const problems = [];
   const jobs = workflowJobs(yaml);
   if (!jobs.length) return ["links.yml has no jobs"];
@@ -120,6 +122,19 @@ export function wiringProblems(yaml, { scripts, readme, nodeSources = {} }) {
     else {
       for (const s of [...shellGates, ...shellTests, ...nodeTests]) {
         if (!checks.includes(`scripts/${s}`)) problems.push(`README.md \`## Checks\` does not describe scripts/${s}`);
+      }
+    }
+  }
+  // The PR template's checklist is what a contributor actually runs before
+  // opening a PR; the node gates are one glob there, the shell gates and
+  // self-tests are listed by hand, exactly like the links.yml steps above.
+  if (prTemplate !== undefined) {
+    const local = /^## Checks run locally\s*$([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(prTemplate)?.[1];
+    if (local === undefined) problems.push(".github/pull_request_template.md has no `## Checks run locally` section");
+    else {
+      if (!local.includes(NODE_GLOB)) problems.push(`.github/pull_request_template.md \`## Checks run locally\` does not list \`${NODE_GLOB}\``);
+      for (const s of [...shellGates, ...shellTests]) {
+        if (!local.includes(`scripts/${s}`)) problems.push(`.github/pull_request_template.md \`## Checks run locally\` does not list scripts/${s}`);
       }
     }
   }
@@ -190,6 +205,7 @@ jobs:
 
 const SCRIPTS = ["check-links.sh", "check-links.test.sh", "check-redirects.sh", "check-redirects.test.sh", "page-x.test.mjs"];
 const SOURCES = { "page-x.test.mjs": 'import { test } from "node:test";\n' };
+const PR_TEMPLATE_OK = `## Summary\n\n## Checks run locally\n\n- [ ] \`node --test scripts/*.test.mjs\`\n- [ ] \`scripts/check-links.sh --external-warn\`\n- [ ] \`scripts/check-links.test.sh\`\n- [ ] \`scripts/check-redirects.test.sh\`\n- [ ] \`scripts/check-redirects.sh\`\n\n## Checklist\n`;
 const README_OK = `# Site\n\n## Checks\n\n- \`scripts/check-links.sh\` — a\n- \`scripts/check-links.test.sh\` — b\n- \`scripts/check-redirects.sh\` — c\n- \`scripts/check-redirects.test.sh\` — d\n- \`node --test scripts/page-x.test.mjs\` — e\n\n## Next\n`;
 
 test("fixture: jobs, run commands (inline and block) and if: gating are parsed", () => {
@@ -205,8 +221,8 @@ test("fixture: jobs, run commands (inline and block) and if: gating are parsed",
   assert.deepEqual(workflowJobs("name: x\n"), []);
 });
 
-test("fixture: a fully wired workflow, script set and README pass", () => {
-  assert.deepEqual(wiringProblems(YAML, { scripts: SCRIPTS, readme: README_OK, nodeSources: SOURCES }), []);
+test("fixture: a fully wired workflow, script set, README and PR template pass", () => {
+  assert.deepEqual(wiringProblems(YAML, { scripts: SCRIPTS, readme: README_OK, prTemplate: PR_TEMPLATE_OK, nodeSources: SOURCES }), []);
   assert.deepEqual(triggerProblems(YAML), []);
 });
 
@@ -276,6 +292,26 @@ test("fixture: README Checks must exist and name every gate and self-test", () =
   assert.equal(elsewhere.length, 1, "a mention outside ## Checks does not count");
 });
 
+test("fixture: PR template Checks run locally must exist and list the node glob, every shell gate and every self-test", () => {
+  const noSection = wiringProblems(YAML, { scripts: SCRIPTS, prTemplate: "## Summary\n\n## Checklist\n", nodeSources: SOURCES });
+  assert.deepEqual(noSection, [".github/pull_request_template.md has no `## Checks run locally` section"]);
+  const noGlob = wiringProblems(YAML, { scripts: SCRIPTS, prTemplate: PR_TEMPLATE_OK.replace("- [ ] `node --test scripts/*.test.mjs`\n", ""), nodeSources: SOURCES });
+  assert.deepEqual(noGlob, [".github/pull_request_template.md `## Checks run locally` does not list `node --test scripts/*.test.mjs`"]);
+  const missingGate = wiringProblems(YAML, { scripts: SCRIPTS, prTemplate: PR_TEMPLATE_OK.replace("- [ ] `scripts/check-links.sh --external-warn`\n", ""), nodeSources: SOURCES });
+  assert.deepEqual(missingGate, [".github/pull_request_template.md `## Checks run locally` does not list scripts/check-links.sh"]);
+  const missingSelfTest = wiringProblems(YAML, { scripts: SCRIPTS, prTemplate: PR_TEMPLATE_OK.replace("- [ ] `scripts/check-redirects.test.sh`\n", ""), nodeSources: SOURCES });
+  assert.deepEqual(missingSelfTest, [".github/pull_request_template.md `## Checks run locally` does not list scripts/check-redirects.test.sh"]);
+  const elsewhere = wiringProblems(YAML, { scripts: SCRIPTS, prTemplate: PR_TEMPLATE_OK.replace("- [ ] `scripts/check-redirects.test.sh`\n", "") + "\n`scripts/check-redirects.test.sh`\n", nodeSources: SOURCES });
+  assert.equal(elsewhere.length, 1, "a mention outside ## Checks run locally does not count");
+  const newGate = wiringProblems(YAML.replace("  redirects:\n", "  fonts:\n    runs-on: ubuntu-latest\n    steps:\n      - run: scripts/check-fonts.sh\n      - run: scripts/check-fonts.test.sh\n\n  redirects:\n"), { scripts: [...SCRIPTS, "check-fonts.sh", "check-fonts.test.sh"], prTemplate: PR_TEMPLATE_OK, nodeSources: SOURCES });
+  assert.deepEqual(newGate, [
+    ".github/pull_request_template.md `## Checks run locally` does not list scripts/check-fonts.sh",
+    ".github/pull_request_template.md `## Checks run locally` does not list scripts/check-fonts.test.sh",
+  ], "a gate wired into CI but absent from the template is reported, not silently accepted");
+  // Individual node gates are run through the glob; naming them one by one is not required.
+  assert.deepEqual(wiringProblems(YAML, { scripts: [...SCRIPTS, "page-y.test.mjs"], prTemplate: PR_TEMPLATE_OK, nodeSources: { ...SOURCES, "page-y.test.mjs": SOURCES["page-x.test.mjs"] } }), []);
+});
+
 test("fixture: triggers must include pull_request and push to main", () => {
   assert.ok(triggerProblems(YAML.replace("  pull_request:\n", "")).includes("links.yml does not run on pull_request"));
   assert.ok(triggerProblems(YAML.replace("branches: [main]", "branches: [release]")).some((p) => p.includes("push to main")));
@@ -293,8 +329,8 @@ const yaml = readFileSync(WORKFLOW, "utf8");
 const names = readdirSync(HERE).filter((n) => statSync(join(HERE, n)).isFile());
 const nodeSources = Object.fromEntries(names.filter((n) => n.endsWith(".mjs")).map((n) => [n, readFileSync(join(HERE, n), "utf8")]));
 
-test("links.yml: every scripts/ gate and self-test is run by an unconditional step, node gates run through the glob, README Checks lists them all", () => {
-  assert.deepEqual(wiringProblems(yaml, { scripts: names, readme: readFileSync(README, "utf8"), nodeSources }), [], "fixing a missing step needs a workflow edit; fixing a README gap does not");
+test("links.yml: every scripts/ gate and self-test is run by an unconditional step, node gates run through the glob, README Checks and the PR template list them all", () => {
+  assert.deepEqual(wiringProblems(yaml, { scripts: names, readme: readFileSync(README, "utf8"), prTemplate: readFileSync(PR_TEMPLATE, "utf8"), nodeSources }), [], "fixing a missing step needs a workflow edit; fixing a README or PR-template gap does not");
 });
 
 test("links.yml: runs on pull_request and on push to main", () => {

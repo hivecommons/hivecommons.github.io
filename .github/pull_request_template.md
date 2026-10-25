@@ -13,6 +13,7 @@ Closes #<!-- issue number, if this PR resolves one -->
 <!-- From the repository root; see README "Local preview and running the checks". Note any you could not run. -->
 
 - [ ] `node --test scripts/*.test.mjs`
+- [ ] `scripts/check-links.sh --external-warn`
 - [ ] `scripts/check-links.test.sh`
 - [ ] `scripts/check-redirects.test.sh`
 - [ ] `scripts/check-redirects.sh`
