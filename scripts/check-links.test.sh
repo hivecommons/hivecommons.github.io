@@ -33,8 +33,14 @@ while (( $# )); do
 done
 case "$url" in
   *broken*) code=404; body="gone" ;;
+  *withdrawn*) code=410; body="withdrawn" ;;
   *server-error*) code=500; body="boom" ;;
   *soft404*) code=200; body="<h1>Page Not Found</h1>" ;;
+  *soft-code*) code=200; body="<span>404</span>" ;;
+  *soft-moved*) code=200; body="<p>This page doesn't exist or has moved.</p>" ;;
+  # fonts.googleapis.com / fonts.gstatic.com are preconnect-only origins the
+  # checker must skip without probing: make any probe of them a hard failure.
+  *fonts.googleapis.com*|*fonts.gstatic.com*) code=404; body="probed a preconnect origin" ;;
   *unreachable*) exit 7 ;;
   *) code=200; body="<p>fine</p>" ;;
 esac
@@ -257,6 +263,32 @@ expect_rc 0 "--external-warn downgrades external failures to exit 0"
 expect_out 'WARN external broken: .*broken' "404 becomes WARN"
 expect_out 'WARN external soft-404: .*soft404' "soft-404 becomes WARN"
 expect_no_out '^ERROR' "no ERROR lines under --external-warn"
+
+echo "case: 410 Gone and every soft-404 body pattern are external failures"
+root="$(new_site external-variants)"
+cat > "$root/index.html" <<'HTML'
+<a href="https://example.test/withdrawn">410</a>
+<a href="https://example.test/soft-code">bare 404 text node</a>
+<a href="https://example.test/soft-moved">doesn't exist or has moved</a>
+HTML
+run_checker "$root"
+expect_rc 1 "410 and soft-404 variants fail without --external-warn"
+expect_out 'ERROR external broken: index\.html -> https://example\.test/withdrawn \(410' "410 is ERROR like 404"
+expect_out 'ERROR external soft-404: .*soft-code \(200' ">404< body is a soft-404"
+expect_out "ERROR external soft-404: .*soft-moved \\(200" "doesn't-exist-or-has-moved body is a soft-404"
+expect_out 'External failures: 3\.' "all three counted"
+
+echo "case: Google Fonts preconnect origins are skipped, not probed"
+root="$(new_site fonts-skip)"
+cat > "$root/index.html" <<'HTML'
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<a href="https://example.test/fine">fine</a>
+HTML
+run_checker "$root"
+expect_rc 0 "preconnect-only origins never reach curl (the fake fails any probe of them)"
+expect_no_out 'fonts\.g' "no fonts origin is reported"
+expect_out 'Checked 3 unique links\. Internal errors: 0\. External failures: 0\.' "skipped origins still count as checked links"
 
 echo "case: internal errors still fail under --external-warn"
 root="$(new_site warn-internal)"
