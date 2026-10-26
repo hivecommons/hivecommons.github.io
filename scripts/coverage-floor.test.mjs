@@ -339,3 +339,44 @@ test("every branch of every scripts/*.mjs helper and every inline page script is
     ...problemsOf(inline, inlineRuns.runs),
   ], []);
 });
+
+test("fixture: real inline child coverage maps Function wrappers to original page lines", () => {
+  const dir = mkdtempSync(join(tmpdir(), "coverage-inline-fixture-"));
+  try {
+    mkdirSync(join(dir, "scripts"));
+    const page = '<h1>Fixture</h1>\n\n<script>\nfunction pick(x) {\n  return x ? "yes" : "no";\n}\nassert.equal(pick(flag), expected);\n</script>';
+    writeFileSync(join(dir, "page.html"), page);
+    const helper = pathToFileURL(join(HERE, "inline-scripts.mjs")).href;
+    writeFileSync(join(dir, "scripts", "page.test.mjs"), `
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { inlineScript } from ${JSON.stringify(helper)};
+const { src } = inlineScript(readFileSync("page.html", "utf8"), "page.html", "pick");
+new Function("assert", "flag", "expected", src)(assert, true, "yes");
+new Function("assert", "flag", "expected", "unusedLongParameter", src)(assert, true, "yes");
+`);
+    const registry = { "page.html": [{ hook: "pick" }] };
+    const sources = inlineSources(dir, registry);
+    const first = collect(dir, suiteFiles(dir));
+    assert.equal(first.status, 0, first.stdout + first.stderr);
+    const { runs, problems } = inlineRunsFromReports(first.reports, sources);
+    assert.deepEqual(problems, []);
+    assert.deepEqual([...runs.keys()], ["page.html#pick"]);
+    assert.deepEqual(problemsOf(sources, runs), [
+      'page.html#pick:5 `: "no"` never executed by the suite (add a test that asserts what this branch decides)',
+    ]);
+    assert.deepEqual(problemsOf(sources, new Map()), ['page.html#pick: never loaded by the suite']);
+    writeFileSync(join(dir, "scripts", "both.test.mjs"), `
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { inlineScript } from ${JSON.stringify(helper)};
+new Function("assert", "flag", "expected", inlineScript(readFileSync("page.html", "utf8"), "page.html", "pick").src)(assert, false, "no");
+`);
+    const both = collect(dir, suiteFiles(dir));
+    assert.equal(both.status, 0, both.stdout + both.stderr);
+    assert.deepEqual(problemsOf(sources, inlineRunsFromReports(both.reports, sources).runs), []);
+    assert.deepEqual([...inlineRunsFromReports([{ result: [{ url: "inline:unknown", functions: [] }, { url: "node:fs" }, { url: pathToFileURL(join(dir, "scripts", "unknown.mjs")).href }] }, {}], sources).runs], []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
