@@ -431,6 +431,54 @@ test("hero keyboard: Arrow/Home/End navigate and are consumed; other keys are ig
   assertHeroSlide(t, HERO_SLIDES - 1);
 });
 
+test("hero keyboard: arrowing from a link inside the slide moves focus into the new slide and stays paused", () => {
+  const t = bootHero();
+  // Real browsers blur the focused element as its slide goes hidden and fire
+  // focusout (relatedTarget null) synchronously, before any script refocus.
+  let blurs = 0;
+  t.slides.forEach((slide) => {
+    let hidden = slide.hidden;
+    Object.defineProperty(slide, "hidden", {
+      get: () => hidden,
+      set: (v) => {
+        hidden = v;
+        if (v && t.doc.activeElement && slide.contains(t.doc.activeElement)) {
+          blurs++;
+          t.doc.activeElement = t.doc.body;
+          slide.dispatch("focusout", { relatedTarget: null });
+        }
+      },
+    });
+  });
+  const link = t.slides[0].querySelector("a");
+  link.focus();
+  t.root.dispatch("focusin");
+  assert.deepEqual(t.timers.intervals(), [], "paused while a slide link has focus");
+  t.root.dispatch("keydown", { key: "ArrowRight" });
+  assertHeroSlide(t, 1);
+  assert.equal(blurs, 1, "the hidden slide did drop focus");
+  const target = t.slides[1].querySelector("a");
+  assert.equal(t.doc.activeElement, target, "focus lands on the new slide's first link, not <body>");
+  assert.deepEqual(target.lastFocusOptions, { preventScroll: true });
+  assert.deepEqual(t.timers.intervals(), [], "rotation stays paused for the keyboard user");
+  t.root.dispatch("keydown", { key: "End" });
+  assert.equal(t.doc.activeElement, t.slides[HERO_SLIDES - 1].querySelector("a"), "Home/End refocus too");
+  assert.deepEqual(t.timers.intervals(), []);
+  t.doc.activeElement = t.doc.body;
+  t.root.dispatch("focusout", { relatedTarget: null });
+  assert.deepEqual(t.timers.intervals(), [HERO_ROTATE_MS], "a genuine Tab away still resumes rotation");
+});
+
+test("hero keyboard: arrowing from the controls leaves focus on the control", () => {
+  const t = bootHero();
+  t.next.focus();
+  t.root.dispatch("focusin");
+  t.root.dispatch("keydown", { key: "ArrowRight" });
+  assertHeroSlide(t, 1);
+  assert.equal(t.doc.activeElement, t.next, "focus is not stolen from the Next button");
+  assert.equal(t.slides[1].querySelector("a").focusCount, 0);
+});
+
 test("hero pause: hover stops rotation, leaving resumes", () => {
   const t = bootHero();
   t.root.dispatch("mouseenter");
