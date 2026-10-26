@@ -1146,14 +1146,17 @@
   }
   function stop() { clearInterval(timer); timer = null; }
   function restart() { stop(); start(); }
-  root.addEventListener('mouseenter', function () { pointerPaused = true; stop(); });
-  root.addEventListener('mouseleave', function () { pointerPaused = false; start(); });
-  root.addEventListener('focusin', function () { focusPaused = true; stop(); });
-  root.addEventListener('focusout', function (e) {
-    if (!root.contains(e.relatedTarget)) {
-      focusPaused = false;
-      start();
-    }
+  [root, controls].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener('mouseenter', function () { pointerPaused = true; stop(); });
+    el.addEventListener('mouseleave', function () { pointerPaused = false; start(); });
+    el.addEventListener('focusin', function () { focusPaused = true; stop(); });
+    el.addEventListener('focusout', function (e) {
+      if (!root.contains(e.relatedTarget) && !(controls && controls.contains(e.relatedTarget))) {
+        focusPaused = false;
+        start();
+      }
+    });
   });
   document.addEventListener('visibilitychange', function () { document.hidden ? stop() : start(); });
   if (reduceMotion.addEventListener) {
