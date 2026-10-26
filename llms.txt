@@ -13,6 +13,7 @@ Hive Commons also maintains Spektacular (Spek), a spec-driven workflow tool; the
 - [promptargs](https://github.com/hivecommons/promptargs): template arguments for AI prompts; fills `{{variables}}` in prompts for Claude Code, Copilot, Goose, Bob and others.
 - [rationguard](https://github.com/hivecommons/rationguard): detects and rebuts rationalization patterns in AI agent output.
 - [dibs](https://dibs.hivecommons.dev): contributor attribution layer for the AI-agent era, connecting ideators with hive-managed repositories.
+- [Crux](https://github.com/hivecommons/crux): the agent runtime inside Hive, split out for reuse; starts AI coding agent CLIs in tmux from a YAML definition, sends them work, and restarts or pauses agents that stall. First release v0.1.0 (early software).
 
 ## Supported agents and inference engines
 

@@ -21,7 +21,7 @@ const HERO_SLIDES = 4;
 const HERO_ROTATE_MS = 7000;
 const HERO_SWIPE_PX = 48;
 const HERO_RESIZE_DEBOUNCE_MS = 80;
-const PROJECT_SLIDES = 7;
+const PROJECT_SLIDES = 8;
 const PROJECT_ADVANCE_MS = 6000;
 const PROJECT_SCROLL_SETTLE_MS = 450;
 const PROJECT_SCROLL_SETTLE_REDUCED_MS = 80;
@@ -652,7 +652,7 @@ test("hero keyboard: a slide without a link receives focus itself (tabindex -1);
 // Projects carousel
 // ---------------------------------------------------------------------------
 
-const PROJECT_NAMES = ["Hive", "Spektacular", "dibs", "pluk", "rationguard", "hotshot", "promptargs"];
+const PROJECT_NAMES = ["Hive", "Spektacular", "dibs", "pluk", "rationguard", "hotshot", "promptargs", "Crux"];
 const TRACK_OFFSET = 100;
 const TRACK_PADDING = 16;
 const SLIDE_PITCH = 300;
@@ -708,7 +708,7 @@ function assertProjectSlide(t, i, msg) {
   });
 }
 
-test("projects markup: one carousel with seven slides, each with an h3 and a link, controls and dots present", () => {
+test("projects markup: one carousel with eight slides, each with an h3 and a link, controls and dots present", () => {
   const html = readFileSync(PAGE, "utf8").replace(/<script>[\s\S]*?<\/script>/g, "");
   assert.equal((html.match(/data-carousel\b(?!-)/g) || []).length, 1);
   assert.equal((html.match(/data-car-track\b/g) || []).length, 1);
