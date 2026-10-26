@@ -789,6 +789,22 @@ test("projects pause: pointer hovering then external focusout stays paused until
   assert.deepEqual(t.timers.intervals(), [PROJECT_ADVANCE_MS], "resumes once neither is inside");
 });
 
+test("projects pause: hovering or focusing the external Prev/Next controls pauses auto-advance", () => {
+  const t = bootProjects();
+  t.controls.dispatch("mouseenter");
+  assert.deepEqual(t.timers.intervals(), [], "hover on controls pauses");
+  t.controls.dispatch("mouseleave");
+  assert.deepEqual(t.timers.intervals(), [PROJECT_ADVANCE_MS], "leaving controls resumes");
+  t.controls.dispatch("focusin");
+  assert.deepEqual(t.timers.intervals(), [], "focus on controls pauses");
+  t.controls.dispatch("focusout", { relatedTarget: t.root });
+  assert.deepEqual(t.timers.intervals(), [], "focus moving into the carousel stays paused");
+  t.root.dispatch("focusout", { relatedTarget: t.next });
+  assert.deepEqual(t.timers.intervals(), [], "focus moving back to the controls stays paused");
+  t.controls.dispatch("focusout", { relatedTarget: null });
+  assert.deepEqual(t.timers.intervals(), [PROJECT_ADVANCE_MS], "resumes once focus leaves both");
+});
+
 test("projects reduced-motion toggle: stops and resumes auto-advance", () => {
   const t = bootProjects();
   t.mq.set(true);
