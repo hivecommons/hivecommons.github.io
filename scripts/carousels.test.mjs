@@ -998,3 +998,22 @@ test("projects track inset: an empty computed padding-left counts as 0, not NaN"
   t.next.dispatch("click");
   assert.equal(t.lastScroll().left, SLIDE_PITCH, "would be NaN if the empty padding were not coerced");
 });
+
+test("hero: keyboard focuses a slide without links and retries unsupported focus options", () => {
+  const t = bootHero();
+  t.slides[0].children[0].focus();
+  t.slides[1].children.forEach((el) => el.remove());
+  const attempts = [];
+  const target = t.slides[1];
+  target.focus = (options) => {
+    attempts.push(options);
+    if (options) throw new TypeError('options unsupported');
+    t.doc.activeElement = target;
+  };
+  t.root.dispatch('keydown', { key: 'ArrowRight' });
+  assert.equal(t.currentIndex(), 1);
+  assert.equal(target.tabIndex, -1);
+  assert.deepEqual(attempts, [{ preventScroll: true }, undefined]);
+  assert.equal(t.doc.activeElement, target);
+  assert.equal(t.rotating(), false);
+});

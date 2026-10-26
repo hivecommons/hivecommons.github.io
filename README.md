@@ -204,6 +204,8 @@ red PR job against.
   Then pins the live tree: every committed content page is already up to date, so the
   tool and `page-csp.test.mjs` agree on what correct means, and a failure names the
   regenerate command. Zero dependencies.
+- `node --test scripts/inline-scripts.test.mjs` — checks shared inline-script extraction,
+  unique hook matching, page line numbers and stable V8 source URLs.
 - `node --test scripts/coverage-floor.test.mjs` — branch-coverage floor over the
   `scripts/*.mjs` helpers the other gates import (`page-csp.mjs`, `html-pages.mjs`,
   `actions-if.mjs`, `update-csp-hashes.mjs`, `inline-scripts.mjs`) and over every inline
