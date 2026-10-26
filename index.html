@@ -2,7 +2,7 @@
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-NgUcRWqgRxmvoXsdf9DJT4dQ5AOna/qzI6dDicudC9k=' 'sha256-QSGzxNSepdjMBRwnovEOJlbbTDp+rqYlcPfhcB+fgnQ=' 'sha256-rrFBsqTHVoUIsbIMbJ9438/R1TuU4x9Aw7xFQONRI9U='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' 'sha256-rq0n65OzxYcm03aTh5k2DL2wKS1HW6w9jAApNmKLPtg=' 'sha256-QSGzxNSepdjMBRwnovEOJlbbTDp+rqYlcPfhcB+fgnQ=' 'sha256-rrFBsqTHVoUIsbIMbJ9438/R1TuU4x9Aw7xFQONRI9U='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hive Commons</title>
 <meta name="description" content="Hive Commons supports Hive: governed AI-agent fleets with Jira Data Center work sources, The Commons, swarms, Claude Code, GitHub Copilot, vLLM, llm-d and more.">
@@ -794,11 +794,31 @@
     start();
   }
 
+  function focusInSlide() {
+    var active = document.activeElement;
+    return !!active && slides.some(function (slide) { return slide.contains(active); });
+  }
+
+  // Hiding the slide that holds focus drops focus to <body>; the resulting
+  // focusout (relatedTarget null) would un-pause rotation under a keyboard
+  // user. Hand focus to the new slide so it stays inside the carousel.
+  function keyGoTo(i) {
+    var refocus = focusInSlide();
+    goTo(i, true);
+    if (!refocus) return;
+    var target = slides[current].querySelector('a, button') || slides[current];
+    if (target === slides[current]) target.tabIndex = -1;
+    try { target.focus({ preventScroll: true }); }
+    catch (err) { target.focus(); }
+    focusPaused = true;
+    stop();
+  }
+
   function onKey(e) {
-    if (e.key === 'ArrowRight') { e.preventDefault(); goTo(current + 1, true); restart(); }
-    else if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1, true); restart(); }
-    else if (e.key === 'Home') { e.preventDefault(); goTo(0, true); restart(); }
-    else if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1, true); restart(); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); keyGoTo(current + 1); restart(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); keyGoTo(current - 1); restart(); }
+    else if (e.key === 'Home') { e.preventDefault(); keyGoTo(0); restart(); }
+    else if (e.key === 'End') { e.preventDefault(); keyGoTo(slides.length - 1); restart(); }
   }
 
   if (prev) prev.addEventListener('click', function () { goTo(current - 1, true); restart(); });
