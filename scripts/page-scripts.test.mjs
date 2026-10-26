@@ -11,6 +11,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { htmlFiles, isRedirectPage, SKIP_DIRS } from "./html-pages.mjs";
+import { HARNESSED_SCRIPTS, inlineScript } from "./inline-scripts.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -74,20 +75,10 @@ for (const page of pages) {
 // The loop above only checks that an inline script parses. What each one does
 // is pinned by a dedicated harness (scripts/*.test.mjs) that extracts the block
 // from the page by a hook string and runs it against a stub DOM. A new inline
-// script has to be registered here with its harness, or it ships with nothing
-// but a syntax check; the only block exempt is the one-statement no-js toggle.
+// script has to be registered in HARNESSED_SCRIPTS (scripts/inline-scripts.mjs)
+// with its harness, or it ships with nothing but a syntax check; the only block
+// exempt is the one-statement no-js toggle.
 const NO_JS_TOGGLE = "document.documentElement.classList.replace('no-js', 'js');";
-
-const HARNESSED_SCRIPTS = {
-  "index.html": [
-    { hook: "[data-hero-carousel]", harness: "scripts/carousels.test.mjs" },
-    { hook: "[data-acmm-levels]", harness: "scripts/acmm-levels.test.mjs" },
-    { hook: "[data-carousel]", harness: "scripts/carousels.test.mjs" },
-  ],
-  "stories/index.html": [
-    { hook: 'getElementById("story-dialog")', harness: "scripts/story-dialog.test.mjs" },
-  ],
-};
 
 function isBehaviourScript(b) {
   return !b.external && (b.type === "" || b.type === "text/javascript" || b.type === "module");
@@ -130,6 +121,15 @@ test("every registered page exists and every harness file extracts its block by 
       assert.ok(src.includes(hook), `${harness} never mentions ${hook}, so it cannot be extracting that block from ${rel}`);
     }
   }
+});
+
+test("fixture: inlineScript returns the one matching block with a sourceURL trailer and its page line; zero or several matches throw", () => {
+  const html = "<!doctype html>\n<html>\n<script>document.documentElement.classList.replace('no-js', 'js');</script>\n<p>x</p>\n<script>\n(function () { var r = document.querySelector('[data-w]'); if (!r) return; })();\n</script>\n</html>\n";
+  const { src, line } = inlineScript(html, "w/index.html", "[data-w]");
+  assert.equal(line, 5);
+  assert.equal(src, "\n(function () { var r = document.querySelector('[data-w]'); if (!r) return; })();\n\n//# sourceURL=inline:w/index.html#[data-w]\n");
+  assert.throws(() => inlineScript(html, "w/index.html", "[data-missing]"), /w\/index\.html: expected exactly one <script> block mentioning \[data-missing\], found 0/);
+  assert.throws(() => inlineScript(html, "w/index.html", "document"), /found 2/);
 });
 
 test("fixture: an inline script without a registered hook is reported, the no-js toggle is not", () => {

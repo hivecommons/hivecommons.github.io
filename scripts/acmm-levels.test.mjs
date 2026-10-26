@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { inlineScript } from "./inline-scripts.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PAGE = join(HERE, "..", "index.html");
@@ -18,10 +19,7 @@ const HOLD_MS = 5000;
 const LEVELS = 6;
 
 function extractAcmmScript(html) {
-  const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  const scripts = blocks.filter((s) => s.includes("[data-acmm-levels]"));
-  assert.equal(scripts.length, 1, "expected exactly one ACMM levels script block");
-  return scripts[0];
+  return inlineScript(html, "index.html", "[data-acmm-levels]").src;
 }
 
 class ClassList {
@@ -73,7 +71,9 @@ class Element {
   querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
 }
 
-function makeDocument({ activeIndex = 0 } = {}) {
+// `withRoot: false` is a page without the ladder, `panelCount` a details list
+// out of step with the levels, `tabless` the index of a level with no button.
+function makeDocument({ activeIndex = 0, withRoot = true, panelCount = LEVELS, tabless = -1 } = {}) {
   const doc = { activeElement: null, hidden: false, listeners: {} };
   doc.addEventListener = (type, fn) => { (doc.listeners[type] ||= []).push(fn); };
   doc.dispatch = (type) => { for (const fn of doc.listeners[type] || []) fn({ type }); };
@@ -91,11 +91,11 @@ function makeDocument({ activeIndex = 0 } = {}) {
       classes: active ? ["is-active"] : [],
       parent: list,
     });
-    const tab = new Element(doc, "tab-" + (i + 1), {
+    const tab = i === tabless ? null : new Element(doc, "tab-" + (i + 1), {
       attrs: { "data-acmm-tab": "", "aria-selected": active ? "true" : "false" },
       parent: level,
     });
-    const panel = new Element(doc, "panel-" + (i + 1), {
+    const panel = i >= panelCount ? null : new Element(doc, "panel-" + (i + 1), {
       attrs: { "data-acmm-panel": "" },
       classes: active ? ["is-active"] : [],
       parent: details,
@@ -103,7 +103,7 @@ function makeDocument({ activeIndex = 0 } = {}) {
     levels.push(level); tabs.push(tab); panels.push(panel);
   }
   doc.querySelector = (selector) => {
-    if (selector === "[data-acmm-levels]") return root;
+    if (selector === "[data-acmm-levels]") return withRoot ? root : null;
     throw new Error("unsupported document selector in stub DOM: " + selector);
   };
   return { doc, root, levels, tabs, panels };
@@ -133,10 +133,10 @@ function makeTimers() {
   };
 }
 
-function boot({ reduceMotion = false, intersectionObserver = true, activeIndex = 0 } = {}) {
+function boot({ reduceMotion = false, intersectionObserver = true, activeIndex = 0, withRoot = true, panelCount = LEVELS, tabless = -1 } = {}) {
   const html = readFileSync(PAGE, "utf8");
   const src = extractAcmmScript(html);
-  const dom = makeDocument({ activeIndex });
+  const dom = makeDocument({ activeIndex, withRoot, panelCount, tabless });
   const timers = makeTimers();
   const mq = { matches: reduceMotion, listeners: [], addEventListener(type, fn) { if (type === "change") this.listeners.push(fn); } };
   mq.set = (matches) => { mq.matches = matches; mq.listeners.forEach((fn) => fn({ matches })); };
@@ -375,4 +375,30 @@ test("start() is idempotent: repeated in-view signals never stack timers", () =>
   assert.equal(t.timers.pendingCount(), 1, "only one hold timer is ever pending");
   t.advance(HOLD_MS);
   assertActive(t, 1, "exactly one advance per HOLD_MS");
+});
+
+test("no-op guards: a page without the ladder, or panels out of step with the levels, wires nothing", () => {
+  const none = boot({ withRoot: false });
+  assert.deepEqual(none.observers, [], "nothing observed");
+  assert.deepEqual(Object.keys(none.doc.listeners), [], "nothing listened to");
+  assert.deepEqual(Object.keys(none.root.listeners), []);
+  assert.equal(none.timers.pendingCount(), 0);
+  const skewed = boot({ panelCount: LEVELS - 1 });
+  assert.deepEqual(skewed.observers, [], "a panel list that does not match the levels is left alone rather than mis-paired");
+  assert.deepEqual(Object.keys(skewed.root.listeners), []);
+  assert.equal(skewed.tabs[1].tabIndex, 0, "roving tabindex never applied");
+  assert.equal(skewed.panels[1].getAttribute("aria-hidden"), null);
+});
+
+test("a level without a tab button is skipped by the wiring but still toggles with the ladder", () => {
+  const t = boot({ tabless: 2 });
+  t.show();
+  assert.equal(t.tabs[2], null);
+  assert.deepEqual(Object.keys(t.levels[2].listeners), [], "no click/focus/keydown wiring for the buttonless level");
+  t.tabs[1].dispatch("click");
+  t.tabs[1].dispatch("keydown", { key: "ArrowRight" });
+  assert.equal(t.activeIndexNow(), 2, "keyboard selection still reaches it");
+  assert.equal(t.levels[2].classList.contains("is-active"), true);
+  assert.equal(t.panels[2].getAttribute("aria-hidden"), "false");
+  assert.equal(t.doc.activeElement, t.tabs[1], "there is no button to move focus to");
 });

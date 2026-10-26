@@ -10,16 +10,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { inlineScript } from "./inline-scripts.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PAGE = join(HERE, "..", "stories", "index.html");
 const STORY_MAX = 1500;
 
 function extractDialogScript(html) {
-  const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  const dialogScripts = blocks.filter((s) => s.includes('getElementById("story-dialog")'));
-  assert.equal(dialogScripts.length, 1, "expected exactly one story-dialog script block");
-  return dialogScripts[0];
+  return inlineScript(html, "stories/index.html", 'getElementById("story-dialog")').src;
 }
 
 class ClassList {
@@ -67,9 +65,11 @@ class Element {
   querySelector(selector) { return this.doc.select(selector, this)[0] || null; }
 }
 
-function makeDocument() {
+// `omit` lists element ids the page is built without, so the script's
+// missing-element guards can be exercised.
+function makeDocument({ omit = [] } = {}) {
   const doc = { byId: new Map(), activeElement: null };
-  doc.getElementById = (id) => doc.byId.get(id) || null;
+  doc.getElementById = (id) => (omit.includes(id) ? null : doc.byId.get(id)) || null;
   doc.querySelectorAll = (selector) => doc.select(selector, null);
   // Only the handful of selectors the page script uses are supported.
   doc.select = (selector, scope) => {
@@ -126,10 +126,10 @@ function makeDocument() {
   return doc;
 }
 
-function boot({ popupBlocked = false, clipboardOverride } = {}) {
+function boot({ popupBlocked = false, clipboardOverride, omit = [] } = {}) {
   const html = readFileSync(PAGE, "utf8");
   const src = extractDialogScript(html);
-  const doc = makeDocument();
+  const doc = makeDocument({ omit });
   const body = new Element(doc, "body");
   doc.body = body;
   const opened = [];
@@ -282,6 +282,26 @@ test("required fields block submission and flag the first invalid field", () => 
   assert.equal(t.el("story-project").getAttribute("aria-invalid"), "false");
   assert.equal(t.el("story-project-error").textContent, "");
   assert.equal(t.doc.activeElement, t.el("story-name"), "focus moves to first invalid field");
+});
+
+test("a field whose error element is missing is neither flagged nor described; it still blocks submission", () => {
+  const t = boot({ omit: ["story-name-error"] });
+  t.fill({ ...VALID, "story-name": "" });
+  t.submit();
+  assert.equal(t.opened.length, 0, "validation still fails");
+  assert.equal(t.el("story-name").getAttribute("aria-invalid"), null, "no aria-invalid without an error slot to describe it");
+  assert.equal(t.el("story-name").getAttribute("aria-describedby"), null);
+  assert.equal(t.doc.activeElement, null, "nothing is marked invalid, so nothing is focused");
+});
+
+test("no-op guard: a page without the dialog or the form wires nothing", () => {
+  for (const omit of [["story-dialog"], ["story-form"]]) {
+    const t = boot({ omit });
+    for (const id of ["opener-hero", "opener-band", "story-close-x", "story-text"]) {
+      assert.deepEqual(Object.keys(t.el(id).listeners), [], `${id} has no listeners when ${omit[0]} is missing`);
+    }
+    assert.equal(t.timers.length, 0);
+  }
 });
 
 test("profile and PR links must be absolute http(s) URLs", () => {
