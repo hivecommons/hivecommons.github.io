@@ -58,10 +58,13 @@ red PR job against.
 - `node --test scripts/page-scripts.test.mjs` — static gate over every committed HTML
   page: each inline `<script>` parses, each JSON-LD block is valid schema.org JSON, no
   external `<script src>` is introduced, every inline behaviour script (other than the
-  one-line `no-js` toggle) is registered in `HARNESSED_SCRIPTS` with the harness test
-  that extracts and runs it — so a new inline script cannot ship with only a syntax
-  check — and `sitemap.xml` lists exactly the canonical top-level pages (redirect
-  shortcuts excluded, new pages required). Zero dependencies.
+  one-line `no-js` toggle) is registered in `HARNESSED_SCRIPTS`
+  (`scripts/inline-scripts.mjs`) with the harness test that extracts and runs it — so a
+  new inline script cannot ship with only a syntax check — and `sitemap.xml` lists
+  exactly the canonical top-level pages (redirect shortcuts excluded, new pages
+  required). The harnesses extract their block through `inlineScript()` from the same
+  module, which tags the body with a `//# sourceURL=inline:<page>#<hook>` trailer so
+  `coverage-floor.test.mjs` can attribute its coverage. Zero dependencies.
 - `node --test scripts/page-markup.test.mjs` — static markup gate over every committed
   non-redirect HTML page: `id`s are unique, every ARIA idref (`aria-controls`,
   `aria-labelledby`, `aria-describedby`, …) and `label for` resolves to an `id` on the
@@ -203,15 +206,19 @@ red PR job against.
   regenerate command. Zero dependencies.
 - `node --test scripts/coverage-floor.test.mjs` — branch-coverage floor over the
   `scripts/*.mjs` helpers the other gates import (`page-csp.mjs`, `html-pages.mjs`,
-  `actions-if.mjs`, `update-csp-hashes.mjs`): runs the rest of the suite once more as a
-  child with `NODE_V8_COVERAGE`, reads the raw V8 block-coverage ranges for every helper
-  (`*.test.mjs` excluded) and fails naming each range no process executed — file, line
-  and the quoted source slice — so a helper branch that runs under the suite without a
-  test asserting what it decides cannot merge green. A range counts as executed if any
-  child process ran it; a tool's main-module guard (`if (process.argv[1] …
-  import.meta.url)`) is excluded because its self-test runs it via `spawnSync` against a
-  copy. Each rule has a fixture self-test, including a real child run over a tmp helper
-  with one dead branch. Zero dependencies.
+  `actions-if.mjs`, `update-csp-hashes.mjs`, `inline-scripts.mjs`) and over every inline
+  page script registered in `HARNESSED_SCRIPTS` (hero carousel, ACMM levels, projects
+  carousel, story dialog): runs the rest of the suite once more as a child with
+  `NODE_V8_COVERAGE`, reads the raw V8 block-coverage ranges for every helper
+  (`*.test.mjs` excluded) and for every `inline:<page>#<hook>` script the harnesses
+  compile via `new Function` (offsets shifted past the function wrapper), and fails
+  naming each range no process executed — file or `page#hook`, page line and the quoted
+  source slice — so a branch that runs under the suite without a test asserting what it
+  decides cannot merge green. A range counts as executed if any child process ran it; a
+  tool's main-module guard (`if (process.argv[1] … import.meta.url)`) is excluded because
+  its self-test runs it via `spawnSync` against a copy. Each rule has a fixture
+  self-test, including real child runs over a tmp helper and a tmp page with one dead
+  branch each. Zero dependencies.
 - `node --test scripts/llms-txt.test.mjs` — static gate keeping `llms.txt` in step with
   `index.html`: the agent CLIs it names must equal the Agent CLIs chips, the inference
   engines/gateways it names must equal the engine and gateway chips (classifier chips

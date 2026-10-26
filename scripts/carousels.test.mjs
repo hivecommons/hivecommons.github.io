@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { inlineScript } from "./inline-scripts.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PAGE = join(HERE, "..", "index.html");
@@ -27,10 +28,7 @@ const PROJECT_SCROLL_SETTLE_REDUCED_MS = 80;
 const PROJECT_SCROLL_SYNC_MS = 80;
 
 function extractScript(html, hook) {
-  const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  const scripts = blocks.filter((s) => s.includes(hook));
-  assert.equal(scripts.length, 1, `expected exactly one script block mentioning ${hook}`);
-  return scripts[0];
+  return inlineScript(html, "index.html", hook).src;
 }
 
 // ---------------------------------------------------------------------------
@@ -214,36 +212,41 @@ function runScript(src, { doc, win, timers, IntersectionObserver }) {
 const HERO_NAMES = ["Hive Commons", "Hive", "Spektacular (Spek)", "The family"];
 const HERO_IDS = ["hero-hivecommons", "hero-hive", "hero-spektacular", "hero-family"];
 
-function makeHeroDom(doc, { slideCount = HERO_SLIDES, withControls = true } = {}) {
-  const root = new Element(doc, "section", { attrs: { "data-hero-carousel": "" }, parent: doc.body, computed: { paddingTop: "24px", paddingBottom: "32px" } });
-  const stage = new Element(doc, "div", { attrs: { "data-hero-stage": "" }, parent: root, rect: { width: 800, height: 0 } });
+// Options mirror the page's markup and its degraded forms: `withStage`,
+// `withControls`, `withDots` (dots directly under the root when the controls
+// bar is absent), `named` (data-hero-name on every slide), `withLinks`
+// (a focusable link in every slide) and `styled` (computed padding/margin).
+function makeHeroDom(doc, { slideCount = HERO_SLIDES, withStage = true, withControls = true, withDots = withControls, named = true, withLinks = true, styled = true } = {}) {
+  const root = new Element(doc, "section", { attrs: { "data-hero-carousel": "" }, parent: doc.body, computed: styled ? { paddingTop: "24px", paddingBottom: "32px" } : {} });
+  const stage = withStage ? new Element(doc, "div", { attrs: { "data-hero-stage": "" }, parent: root, rect: { width: 800, height: 0 } }) : root;
   const slides = [];
   for (let i = 0; i < slideCount; i++) {
-    const slide = new Element(doc, "article", {
-      attrs: { "data-hero-slide": "", "data-hero-name": HERO_NAMES[i], id: HERO_IDS[i] },
-      parent: stage, rect: { width: 800, height: 300 + i * 50 },
-    });
+    const attrs = { "data-hero-slide": "", id: HERO_IDS[i] };
+    if (named) attrs["data-hero-name"] = HERO_NAMES[i];
+    const slide = new Element(doc, "article", { attrs, parent: stage, rect: { width: 800, height: 300 + i * 50 } });
     if (i > 0) { slide.hidden = true; slide.setAttribute("inert", ""); }
-    new Element(doc, "a", { parent: slide, attrs: { href: "#" } });
+    if (withLinks) new Element(doc, "a", { parent: slide, attrs: { href: "#" } });
     slides.push(slide);
   }
   let controls = null, prev = null, next = null, dotsWrap = null, status = null;
   if (withControls) {
-    controls = new Element(doc, "div", { attrs: { "data-hero-controls": "" }, parent: root, rect: { height: 40 }, computed: { marginTop: "12px" } });
+    controls = new Element(doc, "div", { attrs: { "data-hero-controls": "" }, parent: root, rect: { height: 40 }, computed: styled ? { marginTop: "12px" } : {} });
     controls.hidden = true;
     prev = new Element(doc, "button", { attrs: { "data-hero-prev": "" }, parent: controls });
     dotsWrap = new Element(doc, "div", { attrs: { "data-hero-dots": "" }, parent: controls });
     next = new Element(doc, "button", { attrs: { "data-hero-next": "" }, parent: controls });
     status = new Element(doc, "p", { attrs: { "data-hero-status": "", "aria-live": "polite" }, parent: controls });
+  } else if (withDots) {
+    dotsWrap = new Element(doc, "div", { attrs: { "data-hero-dots": "" }, parent: root });
   }
-  return { root, stage, slides, controls, prev, next, dotsWrap, status };
+  return { root, stage: withStage ? stage : null, slides, controls, prev, next, dotsWrap, status };
 }
 
-function bootHero({ reduceMotion = false, hash = "", slideCount = HERO_SLIDES, withControls = true } = {}) {
+function bootHero({ reduceMotion = false, hash = "", slideCount = HERO_SLIDES, withRoot = true, withStage = true, withControls = true, withDots = withControls, named = true, withLinks = true, styled = true } = {}) {
   const src = extractScript(readFileSync(PAGE, "utf8"), "[data-hero-carousel]");
   const doc = makeDocument();
   const timers = makeTimers();
-  const dom = makeHeroDom(doc, { slideCount, withControls });
+  const dom = withRoot ? makeHeroDom(doc, { slideCount, withStage, withControls, withDots, named, withLinks, styled }) : { root: null, stage: null, slides: [], controls: null, prev: null, next: null, dotsWrap: null, status: null };
   const { win, mq, IntersectionObserver } = makeWindow({ reduceMotion, timers, intersectionObserver: false, scrollend: false, hash });
   runScript(src, { doc, win, timers, IntersectionObserver });
   const t = {
@@ -587,7 +590,10 @@ test("hero hashchange: navigating to a slide id announces it and resets the time
   assertHeroSlide(t, 3, "non-slide hash leaves the carousel alone");
 });
 
-test("hero no-op guards: a single slide or missing dots container leaves the page untouched", () => {
+test("hero no-op guards: no carousel, a single slide or missing dots container leaves the page untouched", () => {
+  const none = bootHero({ withRoot: false });
+  assert.equal(none.timers.pendingCount(), 0, "a page without the hero carousel schedules nothing");
+  assert.deepEqual(Object.keys(none.doc.listeners), [], "and listens to nothing");
   const one = bootHero({ slideCount: 1 });
   assert.equal(one.controls.hidden, true, "controls stay hidden with one slide");
   assert.equal(one.dots().length, 0);
@@ -595,6 +601,51 @@ test("hero no-op guards: a single slide or missing dots container leaves the pag
   const noControls = bootHero({ withControls: false });
   assert.equal(noControls.timers.pendingCount(), 0, "no dots container -> script bails before scheduling");
   assert.equal(noControls.slides[1].hidden, true);
+});
+
+test("hero unnamed slides: dots and announcements fall back to a positional 'Slide N' label", () => {
+  const t = bootHero({ named: false });
+  assert.deepEqual(t.dots().map((d) => d.getAttribute("aria-label")), [1, 2, 3, 4].map((n) => "Go to slide: Slide " + n));
+  t.next.dispatch("click");
+  assert.equal(t.status.textContent, "Slide 2, slide 2 of 4");
+});
+
+test("hero measure: no stage publishes no height; no controls bar or computed styles contribute 0 to the total", () => {
+  const noStage = bootHero({ withStage: false });
+  assert.equal(noStage.root.style.getPropertyValue("--hero-h"), "", "nothing to measure without a stage");
+  noStage.next.dispatch("click");
+  assertHeroSlide(noStage, 1, "the carousel still navigates");
+  // Dots present but no controls bar: no bar height, no bar margin.
+  const noBar = bootHero({ withControls: false, withDots: true });
+  assert.equal(noBar.root.style.getPropertyValue("--hero-stage-h"), "450px");
+  assert.equal(noBar.root.style.getPropertyValue("--hero-h"), String(450 + 24 + 32) + "px");
+  assert.deepEqual(noBar.timers.intervals(), [HERO_ROTATE_MS], "rotation runs with dots alone");
+  // Computed padding/margin come back empty (e.g. display:none ancestor): NaN is not added.
+  const unstyled = bootHero({ styled: false });
+  assert.equal(unstyled.root.style.getPropertyValue("--hero-h"), String(450 + 40) + "px");
+});
+
+test("hero keyboard: a slide without a link receives focus itself (tabindex -1); a focus() that rejects options is retried without", () => {
+  const t = bootHero({ withLinks: false });
+  t.slides[0].tabIndex = -1;
+  t.slides[0].focus();
+  t.root.dispatch("focusin");
+  t.root.dispatch("keydown", { key: "ArrowRight" });
+  assertHeroSlide(t, 1);
+  assert.equal(t.doc.activeElement, t.slides[1], "the slide itself takes focus");
+  assert.equal(t.slides[1].tabIndex, -1, "made programmatically focusable without joining the tab order");
+  assert.deepEqual(t.slides[1].lastFocusOptions, { preventScroll: true });
+  assert.deepEqual(t.timers.intervals(), [], "still paused for the keyboard user");
+  const legacy = bootHero();
+  const link = legacy.slides[1].querySelector("a");
+  const real = link.focus.bind(link);
+  let calls = 0;
+  link.focus = (opts) => { calls++; if (opts) throw new TypeError("legacy engine"); real(); };
+  legacy.slides[0].querySelector("a").focus();
+  legacy.root.dispatch("focusin");
+  legacy.root.dispatch("keydown", { key: "ArrowRight" });
+  assert.equal(calls, 2, "retried without options");
+  assert.equal(legacy.doc.activeElement, link);
 });
 
 // ---------------------------------------------------------------------------
@@ -608,7 +659,7 @@ const SLIDE_PITCH = 300;
 
 function expectedSlideLeft(i) { return TRACK_OFFSET + i * SLIDE_PITCH - TRACK_OFFSET - TRACK_PADDING; }
 
-function makeProjectDom(doc, { slideCount = PROJECT_SLIDES, withControls = true, withLinks = true } = {}) {
+function makeProjectDom(doc, { slideCount = PROJECT_SLIDES, withControls = true, withLinks = true, styled = true } = {}) {
   let controls = null, prev = null, next = null;
   if (withControls) {
     controls = new Element(doc, "div", { attrs: { "data-carousel-controls": "" }, parent: doc.body });
@@ -617,7 +668,7 @@ function makeProjectDom(doc, { slideCount = PROJECT_SLIDES, withControls = true,
     next = new Element(doc, "button", { attrs: { "data-car-next": "" }, parent: controls });
   }
   const root = new Element(doc, "section", { attrs: { "data-carousel": "" }, parent: doc.body });
-  const track = new Element(doc, "ul", { attrs: { "data-car-track": "" }, parent: root, offsetLeft: TRACK_OFFSET, computed: { paddingLeft: TRACK_PADDING + "px" } });
+  const track = new Element(doc, "ul", { attrs: { "data-car-track": "" }, parent: root, offsetLeft: TRACK_OFFSET, computed: styled ? { paddingLeft: TRACK_PADDING + "px" } : {} });
   const slides = [];
   const links = [];
   for (let i = 0; i < slideCount; i++) {
@@ -631,11 +682,11 @@ function makeProjectDom(doc, { slideCount = PROJECT_SLIDES, withControls = true,
   return { controls, prev, next, root, track, slides, links, dotsWrap };
 }
 
-function bootProjects({ reduceMotion = false, intersectionObserver = true, scrollend = false, slideCount = PROJECT_SLIDES, withControls = true, withLinks = true } = {}) {
+function bootProjects({ reduceMotion = false, intersectionObserver = true, scrollend = false, slideCount = PROJECT_SLIDES, withRoot = true, withControls = true, withLinks = true, styled = true } = {}) {
   const src = extractScript(readFileSync(PAGE, "utf8"), "[data-carousel]");
   const doc = makeDocument();
   const timers = makeTimers();
-  const dom = makeProjectDom(doc, { slideCount, withControls, withLinks });
+  const dom = withRoot ? makeProjectDom(doc, { slideCount, withControls, withLinks, styled }) : { controls: null, prev: null, next: null, root: null, track: null, slides: [], links: [], dotsWrap: { children: [] } };
   const { win, mq, observers, IntersectionObserver } = makeWindow({ reduceMotion, timers, intersectionObserver, scrollend, hash: "" });
   runScript(src, { doc, win, timers, IntersectionObserver });
   return {
@@ -805,6 +856,9 @@ test("projects focusin: tabbing into a card brings it into view without re-focus
   assert.deepEqual(t.timers.intervals(), [], "focus inside pauses");
   t.links[3].dispatch("focusin", { relatedTarget: null });
   assert.equal(t.track.scrollCalls.length, 2, "focusing the already-current card does not scroll again");
+  t.track.dispatch("focusin", { relatedTarget: null });
+  assertProjectSlide(t, 3, "focus landing on the track itself, outside any card, changes nothing");
+  assert.equal(t.track.scrollCalls.length, 2);
   t.root.dispatch("focusout", { relatedTarget: t.dots()[0] });
   assert.deepEqual(t.timers.intervals(), [], "focus moving to a dot keeps it paused");
   t.root.dispatch("focusout", { relatedTarget: null });
@@ -919,7 +973,10 @@ test("projects IntersectionObserver: observes every slide within the track, pick
   assertProjectSlide(noIO, 0);
 });
 
-test("projects no-op guards: a single slide leaves dots and controls hidden and schedules nothing", () => {
+test("projects no-op guards: no carousel or a single slide leaves dots and controls hidden and schedules nothing", () => {
+  const none = bootProjects({ withRoot: false });
+  assert.equal(none.timers.pendingCount(), 0, "a page without the projects carousel schedules nothing");
+  assert.deepEqual(none.observers, [], "and observes nothing");
   const t = bootProjects({ slideCount: 1 });
   assert.equal(t.dotsWrap.hidden, true);
   assert.equal(t.controls.hidden, true);
@@ -933,4 +990,11 @@ test("projects without external controls still boots and navigates", () => {
   assert.equal(t.dotsWrap.hidden, false);
   t.dots()[1].dispatch("click");
   assertProjectSlide(t, 1);
+});
+
+test("projects track inset: an empty computed padding-left counts as 0, not NaN", () => {
+  const t = bootProjects({ styled: false });
+  assert.deepEqual(t.lastScroll(), { left: 0, behavior: "smooth" }, "slide offset minus track offset, no padding subtracted");
+  t.next.dispatch("click");
+  assert.equal(t.lastScroll().left, SLIDE_PITCH, "would be NaN if the empty padding were not coerced");
 });

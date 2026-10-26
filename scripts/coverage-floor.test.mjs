@@ -18,6 +18,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
+import { HARNESSED_SCRIPTS, INLINE_URL_PREFIX, inlineScript } from "./inline-scripts.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
@@ -83,15 +84,18 @@ export function lineOf(src, offset) {
 }
 
 // One problem per dead range, naming file, line and the source it starts with.
+// A source is either the file's text or `{ src, line }` for a block embedded in
+// a page at 1-based `line`, so the reported line is the page's.
 export function problemsOf(sources, runsByFile) {
   const problems = [];
-  for (const [file, src] of [...sources].sort(([a], [b]) => a.localeCompare(b))) {
+  for (const [file, entry] of [...sources].sort(([a], [b]) => a.localeCompare(b))) {
+    const { src, line } = typeof entry === "string" ? { src: entry, line: 1 } : entry;
     const runs = runsByFile.get(file);
     if (!runs) { problems.push(`${file}: never loaded by the suite`); continue; }
     for (const [start, end] of deadRanges(src, runs)) {
       const slice = src.slice(start, end).trim().split("\n")[0];
       const quoted = slice.length > 60 ? `${slice.slice(0, 57)}...` : slice;
-      problems.push(`${file}:${lineOf(src, start)} \`${quoted}\` never executed by the suite (add a test that asserts what this branch decides)`);
+      problems.push(`${file}:${lineOf(src, start) + line - 1} \`${quoted}\` never executed by the suite (add a test that asserts what this branch decides)`);
     }
   }
   return problems;
@@ -121,6 +125,50 @@ export function runsFromReports(reports, root, sources) {
     }
   }
   return out;
+}
+
+// Inline page scripts under <root> as the harnesses run them: Map<"page#hook",
+// { src, line }>, keyed the way `inlineUrl` names them minus the prefix.
+export function inlineSources(root, registry = HARNESSED_SCRIPTS) {
+  const out = new Map();
+  for (const [page, entries] of Object.entries(registry)) {
+    const html = readFileSync(join(root, page), "utf8");
+    for (const { hook } of entries) out.set(`${page}#${hook}`, inlineScript(html, page, hook));
+  }
+  return out;
+}
+
+// `new Function(...params, body)` compiles `(function anonymous(params\n) {\nbody\n})`,
+// so V8's offsets sit `wrapper` code units past the body's own; the sourceURL
+// trailer is part of the body. Ranges are shifted back and clamped to the body.
+const FUNCTION_SUFFIX = "\n})".length;
+
+export function shiftRanges(functions, by, length) {
+  const clamp = (n) => Math.min(length, Math.max(0, n - by));
+  return functions.map((fn) => ({ ...fn, ranges: fn.ranges.map((r) => ({ ...r, startOffset: clamp(r.startOffset), endOffset: clamp(r.endOffset) })) }));
+}
+
+// Parsed NODE_V8_COVERAGE reports reduced to Map<"page#hook", runs[]> for the
+// inline scripts, plus one problem per script whose compiled length does not
+// fit the extracted body (the harness did not run `inlineScript(...).src`
+// through `new Function`, so its offsets cannot be trusted).
+export function inlineRunsFromReports(reports, sources) {
+  const runs = new Map();
+  const problems = [];
+  for (const report of reports) {
+    for (const script of report.result ?? []) {
+      if (!script.url.startsWith(INLINE_URL_PREFIX)) continue;
+      const key = script.url.slice(INLINE_URL_PREFIX.length);
+      const entry = sources.get(key);
+      if (!entry) continue;
+      const compiled = Math.max(...script.functions.flatMap((fn) => fn.ranges.map((r) => r.endOffset)));
+      const wrapper = compiled - entry.src.length - FUNCTION_SUFFIX;
+      if (wrapper < 0) { problems.push(`${key}: compiled as ${compiled} code units but the extracted block is ${entry.src.length}; run inlineScript(...).src through new Function`); continue; }
+      if (!runs.has(key)) runs.set(key, []);
+      runs.get(key).push(shiftRanges(script.functions, wrapper, entry.src.length));
+    }
+  }
+  return { runs, problems: [...new Set(problems)].sort() };
 }
 
 // Runs `node --test <files>` from <root> with coverage into a temp dir; returns
@@ -217,14 +265,77 @@ test("fixture: a real child run reports exactly the dead branch of a tmp helper 
   }
 });
 
+test("fixture: inlineSources keys every registered block as page#hook", () => {
+  assert.deepEqual([...inlineSources(ROOT).keys()], Object.entries(HARNESSED_SCRIPTS).flatMap(([page, entries]) => entries.map(({ hook }) => `${page}#${hook}`)));
+});
+
+test("fixture: inline ranges are shifted past the new Function wrapper and clamped; a body the compiled length cannot hold is a problem", () => {
+  const body = "if (a) { b(); } else { c(); }\n//# sourceURL=inline:p.html#[data-x]\n";
+  const wrapper = "(function anonymous(document\n) {\n".length;
+  const functions = [
+    { functionName: "", ranges: [{ startOffset: 0, endOffset: wrapper + body.length + 3, count: 1 }], isBlockCoverage: true },
+    { functionName: "", ranges: [{ startOffset: 1, endOffset: wrapper + body.length + 2, count: 1 }, { startOffset: wrapper + 21, endOffset: wrapper + 29, count: 0 }], isBlockCoverage: true },
+  ];
+  const sources = new Map([["p.html#[data-x]", { src: body, line: 7 }]]);
+  const { runs, problems } = inlineRunsFromReports([{ result: [{ url: "inline:p.html#[data-x]", functions }, { url: "inline:p.html#[data-other]", functions }, { url: "file:///p.mjs", functions }] }], sources);
+  assert.deepEqual(problems, []);
+  assert.deepEqual(runs.get("p.html#[data-x]"), [[
+    { functionName: "", ranges: [{ startOffset: 0, endOffset: body.length, count: 1 }], isBlockCoverage: true },
+    { functionName: "", ranges: [{ startOffset: 0, endOffset: body.length, count: 1 }, { startOffset: 21, endOffset: 29, count: 0 }], isBlockCoverage: true },
+  ]]);
+  assert.deepEqual(problemsOf(sources, runs), ["p.html#[data-x]:7 `{ c(); }` never executed by the suite (add a test that asserts what this branch decides)"]);
+  assert.deepEqual(problemsOf(new Map([["p.html#[data-x]", { src: "a\nb\nc", line: 10 }]]), new Map([["p.html#[data-x]", [[{ functionName: "", ranges: [{ startOffset: 0, endOffset: 5, count: 1 }, { startOffset: 4, endOffset: 5, count: 0 }], isBlockCoverage: true }]]]])), ["p.html#[data-x]:12 `c` never executed by the suite (add a test that asserts what this branch decides)"]);
+  const short = inlineRunsFromReports([{ result: [{ url: "inline:p.html#[data-x]", functions: [{ functionName: "", ranges: [{ startOffset: 0, endOffset: 10, count: 1 }] }] }] }], sources);
+  assert.deepEqual([...short.runs.keys()], []);
+  assert.deepEqual(short.problems, [`p.html#[data-x]: compiled as 10 code units but the extracted block is ${body.length}; run inlineScript(...).src through new Function`]);
+});
+
+test("fixture: a real child run reports the dead branch of a tmp page's inline script at its page line and nothing for a fully asserted one", () => {
+  const dir = mkdtempSync(join(tmpdir(), "coverage-floor-inline-"));
+  try {
+    mkdirSync(join(dir, "scripts"));
+    mkdirSync(join(dir, "w"));
+    const page = (hook) => `<!doctype html>\n<html>\n<body>\n<script>\n(function () {\n  var root = document.querySelector('${hook}');\n  if (!root) return;\n  root.className = root.getAttribute('data-on') ? 'on' : 'off';\n})();\n</script>\n</body>\n</html>\n`;
+    writeFileSync(join(dir, "index.html"), page("[data-dead]"));
+    writeFileSync(join(dir, "w", "index.html"), page("[data-live]"));
+    const helper = pathToFileURL(join(HERE, "inline-scripts.mjs")).href;
+    const harness = (pageRel, hook, boots) => `import { test } from "node:test";\nimport assert from "node:assert/strict";\nimport { readFileSync } from "node:fs";\nimport { inlineScript } from ${JSON.stringify(helper)};\nconst { src } = inlineScript(readFileSync(${JSON.stringify(join(dir, pageRel))}, "utf8"), ${JSON.stringify(pageRel)}, ${JSON.stringify(hook)});\nfunction boot(root) { new Function("document", src)({ querySelector: () => root }); return root; }\n${boots}\n`;
+    const el = (on) => `{ attrs: ${on ? "{ 'data-on': '1' }" : "{}"}, getAttribute(k) { return this.attrs[k]; }, className: "" }`;
+    writeFileSync(join(dir, "scripts", "dead.test.mjs"), harness("index.html", "[data-dead]", `test("on", () => assert.equal(boot(${el(true)}).className, "on"));`));
+    writeFileSync(join(dir, "scripts", "live.test.mjs"), harness("w/index.html", "[data-live]", `test("on", () => assert.equal(boot(${el(true)}).className, "on"));\ntest("off", () => assert.equal(boot(${el(false)}).className, "off"));\ntest("absent", () => assert.equal(boot(null), null));`));
+    const registry = { "index.html": [{ hook: "[data-dead]", harness: "scripts/dead.test.mjs" }], "w/index.html": [{ hook: "[data-live]", harness: "scripts/live.test.mjs" }] };
+    const sources = inlineSources(dir, registry);
+    assert.deepEqual([...sources.keys()], ["index.html#[data-dead]", "w/index.html#[data-live]"]);
+    assert.equal(sources.get("index.html#[data-dead]").line, 4);
+    const { reports, status, stdout, stderr } = collect(dir, suiteFiles(dir));
+    assert.equal(status, 0, `${stdout}\n${stderr}`);
+    const { runs, problems } = inlineRunsFromReports(reports, sources);
+    assert.deepEqual(problems, []);
+    assert.deepEqual([...runs.keys()].sort(), ["index.html#[data-dead]", "w/index.html#[data-live]"]);
+    assert.deepEqual(problemsOf(sources, runs), [
+      "index.html#[data-dead]:7 `return;` never executed by the suite (add a test that asserts what this branch decides)",
+      "index.html#[data-dead]:8 `: 'off'` never executed by the suite (add a test that asserts what this branch decides)",
+    ]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // --- live gate --------------------------------------------------------------
 
-test("every branch of every scripts/*.mjs helper is executed by the suite", { skip: process.env[CHILD_ENV] ? "running inside the coverage-floor child" : false }, () => {
+test("every branch of every scripts/*.mjs helper and every inline page script is executed by the suite", { skip: process.env[CHILD_ENV] ? "running inside the coverage-floor child" : false }, () => {
   const sources = helperSources(ROOT);
   assert.ok(sources.size > 0, "no helpers under scripts/");
+  const inline = inlineSources(ROOT);
+  assert.ok(inline.size > 0, "no inline scripts registered in HARNESSED_SCRIPTS");
   const files = suiteFiles(ROOT);
   assert.ok(!files.includes(`scripts/${SELF}`));
   const { reports, status, stdout, stderr } = collect(ROOT, files);
   assert.equal(status, 0, `child suite failed; fix it first\n${stdout}\n${stderr}`);
-  assert.deepEqual(problemsOf(sources, runsFromReports(reports, ROOT, sources)), []);
+  const inlineRuns = inlineRunsFromReports(reports, inline);
+  assert.deepEqual([
+    ...problemsOf(sources, runsFromReports(reports, ROOT, sources)),
+    ...inlineRuns.problems,
+    ...problemsOf(inline, inlineRuns.runs),
+  ], []);
 });
