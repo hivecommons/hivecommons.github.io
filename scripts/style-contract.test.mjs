@@ -381,6 +381,49 @@ function fontFilesUnder(dir) {
 }
 
 // ---------------------------------------------------------------------------
+// Motion: `scroll-behavior: smooth` animates every in-page anchor jump, which
+// users who asked the OS for reduced motion must not get. Every such
+// declaration has to sit inside an `@media` block whose query includes
+// `(prefers-reduced-motion: no-preference)`, at any nesting depth. Returns one
+// problem per unguarded declaration with its line.
+// ---------------------------------------------------------------------------
+
+export function unguardedSmoothScroll(css, label = "css") {
+  const clean = stripComments(css);
+  const problems = [];
+  const preludes = [];
+  let preludeStart = 0;
+  for (let i = 0; i < clean.length; i++) {
+    const ch = clean[i];
+    if (ch === '"' || ch === "'") {
+      // Skip string contents so a ";" or "{" inside one is inert, as in cssStructureProblems.
+      let j = i + 1;
+      while (j < clean.length && clean[j] !== ch && clean[j] !== "\n") j += clean[j] === "\\" ? 2 : 1;
+      i = j;
+    } else if (ch === "{") {
+      preludes.push(clean.slice(preludeStart, i).trim());
+      preludeStart = i + 1;
+    } else if (ch === "}") {
+      preludes.pop();
+      preludeStart = i + 1;
+    } else if (ch === ";") {
+      preludeStart = i + 1;
+    } else if (clean.startsWith("scroll-behavior", i) && !/[\w-]/.test(clean[i - 1] ?? "") && /^\s*:/.test(clean.slice(i + "scroll-behavior".length))) {
+      const colon = clean.indexOf(":", i);
+      let end = colon + 1;
+      while (end < clean.length && clean[end] !== ";" && clean[end] !== "}" && clean[end] !== "{") end++;
+      const value = clean.slice(colon + 1, end).replace(/!\s*important\s*$/i, "").trim().toLowerCase();
+      if (value === "smooth") {
+        const guarded = preludes.some((p) => /^@media\b/i.test(p) && /prefers-reduced-motion\s*:\s*no-preference/i.test(p));
+        if (!guarded) problems.push(`${label} line ${lineOf(clean, i)}: scroll-behavior: smooth is not inside @media (prefers-reduced-motion: no-preference)`);
+      }
+      i = end - 1;
+    }
+  }
+  return problems;
+}
+
+// ---------------------------------------------------------------------------
 // Fixture self-tests: prove every rule both passes clean input and fires.
 // ---------------------------------------------------------------------------
 
@@ -415,44 +458,6 @@ const CLEAN_HTML = `<!doctype html><html lang="en" class="no-js"><head><title>t<
 </script>
 </body></html>`;
 
-// ---------------------------------------------------------------------------
-// Motion: `scroll-behavior: smooth` animates every in-page anchor jump, which
-// users who asked the OS for reduced motion must not get. Every such
-// declaration has to sit inside an `@media` block whose query includes
-// `(prefers-reduced-motion: no-preference)`, at any nesting depth. Returns one
-// problem per unguarded declaration with its line.
-// ---------------------------------------------------------------------------
-
-export function unguardedSmoothScroll(css, label = "css") {
-  const clean = stripComments(css);
-  const problems = [];
-  const preludes = [];
-  let preludeStart = 0;
-  for (let i = 0; i < clean.length; i++) {
-    const ch = clean[i];
-    if (ch === "{") {
-      preludes.push(clean.slice(preludeStart, i).trim());
-      preludeStart = i + 1;
-    } else if (ch === "}") {
-      preludes.pop();
-      preludeStart = i + 1;
-    } else if (ch === ";") {
-      preludeStart = i + 1;
-    } else if (clean.startsWith("scroll-behavior", i) && !/[\w-]/.test(clean[i - 1] ?? "") && /^\s*:/.test(clean.slice(i + "scroll-behavior".length))) {
-      const colon = clean.indexOf(":", i);
-      let end = colon + 1;
-      while (end < clean.length && clean[end] !== ";" && clean[end] !== "}") end++;
-      const value = clean.slice(colon + 1, end).replace(/!\s*important\s*$/i, "").trim().toLowerCase();
-      if (value === "smooth") {
-        const guarded = preludes.some((p) => /^@media\b/i.test(p) && /prefers-reduced-motion\s*:\s*no-preference/i.test(p));
-        if (!guarded) problems.push(`${label} line ${lineOf(clean, i)}: scroll-behavior: smooth is not inside @media (prefers-reduced-motion: no-preference)`);
-      }
-      i = end - 1;
-    }
-  }
-  return problems;
-}
-
 test("fixture: clean CSS and page pass every rule", () => {
   assert.deepEqual(cssStructureProblems(CLEAN_CSS), []);
   const defs = new Set([...cssCustomPropertyDefinitions(CLEAN_CSS), ...pageCustomPropertyDefinitions(CLEAN_HTML)]);
@@ -465,6 +470,7 @@ test("fixture: clean CSS and page pass every rule", () => {
   assert.deepEqual(cssDataSelectors(CLEAN_CSS), ["data-root"]);
   assert.deepEqual(missingCssDataSelectors(CLEAN_CSS, [markupOnly(CLEAN_HTML)]), []);
   assert.deepEqual(localStylesheetHrefs(CLEAN_HTML), ["/style.css"]);
+  assert.deepEqual(unguardedSmoothScroll(CLEAN_CSS), []);
 });
 
 test("fixture: unbalanced braces are reported with the opening line", () => {
@@ -566,6 +572,11 @@ test("fixture: an unguarded, wrongly guarded, !important or last-in-block scroll
   assert.deepEqual(unguardedSmoothScroll(`html { scroll-behavior: SMOOTH }`).length, 1);
   assert.deepEqual(unguardedSmoothScroll(`@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }\nhtml { scroll-behavior: smooth; }`).map((e) => /line (\d+)/.exec(e)[1]), ["2"]);
   assert.deepEqual(unguardedSmoothScroll(`html { scroll-behavior: smooth; }\n.a { scroll-behavior: smooth; }`).length, 2);
+  // A "{" inside a string must not leave a guarding prelude on the stack.
+  assert.deepEqual(unguardedSmoothScroll(`@media (prefers-reduced-motion: no-preference) { .c { content: "{"; } }\nhtml { scroll-behavior: smooth; }`).map((e) => /line (\d+)/.exec(e)[1]), ["2"]);
+  assert.deepEqual(unguardedSmoothScroll(`@media (prefers-reduced-motion: no-preference) { .c { content: '{'; } }\n.d[data-x="}"] { scroll-behavior: smooth; }`).length, 1);
+  // A prelude mentioning scroll-behavior must not hide the declarations nested inside it.
+  assert.deepEqual(unguardedSmoothScroll(`@supports (scroll-behavior: smooth) {\n html { scroll-behavior: smooth; }\n}`).map((e) => /line (\d+)/.exec(e)[1]), ["2"]);
 });
 
 test("fixture: a CSS data-* selector that no page's markup carries is reported", () => {
