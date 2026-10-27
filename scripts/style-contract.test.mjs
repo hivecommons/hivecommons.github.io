@@ -414,7 +414,13 @@ export function unguardedSmoothScroll(css, label = "css") {
       while (end < clean.length && clean[end] !== ";" && clean[end] !== "}" && clean[end] !== "{") end++;
       const value = clean.slice(colon + 1, end).replace(/!\s*important\s*$/i, "").trim().toLowerCase();
       if (value === "smooth") {
-        const guarded = preludes.some((p) => /^@media\b/i.test(p) && /prefers-reduced-motion\s*:\s*no-preference/i.test(p));
+        const guarded = preludes.some(
+          (p) =>
+            /^@media\b/i.test(p) &&
+            /prefers-reduced-motion\s*:\s*no-preference/i.test(p) &&
+            !/^@media\s+not\b/i.test(p) &&
+            !/\bnot\s*\(\s*prefers-reduced-motion/i.test(p),
+        );
         if (!guarded) problems.push(`${label} line ${lineOf(clean, i)}: scroll-behavior: smooth is not inside @media (prefers-reduced-motion: no-preference)`);
       }
       i = end - 1;
@@ -575,6 +581,10 @@ test("fixture: an unguarded, wrongly guarded, !important or last-in-block scroll
   // A "{" inside a string must not leave a guarding prelude on the stack.
   assert.deepEqual(unguardedSmoothScroll(`@media (prefers-reduced-motion: no-preference) { .c { content: "{"; } }\nhtml { scroll-behavior: smooth; }`).map((e) => /line (\d+)/.exec(e)[1]), ["2"]);
   assert.deepEqual(unguardedSmoothScroll(`@media (prefers-reduced-motion: no-preference) { .c { content: '{'; } }\n.d[data-x="}"] { scroll-behavior: smooth; }`).length, 1);
+  // A negated no-preference query is the opposite of a guard.
+  assert.deepEqual(unguardedSmoothScroll(`@media not (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth } }`).length, 1);
+  assert.deepEqual(unguardedSmoothScroll(`@media not all and (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth } }`).length, 1);
+  assert.deepEqual(unguardedSmoothScroll(`@media screen and (not (prefers-reduced-motion: no-preference)) { html { scroll-behavior: smooth } }`).length, 1);
   // A prelude mentioning scroll-behavior must not hide the declarations nested inside it.
   assert.deepEqual(unguardedSmoothScroll(`@supports (scroll-behavior: smooth) {\n html { scroll-behavior: smooth; }\n}`).map((e) => /line (\d+)/.exec(e)[1]), ["2"]);
 });
