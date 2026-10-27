@@ -691,6 +691,45 @@ test("style.css: self-hosted @font-face files are committed and every committed 
   assert.deepEqual(unreferencedFontFiles(fonts, referencedAssets), []);
 });
 
+test("style.css: every scroll-behavior: smooth is inside @media (prefers-reduced-motion: no-preference)", () => {
+  const css = readFileSync(stylesheets.get("style.css").file, "utf8");
+  const clean = stripComments(css);
+  const errors = [];
+  const mediaStack = [];
+  let braceDepth = 0;
+  for (let i = 0; i < clean.length; i++) {
+    if (clean[i] === "{") {
+      const atMediaIdx = clean.lastIndexOf("@media", i);
+      const lastCloseIdx = clean.lastIndexOf("}", i);
+      if (atMediaIdx !== -1 && atMediaIdx > lastCloseIdx) {
+        const prelude = clean.substring(atMediaIdx, i);
+        mediaStack.push(prelude);
+      } else {
+        mediaStack.push(null);
+      }
+      braceDepth++;
+    } else if (clean[i] === "}") {
+      braceDepth--;
+      if (mediaStack.length > 0) mediaStack.pop();
+    }
+    if (clean.startsWith("scroll-behavior", i)) {
+      const colonIdx = clean.indexOf(":", i);
+      const declEnd = clean.indexOf(";", colonIdx);
+      if (colonIdx !== -1 && declEnd !== -1) {
+        const decl = clean.substring(colonIdx + 1, declEnd).trim();
+        if (decl === "smooth") {
+          const hasNoPreference = mediaStack.some((m) => m && /prefers-reduced-motion\s*:\s*no-preference/.test(m));
+          if (!hasNoPreference) {
+            const line = clean.substring(0, i).split("\n").length;
+            errors.push(`scroll-behavior: smooth at line ${line} is not inside @media (prefers-reduced-motion: no-preference)`);
+          }
+        }
+      }
+    }
+  }
+  assert.deepEqual(errors, []);
+});
+
 test("index.html: the carousel and ACMM state classes are the ones the stub-DOM tests exercise", () => {
   const index = contentPages.find((p) => p.rel === "index.html");
   const toggled = scriptToggledClasses(index.html);
