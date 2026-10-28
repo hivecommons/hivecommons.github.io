@@ -218,9 +218,14 @@ red PR job against.
   source slice — so a branch that runs under the suite without a test asserting what it
   decides cannot merge green. A range counts as executed if any child process ran it; a
   tool's main-module guard (`if (process.argv[1] … import.meta.url)`) is excluded because
-  its self-test runs it via `spawnSync` against a copy. Each rule has a fixture
-  self-test, including real child runs over a tmp helper and a tmp page with one dead
-  branch each. Zero dependencies.
+  its self-test runs it via `spawnSync` against a copy. The same read covers the
+  top-level `function` declarations of every other `*.test.mjs` gate — where most checker
+  logic actually lives (`problemsOf`, `unguardedSmoothScroll`, …) — confined to those
+  declaration spans so a `test()` body is never a finding, and ratcheted per file through
+  `TEST_HELPER_BASELINE`: an entry may only be lowered (and is deleted at zero), a file
+  without one must be fully asserted, and a stale entry fails. Each rule has a fixture
+  self-test, including real child runs over a tmp helper, a tmp page and a tmp gate with
+  one dead branch each. Zero dependencies.
 - `node --test scripts/llms-txt.test.mjs` — static gate keeping `llms.txt` in step with
   `index.html`: the agent CLIs it names must equal the Agent CLIs chips, the inference
   engines/gateways it names must equal the engine and gateway chips (classifier chips
