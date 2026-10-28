@@ -27,6 +27,37 @@ const SELF = basename(fileURLToPath(import.meta.url));
 // never recurse; the file list below already leaves it out.
 const CHILD_ENV = "COVERAGE_FLOOR_CHILD";
 
+// Dead ranges inside the top-level functions of each gate when the ratchet
+// landed. Lower an entry when you assert a branch; delete it at zero; never
+// raise one. The end state is an empty object and the same floor the
+// scripts/*.mjs helpers already meet.
+export const TEST_HELPER_BASELINE = {
+  "scripts/acmm-levels.test.mjs": 3,
+  "scripts/automation-docs.test.mjs": 4,
+  "scripts/availability-probes.test.mjs": 2,
+  "scripts/carousels.test.mjs": 6,
+  "scripts/ci-wiring.test.mjs": 6,
+  "scripts/dependabot-config.test.mjs": 9,
+  "scripts/issue-forms.test.mjs": 15,
+  "scripts/jsonld-contract.test.mjs": 14,
+  "scripts/llms-txt.test.mjs": 3,
+  "scripts/no-js-controls.test.mjs": 5,
+  "scripts/owners-file.test.mjs": 4,
+  "scripts/page-404.test.mjs": 5,
+  "scripts/page-images.test.mjs": 19,
+  "scripts/page-markup.test.mjs": 2,
+  "scripts/page-meta.test.mjs": 20,
+  "scripts/page-structure.test.mjs": 7,
+  "scripts/pages-build.test.mjs": 4,
+  "scripts/redirect-targets.test.mjs": 4,
+  "scripts/story-cards.test.mjs": 14,
+  "scripts/story-dialog.test.mjs": 1,
+  "scripts/story-form-contract.test.mjs": 12,
+  "scripts/style-contract.test.mjs": 13,
+  "scripts/workflow-docs.test.mjs": 4,
+  "scripts/workflow-hardening.test.mjs": 3,
+};
+
 // --- analysis ---------------------------------------------------------------
 
 // [start, end) offsets of every main-module guard block in a tool's source:
@@ -39,6 +70,24 @@ export function cliEntrySpans(src) {
       if (src[i] === "{") depth++;
       else if (src[i] === "}" && --depth === 0) { spans.push([m.index, i + 1]); break; }
     }
+  }
+  return spans;
+}
+
+// [start, end) offsets of every top-level function declaration in a gate:
+// `export function f(...) {` / `async function g(...) {` opening at the end of
+// its line, up to the first `}` on a line of its own. Formatted code closes a
+// top-level body exactly there, and counting braces would trip over the `{`
+// inside the string and regex literals the checkers are made of. A one-line
+// declaration has no span (it would otherwise run on to the next body).
+export function functionSpans(src) {
+  const spans = [];
+  for (const m of src.matchAll(/^(?:export )?(?:async )?function\b[^\n]*\{$/gm)) {
+    const close = src.indexOf("\n}", m.index);
+    if (close < 0) break;
+    const after = src[close + 2];
+    if (after !== undefined && after !== "\n") continue;
+    spans.push([m.index, close + 2]);
   }
   return spans;
 }
@@ -59,7 +108,8 @@ export function countOf(functions, start, end) {
 
 // Ranges no process executed: zero-count in one run and still zero in every
 // other run that loaded the script. `runs` is one `functions` array per process.
-export function deadRanges(src, runs) {
+// With `within`, only ranges inside one of those [start, end) spans count.
+export function deadRanges(src, runs, within) {
   const seen = new Map();
   for (const functions of runs) {
     for (const fn of functions) {
@@ -73,6 +123,7 @@ export function deadRanges(src, runs) {
   for (const [start, end] of seen.values()) {
     if (!src.slice(start, end).trim()) continue;
     if (skip.some(([s, e]) => start >= s && start < e)) continue;
+    if (within && !within.some(([s, e]) => start >= s && end <= e)) continue;
     if (runs.some((functions) => (countOf(functions, start, end) ?? 0) > 0)) continue;
     out.push([start, end]);
   }
@@ -83,20 +134,43 @@ export function lineOf(src, offset) {
   return src.slice(0, offset).split("\n").length;
 }
 
-// One problem per dead range, naming file, line and the source it starts with.
-// A source is either the file's text or `{ src, line }` for a block embedded in
-// a page at 1-based `line`, so the reported line is the page's.
-export function problemsOf(sources, runsByFile) {
-  const problems = [];
+// Problems per file, naming file, line and the source each dead range starts
+// with. A source is either the file's text or `{ src, line, within }`: `line`
+// for a block embedded in a page at that 1-based line, so the reported line is
+// the page's; `within` to confine the search to those spans of the source.
+export function problemsByFile(sources, runsByFile) {
+  const out = new Map();
   for (const [file, entry] of [...sources].sort(([a], [b]) => a.localeCompare(b))) {
-    const { src, line } = typeof entry === "string" ? { src: entry, line: 1 } : entry;
+    const { src, line = 1, within } = typeof entry === "string" ? { src: entry } : entry;
+    const problems = [];
+    out.set(file, problems);
     const runs = runsByFile.get(file);
     if (!runs) { problems.push(`${file}: never loaded by the suite`); continue; }
-    for (const [start, end] of deadRanges(src, runs)) {
+    for (const [start, end] of deadRanges(src, runs, within)) {
       const slice = src.slice(start, end).trim().split("\n")[0];
       const quoted = slice.length > 60 ? `${slice.slice(0, 57)}...` : slice;
       problems.push(`${file}:${lineOf(src, start) + line - 1} \`${quoted}\` never executed by the suite (add a test that asserts what this branch decides)`);
     }
+  }
+  return out;
+}
+
+// One problem per dead range, in file order.
+export function problemsOf(sources, runsByFile) {
+  return [...problemsByFile(sources, runsByFile).values()].flat();
+}
+
+// Ratchet: a file may carry at most `baseline[file]` problems (0 when absent)
+// and must lower its entry as they are fixed, so the baseline only shrinks.
+export function ratchetProblems(byFile, baseline) {
+  const problems = [];
+  for (const [file, found] of byFile) {
+    const allowed = baseline[file] ?? 0;
+    if (found.length > allowed) problems.push(`${file}: ${found.length} dead ranges, baseline allows ${allowed}`, ...found);
+    else if (found.length < allowed) problems.push(`${file}: ${found.length} dead ranges left, baseline allows ${allowed} — lower TEST_HELPER_BASELINE to ${found.length || "nothing (delete the entry)"}`);
+  }
+  for (const file of Object.keys(baseline)) {
+    if (!byFile.has(file)) problems.push(`${file}: in TEST_HELPER_BASELINE but not a gate under scripts/ — delete the entry`);
   }
   return problems;
 }
@@ -109,6 +183,20 @@ export function helperSources(root) {
   const dir = join(root, "scripts");
   return new Map(readdirSync(dir).filter((n) => n.endsWith(".mjs") && !n.endsWith(".test.mjs")).sort()
     .map((n) => [`scripts/${n}`, readFileSync(join(dir, n), "utf8")]));
+}
+
+// The gates' own top-level functions: every scripts/*.test.mjs (this file
+// aside — the child never loads it) that declares at least one, as
+// `{ src, within }` so only those declarations are read.
+export function testHelperSources(root, self = SELF) {
+  const dir = join(root, "scripts");
+  const out = new Map();
+  for (const n of readdirSync(dir).filter((n) => n.endsWith(".test.mjs") && n !== self).sort()) {
+    const src = readFileSync(join(dir, n), "utf8");
+    const within = functionSpans(src);
+    if (within.length) out.set(`scripts/${n}`, { src, within });
+  }
+  return out;
 }
 
 // Parsed NODE_V8_COVERAGE reports reduced to Map<repo-relative helper, runs[]>.
@@ -321,6 +409,65 @@ test("fixture: a real child run reports the dead branch of a tmp page's inline s
   }
 });
 
+test("fixture: functionSpans finds top-level declarations only and deadRanges honours within", () => {
+  const src = 'import x from "y";\nexport function a(v) {\n  return v ? "{" : "}";\n}\n\nasync function b() {\n  if (c) {\n    d();\n  }\n}\nfunction notClosed() { return 1; }\ntest("t", () => {\n  const f = function () { return 2; };\n  return f;\n});\n';
+  const spans = functionSpans(src);
+  assert.deepEqual(spans.map(([s, e]) => src.slice(s, e).split("\n")[0]), ["export function a(v) {", "async function b() {"]);
+  assert.equal(src.slice(...spans[0]).at(-1), "}");
+  assert.equal(src.slice(...spans[1]).at(-1), "}");
+  assert.deepEqual(functionSpans("export function f() {\n  return 1;\n}"), [[0, 35]]);
+  assert.deepEqual(functionSpans("export function f() { return 1; }\n"), []);
+  assert.deepEqual(functionSpans("function f() { return 1; }\ntest(\"t\", () => {\n  f();\n});\nfunction g() {\n  return 2;\n}\n").map(([s]) => s), [56]);
+  assert.deepEqual(functionSpans("export function f() {\n  return 1;\n});\n"), []);
+  assert.deepEqual(functionSpans("export function f() {\n  return 1;"), []);
+  assert.deepEqual(functionSpans("const x = 1;\n"), []);
+  const inA = src.indexOf(': "}"');
+  const inTest = src.indexOf("return 2;");
+  const runs = [[{ functionName: "", ranges: [{ startOffset: 0, endOffset: src.length, count: 1 }, { startOffset: inA, endOffset: inA + 5, count: 0 }, { startOffset: inTest, endOffset: inTest + 9, count: 0 }], isBlockCoverage: true }]];
+  assert.deepEqual(deadRanges(src, runs), [[inA, inA + 5], [inTest, inTest + 9]]);
+  assert.deepEqual(deadRanges(src, runs, spans), [[inA, inA + 5]]);
+  assert.deepEqual(problemsOf(new Map([["scripts/g.test.mjs", { src, within: spans }]]), new Map([["scripts/g.test.mjs", runs]])), [
+    'scripts/g.test.mjs:3 `: "}"` never executed by the suite (add a test that asserts what this branch decides)',
+  ]);
+});
+
+test("fixture: the ratchet fails on growth, on a stale entry and on an unlowered one, and passes at the baseline", () => {
+  const byFile = new Map([["scripts/a.test.mjs", ["a:1 dead", "a:2 dead"]], ["scripts/b.test.mjs", []], ["scripts/c.test.mjs", ["c:1 dead"]]]);
+  assert.deepEqual(ratchetProblems(byFile, { "scripts/a.test.mjs": 2, "scripts/c.test.mjs": 1 }), []);
+  assert.deepEqual(ratchetProblems(byFile, { "scripts/a.test.mjs": 1, "scripts/c.test.mjs": 1 }), ["scripts/a.test.mjs: 2 dead ranges, baseline allows 1", "a:1 dead", "a:2 dead"]);
+  assert.deepEqual(ratchetProblems(byFile, { "scripts/a.test.mjs": 2 }), ["scripts/c.test.mjs: 1 dead ranges, baseline allows 0", "c:1 dead"]);
+  assert.deepEqual(ratchetProblems(byFile, { "scripts/a.test.mjs": 3, "scripts/b.test.mjs": 1, "scripts/c.test.mjs": 1 }), [
+    "scripts/a.test.mjs: 2 dead ranges left, baseline allows 3 — lower TEST_HELPER_BASELINE to 2",
+    "scripts/b.test.mjs: 0 dead ranges left, baseline allows 1 — lower TEST_HELPER_BASELINE to nothing (delete the entry)",
+  ]);
+  assert.deepEqual(ratchetProblems(byFile, { "scripts/a.test.mjs": 2, "scripts/c.test.mjs": 1, "scripts/gone.test.mjs": 1 }), ["scripts/gone.test.mjs: in TEST_HELPER_BASELINE but not a gate under scripts/ — delete the entry"]);
+  assert.deepEqual(ratchetProblems(new Map([["scripts/n.test.mjs", ["scripts/n.test.mjs: never loaded by the suite"]]]), {}), ["scripts/n.test.mjs: 1 dead ranges, baseline allows 0", "scripts/n.test.mjs: never loaded by the suite"]);
+  assert.ok(Object.values(TEST_HELPER_BASELINE).every((n) => Number.isInteger(n) && n > 0), "baseline entries are positive integers; delete an entry at zero");
+});
+
+test("fixture: a real child run reads a gate's own top-level functions and nothing inside its test bodies", () => {
+  const dir = mkdtempSync(join(tmpdir(), "coverage-floor-gate-"));
+  try {
+    mkdirSync(join(dir, "scripts"));
+    writeFileSync(join(dir, "scripts", "gate.test.mjs"), 'import { test } from "node:test";\nimport assert from "node:assert/strict";\nexport function pick(x) {\n  return x ? "yes" : "no";\n}\ntest("yes", () => {\n  assert.equal(pick(1), "yes");\n  if (!pick(1)) assert.fail("unreachable");\n});\n');
+    writeFileSync(join(dir, "scripts", "plain.test.mjs"), 'import { test } from "node:test";\ntest("plain", () => {});\n');
+    writeFileSync(join(dir, "scripts", "coverage-floor.test.mjs"), 'import { test } from "node:test";\nexport function ignored(x) {\n  return x ? 1 : 2;\n}\ntest("self", () => {});\n');
+    const sources = testHelperSources(dir);
+    assert.deepEqual([...sources.keys()], ["scripts/gate.test.mjs"]);
+    assert.deepEqual([...testHelperSources(dir, "nothing.test.mjs").keys()], ["scripts/coverage-floor.test.mjs", "scripts/gate.test.mjs"]);
+    const { reports, status, stdout, stderr } = collect(dir, suiteFiles(dir));
+    assert.equal(status, 0, `${stdout}\n${stderr}`);
+    const byFile = problemsByFile(sources, runsFromReports(reports, dir, sources));
+    assert.deepEqual([...byFile], [["scripts/gate.test.mjs", [
+      'scripts/gate.test.mjs:4 `: "no"` never executed by the suite (add a test that asserts what this branch decides)',
+    ]]]);
+    assert.deepEqual(ratchetProblems(byFile, { "scripts/gate.test.mjs": 1 }), []);
+    assert.equal(ratchetProblems(byFile, {}).length, 2);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // --- live gate --------------------------------------------------------------
 
 test("every branch of every scripts/*.mjs helper and every inline page script is executed by the suite", { skip: process.env[CHILD_ENV] ? "running inside the coverage-floor child" : false }, () => {
@@ -338,6 +485,14 @@ test("every branch of every scripts/*.mjs helper and every inline page script is
     ...inlineRuns.problems,
     ...problemsOf(inline, inlineRuns.runs),
   ], []);
+});
+
+test("every branch of every gate's own top-level functions is executed by the suite, down to TEST_HELPER_BASELINE", { skip: process.env[CHILD_ENV] ? "running inside the coverage-floor child" : false }, () => {
+  const sources = testHelperSources(ROOT);
+  assert.ok(sources.size > 0, "no gate under scripts/ declares a top-level function");
+  const { reports, status, stdout, stderr } = collect(ROOT, suiteFiles(ROOT));
+  assert.equal(status, 0, `child suite failed; fix it first\n${stdout}\n${stderr}`);
+  assert.deepEqual(ratchetProblems(problemsByFile(sources, runsFromReports(reports, ROOT, sources)), TEST_HELPER_BASELINE), []);
 });
 
 test("fixture: real inline child coverage maps Function wrappers to original page lines", () => {
