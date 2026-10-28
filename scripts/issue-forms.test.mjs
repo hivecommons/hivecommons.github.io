@@ -139,6 +139,13 @@ test("every issue form parses and is sound", () => {
   for (const f of forms) assert.deepEqual(formProblems(parseYaml(readFileSync(join(DIR, f), "utf8"))), [], f);
 });
 
+test("fixture: siteHas resolves the root, a bare page, a plain file, and nothing else", () => {
+  assert.equal(siteHas(""), true);
+  assert.equal(siteHas("404"), true);
+  assert.equal(siteHas("robots.txt"), true);
+  assert.equal(siteHas("no-such-page/"), false);
+});
+
 test("fixtures: each rule rejects a bad input", () => {
   const ok = () => true;
   assert.ok(configProblems({ blank_issues_enabled: "yes", contact_links: [] }, ok).length);

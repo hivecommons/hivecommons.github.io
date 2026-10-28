@@ -83,14 +83,20 @@ export function cliEntrySpans(src) {
 // Also matches top-level const arrow-function helpers:
 // `const name = (...) => {` / `const name = async (...) => {` /
 // `const name = function(...) {` / `const name = async function(...) {`.
+// An assigned function closes with `};`, so the const form also accepts a
+// `;` right after the brace; the span ends at the brace either way.
 export function functionSpans(src) {
   const spans = [];
   // Match both function declarations and const arrow-function/function-assigned helpers
   for (const m of src.matchAll(/^(?:export )?(?:(?:async )?function\b|const\s+\w+\s*=\s*(?:async\s+)?(?:\(|function\b))[^\n]*\{$/gm)) {
     const close = src.indexOf("\n}", m.index);
     if (close < 0) break;
+    const isConst = /^(?:export )?const\b/.test(m[0]);
     const after = src[close + 2];
-    if (after !== undefined && after !== "\n") continue;
+    if (after === ";" && isConst) {
+      const next = src[close + 3];
+      if (next !== undefined && next !== "\n") continue;
+    } else if (after !== undefined && after !== "\n") continue;
     spans.push([m.index, close + 2]);
   }
   return spans;
@@ -330,6 +336,14 @@ test("fixture: functionSpans recognizes top-level arrow-const and function-assig
   
   const mixedSpans = functionSpans(mixed);
   assert.equal(mixedSpans.length, 3, "mixed file should have three spans (a, b, c)");
+
+  const semi = "const siteHas = (path) => {\n  if (path === '') return true;\n  return false;\n};\n\nexport const g = function(x) {\n  return x;\n};\n";
+  const semiSpans = functionSpans(semi);
+  assert.equal(semiSpans.length, 2, "arrow/function consts closing with `};` should each have one span");
+  assert.equal(semi.slice(...semiSpans[0]), "const siteHas = (path) => {\n  if (path === '') return true;\n  return false;\n}", "the `};` span ends at the closing brace");
+  assert.equal(semi.slice(...semiSpans[1]), "export const g = function(x) {\n  return x;\n}");
+  assert.deepEqual(functionSpans("const h = (x) => {\n  return x;\n}; h(1);\n"), [], "a `};` followed by more code on the line is not a top-level close");
+  assert.deepEqual(functionSpans("function d() {\n  return 1;\n};\n"), [], "a declaration followed by `;` keeps the old rejection");
 });
 
 
