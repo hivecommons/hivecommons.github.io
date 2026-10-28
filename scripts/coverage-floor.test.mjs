@@ -34,7 +34,6 @@ const CHILD_ENV = "COVERAGE_FLOOR_CHILD";
 export const TEST_HELPER_BASELINE = {
   "scripts/acmm-levels.test.mjs": 3,
   "scripts/automation-docs.test.mjs": 4,
-  "scripts/availability-probes.test.mjs": 2,
   "scripts/carousels.test.mjs": 6,
   "scripts/ci-wiring.test.mjs": 6,
   "scripts/dependabot-config.test.mjs": 9,
@@ -44,7 +43,6 @@ export const TEST_HELPER_BASELINE = {
   "scripts/no-js-controls.test.mjs": 5,
   "scripts/page-404.test.mjs": 5,
   "scripts/page-images.test.mjs": 19,
-  "scripts/page-markup.test.mjs": 2,
   "scripts/page-meta.test.mjs": 20,
   "scripts/page-structure.test.mjs": 7,
   "scripts/pages-build.test.mjs": 4,

@@ -29,7 +29,8 @@ function markupOnly(html) {
 function attrValue(tag, name) {
   const m = new RegExp(`\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+))`, "i").exec(tag);
   if (!m) return null;
-  return m[1] ?? m[2] ?? m[3] ?? "";
+  // Exactly one alternative matched; the quoted ones capture "" for an empty value.
+  return m[1] ?? m[2] ?? m[3];
 }
 
 function hasAttr(tag, name) {
@@ -170,6 +171,13 @@ test("fixture: idrefs that do not resolve are reported, including one token of a
 test("fixture: ids declared only inside <script> text do not satisfy idrefs", () => {
   const html = `<html lang="en"><body><script>var s = '<p id="ghost">';</script>\n<div aria-labelledby="ghost"></div></body></html>`;
   assert.equal(danglingIdrefs(html).length, 1);
+});
+
+test("fixture: unquoted and single-quoted attribute values are read like double-quoted ones", () => {
+  const html = `<html lang=en><body>\n<input id=name>\n<label for=name></label>\n<label for='name'></label>\n<label for=gone></label>\n<p id=name></p></body></html>`;
+  assert.deepEqual(danglingIdrefs(html), ['line 5: for="gone" does not match any id on the page']);
+  assert.deepEqual(duplicateIds(html), ['line 6: duplicate id "name" (first at line 2)']);
+  assert.deepEqual(missingHtmlLang(html), []);
 });
 
 test("fixture: <img> without alt is reported; alt=\"\" and unquoted alt are fine", () => {
