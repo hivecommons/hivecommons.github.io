@@ -40,7 +40,10 @@ has_id() {
   local file="$1"
   local id="$2"
   [[ -f "$file" ]] || return 1
-  grep -Eq "id=[\"']${id//\//\\/}[\"']|name=[\"']${id//\//\\/}[\"']" "$file"
+  local esc
+  esc="$(printf '%s' "$id" | sed 's/[][\.*^$+?(){}|\/]/\\&/g')"
+  # id= on any element; name= only on an <a ...> tag (same line), both on an attribute boundary.
+  grep -Eq "(^|[[:space:]<])id=[\"']${esc}[\"']|<a[[:space:]]([^>]*[[:space:]])?name=[\"']${esc}[\"']" "$file"
 }
 
 is_site_url() {
