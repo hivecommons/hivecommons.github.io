@@ -139,9 +139,9 @@ export function checkOwners(text, { isRoot = true, aliases = new Set() } = {}) {
   }
   if (isRoot && !(Array.isArray(doc.approvers) && doc.approvers.length)) problems.push("root OWNERS must list at least one approver (`approvers:`), or nothing can be /approve'd");
   for (const key of PEOPLE_KEYS) {
+    // parseOwners only ever builds a map for `options`; every other key is a list.
     const list = doc[key];
     if (list === undefined) continue;
-    if (!Array.isArray(list)) { problems.push(`\`${key}\` must be a list`); continue; }
     const seen = new Set();
     for (const entry of list) {
       const lower = entry.toLowerCase();
@@ -214,6 +214,7 @@ test("tabs, scalars where lists belong and stray lines are reported with line nu
   assert.match(checkOwners("approvers: alice\n").join("\n"), /line 1: `approvers` must introduce a list/);
   assert.match(checkOwners("  - alice\napprovers:\n  - bob\n").join("\n"), /line 1: list item before any key/);
   assert.match(checkOwners("approvers:\n  - alice\n  nested: x\n").join("\n"), /line 3: nested key `nested` under `approvers`/);
+  assert.match(checkOwners("  nested: x\napprovers:\n  - alice\n").join("\n"), /line 1: nested key `nested` under `\(none\)`, which is not a map/);
   assert.match(checkOwners("approvers:\n  - alice\n:::\n").join("\n"), /line 3: unparseable line/);
   assert.match(checkOwners("approvers:\n  -   \n").join("\n"), /line 2: empty list item/);
   assert.match(checkOwners("approvers:\n  - alice\napprovers:\n  - bob\n").join("\n"), /line 3: duplicate top-level key `approvers`/);
@@ -223,6 +224,13 @@ test("only keys prow knows are accepted", () => {
   assert.match(checkOwners("approver:\n  - alice\n").join("\n"), /unknown key `approver`/);
   assert.match(checkOwners(GOOD + "maintainers:\n  - carol\n").join("\n"), /unknown key `maintainers`/);
   assert.deepEqual(checkOwners(GOOD + "emeritus_approvers:\n  - dave\nlabels:\n  - area/site\n"), []);
+});
+
+test("a quoted whitespace-only label survives parsing and is reported as empty", () => {
+  // `scalar` strips the quotes after trimming, so `"  "` reaches the list as
+  // two spaces rather than tripping the parser's empty-item rule.
+  assert.deepEqual(parseOwners('labels:\n  - "  "\n').problems, []);
+  assert.deepEqual(checkOwners(GOOD + 'labels:\n  - "  "\n'), ["`labels` has an empty entry"]);
 });
 
 test("options must be a map of known boolean flags", () => {
@@ -267,6 +275,7 @@ test("OWNERS_ALIASES parses alias names and rejects malformed members", () => {
   assert.match(parseAliases("approvers:\n  - alice\n").problems.join("\n"), /only an `aliases:` block/);
   assert.match(parseAliases("aliases:\n    - alice\n").problems.join("\n"), /login before any alias name/);
   assert.match(parseAliases("aliases:\n\tx:\n").problems.join("\n"), /tab indentation/);
+  assert.match(parseAliases("aliases:\n  x:\n  :::\n").problems.join("\n"), /line 3: unparseable line "  :::"/);
 });
 
 // In-memory tree so the walker and the per-file rule wiring are exercised
