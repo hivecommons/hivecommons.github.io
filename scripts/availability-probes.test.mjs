@@ -106,6 +106,18 @@ test("fixture: a missing availability job or loop yields null", () => {
   assert.equal(probedUrls(GOOD_YAML.replace("for url in", "for u in")), null);
 });
 
+test("fixture: siteUrlToFile resolves /, directories and bare files, and rejects the bare origin, foreign hosts and traversal", () => {
+  assert.equal(siteUrlToFile(SITE_ORIGIN + "/"), join(ROOT, "index.html"));
+  assert.equal(siteUrlToFile(SITE_ORIGIN + "/stories/"), join(ROOT, "stories", "index.html"));
+  assert.equal(siteUrlToFile(SITE_ORIGIN + "/og.png?v=2#x"), join(ROOT, "og.png"));
+  // Unlike page-meta's resolver, the bare origin is not the home page here: a
+  // probe URL must carry its trailing slash or curl sees a 301, not the page.
+  assert.equal(siteUrlToFile(SITE_ORIGIN), null);
+  assert.equal(siteUrlToFile("https://docs.hivecommons.dev/"), null);
+  assert.equal(siteUrlToFile(SITE_ORIGIN + "/../scripts/availability-probes.test.mjs"), null);
+  assert.equal(siteUrlToFile(SITE_ORIGIN + "/definitely-not-a-page/"), null);
+});
+
 test("fixture: sitemap <loc> values are extracted", () => {
   assert.deepEqual(sitemapLocs(`<urlset><url><loc> ${SITE_ORIGIN}/ </loc></url><url><loc>${SITE_ORIGIN}/a/</loc></url></urlset>`), [
     `${SITE_ORIGIN}/`, `${SITE_ORIGIN}/a/`,
