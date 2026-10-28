@@ -314,7 +314,7 @@ test("fixture: functionSpans recognizes top-level arrow-const and function-assig
   
   const arrowSpans = functionSpans(arrow);
   assert.equal(arrowSpans.length, 1, "arrow const should have one span");
-  assert.equal(arrow.slice(...arrowSpans[0]), arrow.slice(0, arrow.lastIndexOf('\n') + 1), "arrow const span should cover the entire function");
+  assert.equal(arrow.slice(...arrowSpans[0]), arrow.trimEnd(), "arrow const span should cover the entire function up to its closing brace");
   
   const asyncArrowSpans = functionSpans(asyncArrow);
   assert.equal(asyncArrowSpans.length, 1, "async arrow const should have one span");
