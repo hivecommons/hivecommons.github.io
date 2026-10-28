@@ -80,9 +80,13 @@ export function cliEntrySpans(src) {
 // top-level body exactly there, and counting braces would trip over the `{`
 // inside the string and regex literals the checkers are made of. A one-line
 // declaration has no span (it would otherwise run on to the next body).
+// Also matches top-level const arrow-function helpers:
+// `const name = (...) => {` / `const name = async (...) => {` /
+// `const name = function(...) {` / `const name = async function(...) {`.
 export function functionSpans(src) {
   const spans = [];
-  for (const m of src.matchAll(/^(?:export )?(?:async )?function\b[^\n]*\{$/gm)) {
+  // Match both function declarations and const arrow-function/function-assigned helpers
+  for (const m of src.matchAll(/^(?:export )?(?:(?:async )?function\b|const\s+\w+\s*=\s*(?:async\s+)?(?:\(|function\b))[^\n]*\{$/gm)) {
     const close = src.indexOf("\n}", m.index);
     if (close < 0) break;
     const after = src[close + 2];
@@ -299,6 +303,35 @@ test("fixture: a range zero in one run but inherited as executed in another is n
   assert.equal(countOf(FULL, 27, 42), 1);
   assert.equal(countOf([], 0, 1), undefined);
 });
+
+test("fixture: functionSpans recognizes top-level arrow-const and function-assigned const helpers", () => {
+  const arrow = "const siteHas = (path) => {\n  return path === '';\n}\n";
+  const asyncArrow = "const check = async (x) => {\n  return x > 0;\n}\n";
+  const funcAssigned = "const helper = function(a) {\n  return a ? 'yes' : 'no';\n}\n";
+  const asyncFuncAssigned = "const asyncHelper = async function(b) {\n  return b;\n}\n";
+  const exported = "export const f = (x) => {\n  return x * 2;\n}\n";
+  const mixed = "import x from 'y';\n\nconst a = (p) => {\n  if (p) { return 1; }\n  return 0;\n}\n\nexport function b() {\n  return 2;\n}\n\nconst c = async (q) => {\n  return q || null;\n}\n";
+  
+  const arrowSpans = functionSpans(arrow);
+  assert.equal(arrowSpans.length, 1, "arrow const should have one span");
+  assert.equal(arrow.slice(...arrowSpans[0]), arrow.slice(0, arrow.lastIndexOf('\n') + 1), "arrow const span should cover the entire function");
+  
+  const asyncArrowSpans = functionSpans(asyncArrow);
+  assert.equal(asyncArrowSpans.length, 1, "async arrow const should have one span");
+  
+  const funcSpans = functionSpans(funcAssigned);
+  assert.equal(funcSpans.length, 1, "function-assigned const should have one span");
+  
+  const asyncFuncSpans = functionSpans(asyncFuncAssigned);
+  assert.equal(asyncFuncSpans.length, 1, "async function-assigned const should have one span");
+  
+  const exportedSpans = functionSpans(exported);
+  assert.equal(exportedSpans.length, 1, "exported arrow const should have one span");
+  
+  const mixedSpans = functionSpans(mixed);
+  assert.equal(mixedSpans.length, 3, "mixed file should have three spans (a, b, c)");
+});
+
 
 test("fixture: problems name file, line and the first line of the dead source, sorted by file then offset", () => {
   const src = "export function f(x) {\n  return x\n    ? 1\n    : 2;\n}\n";
