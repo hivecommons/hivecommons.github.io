@@ -120,6 +120,17 @@ expect_out 'ERROR internal anchor missing: index\.html -> #ghost' "same-page anc
 expect_out 'ERROR internal anchor missing: index\.html -> /other\.html#phantom' "cross-page anchor"
 expect_out 'Internal errors: 2\.' "both counted"
 
+echo "case: anchors need a real id/<a name> attribute and match literally"
+root="$(new_site anchor-targets)"
+printf '<a href="/t.html#faq">a</a><a href="/t.html#viewport">b</a><a href="/t.html#a.b">c</a><a href="/t.html#ok">d</a><a href="/t.html#named">e</a><a href="/t.html#x.y">f</a>' > "$root/index.html"
+printf '<div data-id="faq"></div><meta name="viewport" content="x"><p id="axb"></p><p id="ok"></p><a name="named"></a><p id="x.y"></p>' > "$root/t.html"
+run_checker "$root"
+expect_rc 1 "false-pass anchors fail"
+expect_out 'anchor missing: index\.html -> /t\.html#faq' "data-id is not an id"
+expect_out 'anchor missing: index\.html -> /t\.html#viewport' "meta name is not an anchor"
+expect_out 'anchor missing: index\.html -> /t\.html#a\.b' "dot in an anchor is literal"
+expect_no_out 'anchor missing: index\.html -> /t\.html#(ok|named|x\.y)' "real id, <a name> and literal-dot anchors still pass"
+
 echo "case: single-quoted and unquoted href/src are checked; ?src= and empty href are not"
 root="$(new_site quoting-forms)"
 cat > "$root/index.html" <<'HTML'
