@@ -131,6 +131,18 @@ expect_out 'anchor missing: index\.html -> /t\.html#viewport' "meta name is not 
 expect_out 'anchor missing: index\.html -> /t\.html#a\.b' "dot in an anchor is literal"
 expect_no_out 'anchor missing: index\.html -> /t\.html#(ok|named|x\.y)' "real id, <a name> and literal-dot anchors still pass"
 
+echo "case: every ERE metacharacter in an anchor is literal, in both the id= and <a name=> arms"
+root="$(new_site anchor-metachars)"
+printf '<a href="/t.html#a+b">a</a><a href="/t.html#q(1)">b</a><a href="/t.html#n.m">c</a><a href="/t.html#c+d">d</a><a href="/t.html#r(2)">e</a><a href="/t.html#with-attrs">f</a>' > "$root/index.html"
+printf '<p id="top"></p><p id="aab"></p><p id="q1"></p><a name="nzm"></a><p id="c+d"></p><a name="r(2)"></a><a class="x" href="#top" name="with-attrs">top</a>' > "$root/t.html"
+run_checker "$root"
+expect_rc 1 "unescaped-metachar false passes fail"
+expect_out 'anchor missing: index\.html -> /t\.html#a\+b' "plus in an id= anchor is literal"
+expect_out 'anchor missing: index\.html -> /t\.html#q\(1\)' "parens in an id= anchor are literal"
+expect_out 'anchor missing: index\.html -> /t\.html#n\.m' "dot in an <a name> anchor is literal"
+expect_no_out 'anchor missing: index\.html -> /t\.html#(c\+d|r\(2\)|with-attrs)' "literal metachar ids, metachar <a name> and <a ... name=> after other attributes still pass"
+expect_out 'Internal errors: 3\.' "only the three false passes counted"
+
 echo "case: single-quoted and unquoted href/src are checked; ?src= and empty href are not"
 root="$(new_site quoting-forms)"
 cat > "$root/index.html" <<'HTML'
