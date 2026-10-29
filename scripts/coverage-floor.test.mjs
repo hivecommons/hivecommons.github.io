@@ -35,7 +35,6 @@ export const TEST_HELPER_BASELINE = {
   "scripts/acmm-levels.test.mjs": 3,
   "scripts/automation-docs.test.mjs": 4,
   "scripts/carousels.test.mjs": 6,
-  "scripts/ci-wiring.test.mjs": 6,
   "scripts/dependabot-config.test.mjs": 9,
   "scripts/issue-forms.test.mjs": 15,
   "scripts/jsonld-contract.test.mjs": 14,

@@ -46,7 +46,8 @@ export function runCommands(body) {
   for (const m of body.matchAll(/^(\s*)(?:-\s+)?run:[ \t]*(\|-?|>-?)?[ \t]*(.*)$/gm)) {
     if (m[2]) {
       const after = body.slice(m.index + m[0].length);
-      const block = /^((?:[ \t]*\r?\n|[ \t]+\S.*\r?\n?)*)/.exec(after)?.[1] ?? "";
+      // `*` always matches, so an empty block scalar yields "" here.
+      const block = /^((?:[ \t]*\r?\n|[ \t]+\S.*\r?\n?)*)/.exec(after)[1];
       const lines = block.split(/\r?\n/).filter((l) => l.trim());
       const indent = Math.min(...lines.map((l) => /^\s*/.exec(l)[0].length));
       out.push(lines.map((l) => l.slice(indent)).join("\n"));
@@ -218,7 +219,18 @@ test("fixture: jobs, run commands (inline and block) and if: gating are parsed",
   assert.equal(block.length, 1);
   assert.match(block[0], /^for url in https:\/\/a\.test\/ \\\n\s+https:\/\/a\.test\/x\/; do\n\s+curl "\$url"\ndone$/, "block scalar keeps relative indentation, drops the YAML indent");
   assert.deepEqual(runCommands(jobs[1].body), ["scripts/check-links.sh ${{ 'x' || '--external-warn' }}"]);
+  assert.deepEqual(runCommands("      - run: |\n"), [""], "an empty block scalar is one empty command, not a crash");
   assert.deepEqual(workflowJobs("name: x\n"), []);
+});
+
+test("fixture: a workflow with no jobs or no triggers is reported, not passed vacuously", () => {
+  assert.deepEqual(wiringProblems("name: x\n", { scripts: SCRIPTS, readme: README_OK, prTemplate: PR_TEMPLATE_OK, nodeSources: SOURCES }), ["links.yml has no jobs"]);
+  assert.deepEqual(triggerProblems("name: x\njobs:\n"), [
+    "links.yml does not run on pull_request",
+    "links.yml does not run on push to main (README promises a same-named baseline there)",
+  ]);
+  const noPush = YAML.replace("  push:\n    branches: [main]\n", "");
+  assert.deepEqual(triggerProblems(noPush), ["links.yml does not run on push to main (README promises a same-named baseline there)"]);
 });
 
 test("fixture: a fully wired workflow, script set, README and PR template pass", () => {
@@ -281,6 +293,10 @@ test("fixture: node:test files outside the glob, and glob-named files without no
   assert.ok(problems.includes("scripts/page-y.test.mjs is named like a gate but does not import node:test"));
   const plainHelper = wiringProblems(YAML, { scripts: [...SCRIPTS, "helpers.mjs"], nodeSources: { ...SOURCES, "helpers.mjs": "export const x = 1;\n" } });
   assert.deepEqual(plainHelper, []);
+  // A file with no source on record (unreadable, or omitted by the caller) is
+  // treated as empty: a helper passes, a *.test.mjs is reported.
+  assert.deepEqual(wiringProblems(YAML, { scripts: [...SCRIPTS, "helpers.mjs"], nodeSources: SOURCES }), []);
+  assert.deepEqual(wiringProblems(YAML, { scripts: [...SCRIPTS, "page-z.test.mjs"], nodeSources: SOURCES }), ["scripts/page-z.test.mjs is named like a gate but does not import node:test"]);
 });
 
 test("fixture: README Checks must exist and name every gate and self-test", () => {
