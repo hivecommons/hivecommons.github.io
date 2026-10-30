@@ -100,6 +100,33 @@ export function agentCliChipNames(html) {
   return chipsIn(sectionByHeading(html, "agent-cli-title")).map((c) => c.name);
 }
 
+// --- project list -------------------------------------------------------------
+
+// llms.txt "## Projects" bullets: "- [Name](url): blurb" -> "Name". Names drop
+// a trailing parenthetical alias ("Spektacular (Spek)" -> "Spektacular") so they
+// compare against the card <h3>. Links are not compared: llms.txt may point at a
+// project's own site where the card points at its repo. Returns null when the
+// section is absent.
+export function parseLlmsProjects(text) {
+  const m = text.match(/^## Projects\s*\n([\s\S]*?)(?=^## |$(?![\s\S]))/m);
+  if (!m) return null;
+  return [...m[1].matchAll(/^- \[([^\]]+)\]\([^)]+\)/gm)].map((b) => decode(b[1]).replace(/\s*\([^)]*\)\s*$/, ""));
+}
+
+// Project carousel card names on index.html: each card's <h3> text without its
+// <span class="tag"> badge, in carousel order. Anchor cards and div cards
+// (buttons inside) are both read; slides without an <h3> are not projects.
+export function projectCards(html) {
+  const section = sectionByHeading(html, "projects") ?? html;
+  const cards = [];
+  for (const li of section.matchAll(/<li class="slide" data-slide>([\s\S]*?)<\/li>/g)) {
+    const h3 = li[1].match(/<h3>([\s\S]*?)<\/h3>/);
+    if (!h3) continue;
+    cards.push(decode(h3[1].replace(/<span\b[^>]*>[\s\S]*?<\/span>/g, "")));
+  }
+  return cards;
+}
+
 function setDiff(a, b) {
   const sb = new Set(b);
   return a.filter((x) => !sb.has(x));
@@ -190,6 +217,54 @@ test("assertSameSet flags drift in either direction with an actionable message",
   assert.doesNotThrow(() => assertSameSet(["B", "A"], ["A", "B"], "x"));
 });
 
+const FIXTURE_PROJECTS_HTML = `
+<section class="band band-alt" id="projects">
+  <h2>The project family</h2>
+  <ul class="track" data-car-track>
+    <li class="slide" data-slide>
+      <div class="card">
+        <h3>Alpha <span class="tag">flagship</span></h3>
+        <div class="card-actions">
+          <a class="btn btn-primary btn-sm" href="https://alpha.example/start">Start →</a>
+          <a class="card-link" href="https://github.com/x/alpha">Source</a>
+        </div>
+      </div>
+    </li>
+    <li class="slide" data-slide>
+      <a class="card" href="https://beta.example">
+        <h3>Beta <span class="tag tag-new">B for short</span></h3>
+        <span class="card-link">beta.example</span>
+      </a>
+    </li>
+    <li class="slide" data-slide><div class="card"><p>no heading, not a project</p></div></li>
+  </ul>
+</section>
+<ul><li class="slide" data-slide><a class="card" href="https://other.example"><h3>Other carousel</h3></a></li></ul>`;
+
+test("parseLlmsProjects reads one name per bullet, strips the alias, stops at the next heading and reports a missing section as null", () => {
+  const txt = [
+    "# X",
+    "## Projects",
+    "",
+    "- [Alpha](https://github.com/x/alpha): blurb. Docs: https://alpha.example",
+    "- [Beta (B)](https://beta.example): blurb (with parens) inside.",
+    "",
+    "## Next section",
+    "",
+    "- [Not a project](https://nope.example)",
+  ].join("\n");
+  assert.deepEqual(parseLlmsProjects(txt), ["Alpha", "Beta"]);
+  assert.equal(parseLlmsProjects("# X\n\nNo projects."), null);
+  assert.deepEqual(parseLlmsProjects("## Projects\n\n- [Last](https://last.example): at EOF"), ["Last"]);
+});
+
+test("projectCards reads each carousel card's badge-free name from anchor and div cards alike, skipping heading-less slides and other carousels", () => {
+  assert.deepEqual(projectCards(FIXTURE_PROJECTS_HTML), ["Alpha", "Beta"]);
+  // Without a #projects section the whole document is scanned.
+  assert.deepEqual(projectCards('<li class="slide" data-slide><a class="card" href="/u"><h3>Solo</h3></a></li>'), ["Solo"]);
+  assert.deepEqual(projectCards("<p>nothing</p>"), []);
+});
+
 // --- live checks -------------------------------------------------------------
 
 const live = parseLlmsTxt(LLMS_TXT);
@@ -232,4 +307,16 @@ test("llms.txt names every project the home page lists as a Hive Commons product
   // crawler summary honest if the home page stops (or starts) calling it Spek.
   assert.match(INDEX_HTML, /Spektacular/);
   assert.match(LLMS_TXT, /Spektacular \(Spek\)/);
+});
+
+test("llms.txt Projects list names the project carousel cards on index.html, in the same order", () => {
+  const cards = projectCards(INDEX_HTML);
+  assert.ok(cards.length > 0, "no project cards under #projects");
+  const projects = parseLlmsProjects(LLMS_TXT);
+  assert.ok(projects, "llms.txt lost its '## Projects' section — restore it or update this gate");
+  assert.deepEqual(
+    projects,
+    cards,
+    "llms.txt '## Projects' must list the same projects as the index.html carousel, in carousel order",
+  );
 });
