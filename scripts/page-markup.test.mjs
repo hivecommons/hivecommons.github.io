@@ -272,3 +272,21 @@ test("index.html: the interactive scripts' data-* hooks are the ones the stub-DO
     assert.ok(hooks.includes(expected), `expected inline scripts to query [${expected}]; got ${hooks.join(", ")}`);
   }
 });
+
+test("index.html: Crux is the second project, with getting-started and source links", () => {
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const cards = [...html.matchAll(/<li class="slide" data-slide>([\s\S]*?)<\/li>/g)];
+  assert.match(cards[0][1], /<h3>Hive\b/);
+  assert.match(cards[1][1], /<h3>Crux\b/);
+  assert.equal(cards.filter(card => /<h3>Crux\b/.test(card[1])).length, 1);
+  assert.match(cards[1][1], /href="https:\/\/docs\.hivecommons\.dev\/docs\/crux\/overview\/introduction"/);
+  assert.match(cards[1][1], /href="https:\/\/github\.com\/hivecommons\/crux"/);
+  assert.match(cards[1][1], /<div class="card">/);
+});
+
+test("stories/index.html: Crux contributors can select their project", () => {
+  const html = readFileSync(join(ROOT, "stories", "index.html"), "utf8");
+  const choices = /<datalist id="story-projects">([\s\S]*?)<\/datalist>/.exec(html);
+  assert.ok(choices, "story project choices must exist");
+  assert.match(choices[1], /<option value="Crux">/);
+});
