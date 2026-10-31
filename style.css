@@ -340,6 +340,16 @@ h1 {
 .adopters-note a { color: var(--ink-2); text-decoration-color: var(--honey-deep); text-underline-offset: 3px; }
 .adopters-note a:hover { color: var(--honey); }
 
+/* ---------- Hive in practice ---------- */
+.hive-talk { padding-top: 0; scroll-margin-top: 5rem; }
+.talk-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: center; gap: clamp(1.5rem, 4vw, 3rem); }
+.talk-player { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); }
+.talk-copy p { margin-top: 1rem; color: var(--ink-2); }
+.talk-copy a:not(.btn) { text-decoration-color: var(--honey-deep); text-underline-offset: 3px; }
+.talk-copy a:not(.btn):hover { color: var(--honey); }
+.talk-copy .talk-meta, .talk-copy .talk-note { font-size: .9rem; }
+.talk-copy .cta-row { margin-top: 1.5rem; }
+
 /* ACMM ladder */
 .acmm {
   --acmm-interval: 5s;
@@ -691,7 +701,8 @@ h1 {
   .hero-slide { grid-template-columns: 1fr; align-content: center; }
   .hero-art { order: -1; }
   .hero-visual { max-width: 20rem; }
-  .pitch-grid, .community-grid, .integration-groups { grid-template-columns: 1fr; }
+  .pitch-grid, .community-grid, .integration-groups, .talk-grid { grid-template-columns: 1fr; }
+  .hive-talk { scroll-margin-top: 10rem; }
   .pitch-lead { max-width: none; }
   .pillars { grid-template-columns: 1fr; }
   .fit { grid-template-columns: 1fr; }
