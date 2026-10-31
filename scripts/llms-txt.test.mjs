@@ -127,6 +127,20 @@ export function projectCards(html) {
   return cards;
 }
 
+// --- version gates -----------------------------------------------------------
+
+// Extract the Crux version tag from the project carousel: "<h3>Crux ... <span...>vX.Y.Z</span></h3>"
+export function cruxVersionFromHtml(html) {
+  const m = html.match(/<h3>Crux\s*<span[^>]*>([^<]*)<\/span><\/h3>/);
+  return m ? m[1] : null;
+}
+
+// Extract the Crux version from llms.txt: "First release vX.Y.Z" or "Latest release vX.Y.Z"
+export function cruxVersionFromLlms(text) {
+  const m = text.match(/\[Crux\].*?(?:First|Latest) release (v\d+\.\d+\.\d+)/);
+  return m ? m[1] : null;
+}
+
 function setDiff(a, b) {
   const sb = new Set(b);
   return a.filter((x) => !sb.has(x));
@@ -288,6 +302,22 @@ test("projectCards reads each carousel card's badge-free name from anchor and di
   assert.deepEqual(projectCards("<p>nothing</p>"), []);
 });
 
+test("fixture: cruxVersionFromHtml extracts version from Crux carousel tag or returns null when absent", () => {
+  assert.equal(cruxVersionFromHtml('<h3>Crux <span class="tag tag-new">v0.2.0</span></h3>'), "v0.2.0");
+  assert.equal(cruxVersionFromHtml('<h3>Crux <span class="tag">v1.0.0</span></h3>'), "v1.0.0");
+  assert.equal(cruxVersionFromHtml("<h3>Other <span>v1.0.0</span></h3>"), null);
+  assert.equal(cruxVersionFromHtml("<h3>Crux</h3>"), null);
+  assert.equal(cruxVersionFromHtml(""), null);
+});
+
+test("fixture: cruxVersionFromLlms extracts version from llms.txt or returns null when absent", () => {
+  assert.equal(cruxVersionFromLlms("- [Crux](https://github.com/hivecommons/crux): ... Latest release v0.2.0 (early software)."), "v0.2.0");
+  assert.equal(cruxVersionFromLlms("- [Crux](https://github.com/hivecommons/crux): ... First release v0.1.0 (early software)."), "v0.1.0");
+  assert.equal(cruxVersionFromLlms("- [Other](https://github.com/hivecommons/other): ... Latest release v1.0.0."), null);
+  assert.equal(cruxVersionFromLlms("- [Crux](https://github.com/hivecommons/crux): ... No version here."), null);
+  assert.equal(cruxVersionFromLlms(""), null);
+});
+
 // --- live checks -------------------------------------------------------------
 
 const live = parseLlmsTxt(LLMS_TXT);
@@ -343,3 +373,16 @@ test("llms.txt Projects list names the project carousel cards on index.html, in 
     "llms.txt '## Projects' must list the same projects as the index.html carousel, in carousel order",
   );
 });
+
+test("Crux version in llms.txt matches the carousel tag in index.html and both are valid semver", () => {
+  const htmlVersion = cruxVersionFromHtml(INDEX_HTML);
+  const llmsVersion = cruxVersionFromLlms(LLMS_TXT);
+  const semverPattern = /^v\d+\.\d+\.\d+$/;
+  
+  assert.ok(htmlVersion, "Crux version tag not found in index.html carousel");
+  assert.ok(llmsVersion, "Crux version not found in llms.txt");
+  assert.match(htmlVersion, semverPattern, `index.html Crux tag '${htmlVersion}' is not valid semver`);
+  assert.match(llmsVersion, semverPattern, `llms.txt Crux version '${llmsVersion}' is not valid semver`);
+  assert.equal(htmlVersion, llmsVersion, `Crux version mismatch: index.html has '${htmlVersion}' but llms.txt has '${llmsVersion}' — keep them in sync`);
+});
+
