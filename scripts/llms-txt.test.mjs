@@ -127,6 +127,20 @@ export function projectCards(html) {
   return cards;
 }
 
+// --- version gates -----------------------------------------------------------
+
+// Extract the Crux version tag from the project carousel: "<h3>Crux ... <span...>vX.Y.Z</span></h3>"
+export function cruxVersionFromHtml(html) {
+  const m = html.match(/<h3>Crux\s*<span[^>]*>([^<]*)<\/span><\/h3>/);
+  return m ? m[1] : null;
+}
+
+// Extract the Crux version from llms.txt: "First release vX.Y.Z" or "Latest release vX.Y.Z"
+export function cruxVersionFromLlms(text) {
+  const m = text.match(/\[Crux\].*?(?:First|Latest) release (v\d+\.\d+\.\d+)/);
+  return m ? m[1] : null;
+}
+
 function setDiff(a, b) {
   const sb = new Set(b);
   return a.filter((x) => !sb.has(x));
@@ -320,3 +334,16 @@ test("llms.txt Projects list names the project carousel cards on index.html, in 
     "llms.txt '## Projects' must list the same projects as the index.html carousel, in carousel order",
   );
 });
+
+test("Crux version in llms.txt matches the carousel tag in index.html and both are valid semver", () => {
+  const htmlVersion = cruxVersionFromHtml(INDEX_HTML);
+  const llmsVersion = cruxVersionFromLlms(LLMS_TXT);
+  const semverPattern = /^v\d+\.\d+\.\d+$/;
+  
+  assert.ok(htmlVersion, "Crux version tag not found in index.html carousel");
+  assert.ok(llmsVersion, "Crux version not found in llms.txt");
+  assert.match(htmlVersion, semverPattern, `index.html Crux tag '${htmlVersion}' is not valid semver`);
+  assert.match(llmsVersion, semverPattern, `llms.txt Crux version '${llmsVersion}' is not valid semver`);
+  assert.equal(htmlVersion, llmsVersion, `Crux version mismatch: index.html has '${htmlVersion}' but llms.txt has '${llmsVersion}' — keep them in sync`);
+});
+
