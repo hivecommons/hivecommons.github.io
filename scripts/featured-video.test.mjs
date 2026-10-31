@@ -44,6 +44,19 @@ test("the privacy-enhanced player starts at the Hive discussion without autoplay
   assert.match(html, /frame-src https:\/\/www\.youtube-nocookie\.com;/);
 });
 
+test("the player is sandboxed to what the YouTube embed needs and cannot navigate the page", () => {
+  const frame = /<iframe\b[^>]*>/.exec(section)[0];
+  const sandbox = attribute(frame, "sandbox").split(/\s+/).filter(Boolean).sort();
+  assert.deepEqual(sandbox, [
+    "allow-popups",
+    "allow-popups-to-escape-sandbox",
+    "allow-presentation",
+    "allow-same-origin",
+    "allow-scripts",
+  ]);
+  for (const token of sandbox) assert.doesNotMatch(token, /^allow-(top-navigation|forms|modals|downloads)/);
+});
+
 test("direct YouTube links offer the highlighted discussion and full talk", () => {
   const links = [...section.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)];
   const discussion = links.find(([tag]) => tag.includes("Watch the Hive discussion"));
