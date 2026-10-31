@@ -6,15 +6,16 @@
 // test recomputes every hash from the committed HTML and fails on mismatch
 // (scripts/update-csp-hashes.mjs rewrites the policy; the helpers live in
 // scripts/page-csp.mjs).
-// It also keeps the policy from regressing to 'unsafe-inline'/'unsafe-eval'
-// and keeps every external <img> origin covered by img-src.
+// It also keeps the policy from regressing to 'unsafe-inline'/'unsafe-eval',
+// keeps every external <img> origin covered by img-src and every external
+// <iframe> origin covered by frame-src (with no frame-src origin left unused).
 // Zero dependencies. Usage: node --test scripts/page-csp.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import { ROOT, htmlFiles, isRedirectPage } from "./html-pages.mjs";
-import { REGEN_HINT, externalImageOrigins, inlineScriptSources, parseCsp, problemsOf, sha256Source } from "./page-csp.mjs";
+import { REGEN_HINT, externalFrameOrigins, externalImageOrigins, inlineScriptSources, parseCsp, problemsOf, sha256Source } from "./page-csp.mjs";
 
 // --- per-page gates ---------------------------------------------------------
 
@@ -32,9 +33,9 @@ for (const file of htmlFiles()) {
 
 // --- fixture self-tests -----------------------------------------------------
 
-function fixture({ csp, script = "console.log(1)", handler = "", img = "" } = {}) {
+function fixture({ csp, script = "console.log(1)", handler = "", img = "", frame = "" } = {}) {
   const meta = csp === null ? "" : `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
-  return `<!doctype html><html><head><meta charset="utf-8">${meta}<title>x</title></head><body>${img}<p${handler ? ` onerror="${handler}"` : ""}></p><script type="application/ld+json">{"@context":"https://schema.org","@type":"Thing"}</script><script>${script}</script></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8">${meta}<title>x</title></head><body>${img}${frame}<p${handler ? ` onerror="${handler}"` : ""}></p><script type="application/ld+json">{"@context":"https://schema.org","@type":"Thing"}</script><script>${script}</script></body></html>`;
 }
 
 const BASE = "default-src 'none'; img-src 'self'; base-uri 'none'; form-action 'none'";
@@ -184,6 +185,44 @@ test("fixture: external <img> origin must be in img-src", () => {
   const img = '<img src="https://github.com/octocat.png" alt="">';
   assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; script-src ${h}`, img })), ["img-src does not allow external <img> origin https://github.com"]);
   assert.deepEqual(problemsOf(fixture({ csp: `default-src 'none'; img-src 'self' https://github.com; base-uri 'none'; form-action 'none'; script-src ${h}`, img })), []);
+});
+
+const FRAME = '<iframe src="https://www.youtube-nocookie.com/embed/x" title="x"></iframe>';
+
+test("fixture: <iframe> without src, relative src and srcdoc contribute no external origin", () => {
+  assert.deepEqual(externalFrameOrigins('<iframe title="a"></iframe><iframe src="/embed.html" title="b"></iframe><iframe srcdoc="<p>x</p>" title="c"></iframe><IFRAME SRC="HTTPS://Example.org/e?x=1" title="d"></IFRAME>'), ["https://example.org"]);
+  const h = sha256Source("console.log(1)");
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; script-src ${h}`, frame: '<iframe src="/embed.html" title="x"></iframe>' })), []);
+});
+
+test("fixture: external <iframe> origin must be in frame-src", () => {
+  const h = sha256Source("console.log(1)");
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; frame-src https://example.org; script-src ${h}`, frame: FRAME })), [
+    "frame-src does not allow external <iframe> origin https://www.youtube-nocookie.com",
+    "frame-src allows https://example.org but no <iframe> on the page uses it",
+  ]);
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; frame-src https://www.youtube-nocookie.com; script-src ${h}`, frame: FRAME })), []);
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; frame-src https:; script-src ${h}`, frame: FRAME })), []);
+});
+
+test("fixture: without frame-src, child-src then default-src governs <iframe> origins", () => {
+  const h = sha256Source("console.log(1)");
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; child-src https://www.youtube-nocookie.com; script-src ${h}`, frame: FRAME })), []);
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; script-src ${h}`, frame: FRAME })), [
+    "frame-src does not allow external <iframe> origin https://www.youtube-nocookie.com",
+  ]);
+  assert.deepEqual(problemsOf(fixture({ csp: `img-src 'self'; base-uri 'none'; form-action 'none'; script-src ${h}`, frame: FRAME })), [
+    "default-src must be 'none' so every fetch type is allow-listed explicitly",
+    "frame-src does not allow external <iframe> origin https://www.youtube-nocookie.com",
+  ]);
+});
+
+test("fixture: a frame-src origin no <iframe> uses is reported; 'self' and 'none' are not origins", () => {
+  const h = sha256Source("console.log(1)");
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; frame-src 'self' https://www.youtube-nocookie.com; script-src ${h}` })), [
+    "frame-src allows https://www.youtube-nocookie.com but no <iframe> on the page uses it",
+  ]);
+  assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; frame-src 'none'; script-src ${h}` })), []);
 });
 
 test("fixture: policy placed after a <script> in <head> is reported", () => {

@@ -189,7 +189,10 @@ red PR job against.
   `'unsafe-hashes'` without handlers is rejected. The meta must precede every
   `<script>`/`<link>`/`<img>`/`<style>` in `<head>`. Every external `<img>` origin must
   be allowed by `img-src` (or `default-src` when `img-src` is absent), either explicitly
-  or via `https:`. `base-uri` must contain `'none'` or `'self'`, and `form-action` must
+  or via `https:`. Every external `<iframe>` origin must likewise be allowed by
+  `frame-src` (falling back to `child-src`, then `default-src`, as browsers do), and an
+  explicit `frame-src` may not list an origin no `<iframe>` on the page uses. `base-uri`
+  must contain `'none'` or `'self'`, and `form-action` must
   be present. Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/update-csp-hashes.test.mjs` — fixture self-test of
   `scripts/update-csp-hashes.mjs`, the tool that regenerates the `sha256-` allow-list the

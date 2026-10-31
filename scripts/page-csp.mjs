@@ -48,6 +48,17 @@ export function externalImageOrigins(html) {
   return [...out].sort();
 }
 
+// Origins of every <iframe> whose src is absolute http(s); relative, srcdoc
+// and about: frames are same-document and governed by no fetch directive.
+export function externalFrameOrigins(html) {
+  const out = new Set();
+  for (const m of html.matchAll(/<iframe\b[^>]*>/gi)) {
+    const src = attrs(m[0]).src ?? "";
+    if (/^https?:\/\//i.test(src)) out.add(new URL(src).origin);
+  }
+  return [...out].sort();
+}
+
 // The first CSP <meta> in <head>: its full tag text, parsed directives (in
 // source order), and where it and the first fetch-triggering tag sit in <head>.
 export function parseCsp(html) {
@@ -117,6 +128,18 @@ export function problemsOf(html) {
   const imgSrc = d["img-src"] ?? d["default-src"] ?? [];
   for (const origin of externalImageOrigins(html)) {
     if (!imgSrc.includes(origin) && !imgSrc.includes("https:")) problems.push(`img-src does not allow external <img> origin ${origin}`);
+  }
+  // Browsers resolve frame-src -> child-src -> default-src (CSP3). A frame
+  // whose origin is not allowed is silently replaced by an empty box.
+  const frameSrc = d["frame-src"] ?? d["child-src"] ?? d["default-src"] ?? [];
+  const frameOrigins = externalFrameOrigins(html);
+  for (const origin of frameOrigins) {
+    if (!frameSrc.includes(origin) && !frameSrc.includes("https:")) problems.push(`frame-src does not allow external <iframe> origin ${origin}`);
+  }
+  // An explicit frame-src is the page's third-party-frame allow-list: an
+  // origin no <iframe> points at widens it for nothing (like a stale hash).
+  for (const origin of d["frame-src"] ?? []) {
+    if (/^https?:\/\//i.test(origin) && !frameOrigins.includes(origin)) problems.push(`frame-src allows ${origin} but no <iframe> on the page uses it`);
   }
   if (!(d["base-uri"] ?? []).some((t) => t === "'none'" || t === "'self'")) problems.push("base-uri must be 'none' or 'self'");
   if (!d["form-action"]) problems.push("form-action directive missing");
