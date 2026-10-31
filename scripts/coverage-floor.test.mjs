@@ -38,7 +38,6 @@ export const TEST_HELPER_BASELINE = {
   "scripts/dependabot-config.test.mjs": 9,
   "scripts/issue-forms.test.mjs": 15,
   "scripts/jsonld-contract.test.mjs": 14,
-  "scripts/llms-txt.test.mjs": 3,
   "scripts/no-js-controls.test.mjs": 5,
   "scripts/page-404.test.mjs": 5,
   "scripts/page-images.test.mjs": 19,

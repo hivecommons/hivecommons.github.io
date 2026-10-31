@@ -203,6 +203,29 @@ test("chipsIn reads chip name and trailing note, decoding entities and skipping 
   assert.deepEqual(chipsIn(null), []);
 });
 
+test("sectionByHeading needs an enclosing <section>; chipsIn skips chip-less items and reads a bare chip's note as empty", () => {
+  // The heading id exists but no <section> opens before it: the markup moved
+  // out of a section, so the gate must say "not found" rather than slice from
+  // index -1 and compare against a bogus fragment.
+  assert.equal(sectionByHeading('<div><h3 id="loose-title">Loose</h3></div></section>', "loose-title"), null);
+  // ...and the mirror: a section opens but never closes after the heading.
+  assert.equal(sectionByHeading('<section><h3 id="open-title">Open</h3>', "open-title"), null);
+  // An <li> without an integration-chip span (a "more coming" placeholder, a
+  // divider) is not a chip; a chip whose only span is the logo image has no
+  // note, so classifier filtering sees "" instead of the chip name.
+  const section = `<section>
+    <ul>
+      <li><em>More coming soon</em></li>
+      <li><a href="#"><span class="integration-chip"><img src="/bare.svg" alt="Bare"></span></a></li>
+      <li><a href="#"><span class="integration-chip">Noted</span><span>backend: noted</span></a></li>
+    </ul>
+  </section>`;
+  assert.deepEqual(chipsIn(section), [
+    { name: '<img src="/bare.svg" alt="Bare">', note: "" },
+    { name: "Noted", note: "backend: noted" },
+  ]);
+});
+
 test("inferenceChipNames unions engines and gateways but drops classifier chips", () => {
   assert.deepEqual(inferenceChipNames(FIXTURE_HTML), ["Engine", "Gateway"]);
 });
