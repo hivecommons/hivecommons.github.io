@@ -55,6 +55,9 @@ red PR job against.
   navigation, auto-rotate and every pause condition, hero height measurement (clones,
   resize debounce), and projects scroll-sync (debounced scroll, `scrollend`,
   IntersectionObserver). Zero dependencies.
+- `node --test scripts/featured-video.test.mjs` — checks the Bluefin talk's placement,
+  speaker attribution, privacy-enhanced lazy-loaded player, 6:09 start without autoplay,
+  direct links to the highlighted and full talk, and the adopter link. Zero dependencies.
 - `node --test scripts/page-scripts.test.mjs` — static gate over every committed HTML
   page: each inline `<script>` parses, each JSON-LD block is valid schema.org JSON, no
   external `<script src>` is introduced, every inline behaviour script (other than the
