@@ -50,7 +50,6 @@ export const TEST_HELPER_BASELINE = {
   "scripts/story-form-contract.test.mjs": 12,
   "scripts/style-contract.test.mjs": 13,
   "scripts/workflow-docs.test.mjs": 4,
-  "scripts/workflow-hardening.test.mjs": 3,
 };
 
 // --- analysis ---------------------------------------------------------------

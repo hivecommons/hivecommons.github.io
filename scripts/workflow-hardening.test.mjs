@@ -248,6 +248,36 @@ test("fixture: workflowJobs and jobSteps split by indentation and carry line num
   assert.deepEqual(jobSteps(jobs[1]), []);
 });
 
+test("fixture: workflowJobs stops at the next top-level key instead of reading it as a job", () => {
+  // `jobs:` is not always the last block: a trailing top-level `env:` (or
+  // `defaults:`) has two-space-indented children that look exactly like job
+  // names. Without the break they would be parsed as jobs with no runs-on.
+  const yaml = GOOD + "\nenv:\n  CI: true\n  phantom:\n    runs-on: ubuntu-latest\n";
+  const jobs = workflowJobs(yaml);
+  assert.deepEqual(jobs.map((j) => j.name), ["build", "reuse"]);
+  assert.ok(!jobs.some((j) => j.body.some((l) => /CI: true|phantom/.test(l))), "the env block must not be appended to the last job's body");
+  assert.deepEqual(hardeningProblems({ "w.yml": yaml }), []);
+});
+
+test("fixture: jobSteps stops at the next job-level key instead of reading it as a step", () => {
+  // A job key after `steps:` (here `env:`) sits at the steps indent; its
+  // children are deeper than `steps:` but are not steps. Without the break a
+  // `- ` list item under it would be counted as a step, and a
+  // `persist-credentials` under it could be credited to a checkout step.
+  const yaml = GOOD.replace("      - run: echo ok\n", "      - run: echo ok\n    env:\n      LIST:\n        - item\n      persist-credentials: false\n");
+  const [build] = workflowJobs(yaml);
+  const steps = jobSteps(build);
+  assert.equal(steps.length, 5, steps.map((s) => s.body[0]).join("\n"));
+  assert.ok(!steps.some((s) => s.body.some((l) => /LIST:|- item|^      persist-credentials/.test(l))), "nothing under env: belongs to a step");
+  assert.deepEqual(hardeningProblems({ "w.yml": yaml }), []);
+  // The break is what keeps the stray persist-credentials from rescuing an
+  // unhardened checkout earlier in the same job.
+  const unhardened = yaml.replace("        with:\n          persist-credentials: false\n", "");
+  const p = hardeningProblems({ "w.yml": unhardened });
+  assert.equal(p.length, 1, p.join("\n"));
+  assert.match(p[0], /:14 actions\/checkout step does not set/);
+});
+
 test("fixture: a tag, branch, short SHA or missing @ref on uses: is reported", () => {
   const tag = hardeningProblems({ "w.yml": GOOD.replace(`ossf/scorecard-action@${SHA_B} # v2.4.4`, "ossf/scorecard-action@v2.4.4 # v2.4.4") });
   assert.deepEqual(tag, [".github/workflows/w.yml:18 uses ossf/scorecard-action@v2.4.4 — @v2.4.4 is not a 40-hex commit SHA (mutable tags and branches can be moved under you)"]);
@@ -258,6 +288,21 @@ test("fixture: a tag, branch, short SHA or missing @ref on uses: is reported", (
   assert.deepEqual(none, [".github/workflows/w.yml:18 uses ossf/scorecard-action without any @ref — pin it to a 40-hex commit SHA"]);
   const upper = hardeningProblems({ "w.yml": GOOD.replace(`ossf/scorecard-action@${SHA_B}`, `ossf/scorecard-action@${SHA_B.toUpperCase()}`) });
   assert.equal(upper.length, 1, "uppercase hex is not what git prints and not what Dependabot writes");
+});
+
+test("fixture: a SHA-pinned uses: whose action is not owner/repo[/path] is reported", () => {
+  // A bare `checkout@<sha>` or a `owner/repo:tag@<sha>` passes the SHA and
+  // comment rules; only the action-shape rule catches it.
+  const bare = hardeningProblems({ "w.yml": GOOD.replace(`ossf/scorecard-action@${SHA_B}`, `scorecard-action@${SHA_B}`) });
+  assert.deepEqual(bare, [`.github/workflows/w.yml:18 uses scorecard-action@${SHA_B} — expected owner/repo[/path]@sha`]);
+  const colon = hardeningProblems({ "w.yml": GOOD.replace(`ossf/scorecard-action@${SHA_B}`, `ossf/scorecard-action:v2@${SHA_B}`) });
+  assert.equal(colon.length, 1, colon.join("\n"));
+  assert.match(colon[0], /expected owner\/repo\[\/path\]@sha$/);
+  // Shape and SHA rules are independent: a bad action with a tag reports both.
+  const both = hardeningProblems({ "w.yml": GOOD.replace(`ossf/scorecard-action@${SHA_B} # v2.4.4`, "scorecard-action@v2 # v2") });
+  assert.equal(both.length, 2, both.join("\n"));
+  assert.match(both[0], /expected owner\/repo\[\/path\]@sha$/);
+  assert.match(both[1], /@v2 is not a 40-hex commit SHA/);
 });
 
 test("fixture: a SHA pin without a trailing version comment is reported", () => {
