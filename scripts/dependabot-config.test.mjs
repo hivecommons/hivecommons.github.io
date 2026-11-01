@@ -278,6 +278,38 @@ test("fixture: two entries for the same ecosystem and directory are reported onc
   assert.deepEqual(p, ["line 7: github-actions at / is already covered by the entry at line 3"]);
 });
 
+test("fixture: an unreadable top-level line, a body under a section that is not updates:, a bad first key on an item, flow lists and an empty flow-map part are each placed", () => {
+  assert.deepEqual(parseDependabot("version: 2\n- updates\n").problems, ['line 2: unreadable: "- updates"']);
+  const registries = parseDependabot("version: 2\nregistries:\n  npm-github:\n    type: npm-registry\nupdates:\n  - package-ecosystem: npm\n    directory: /\n    schedule:\n      interval: weekly\n");
+  assert.deepEqual(registries.problems, []);
+  assert.equal(registries.updates.length, 1);
+  assert.equal(registries.updates[0].type, undefined);
+  assert.deepEqual(parseDependabot("version: 2\nupdates:\n  - schedule: {weekly}\n").problems, ["line 3: unreadable flow map schedule: \"{weekly}\""]);
+  const flow = parseDependabot("version: 2\nupdates:\n  - package-ecosystem: npm\n    directory: /\n    labels: [\"deps\", 'npm', ]\n    schedule: {interval: weekly, }\n");
+  assert.deepEqual(flow.problems, []);
+  assert.deepEqual(flow.updates[0].labels, ["deps", "npm"]);
+  assert.deepEqual(flow.updates[0].schedule, { interval: "weekly" });
+});
+
+test("fixture: an entry with no package-ecosystem is reported and skipped, and a directories: list is what the rules read", () => {
+  const cfg = parseDependabot("version: 2\nupdates:\n  - directory: /\n    schedule:\n      interval: weekly\n  - package-ecosystem: npm\n    directories:\n      - /\n      - /site\n    schedule:\n      interval: weekly\n  - package-ecosystem: npm\n    directory: /site\n    schedule:\n      interval: weekly\n");
+  assert.deepEqual(cfg.problems, []);
+  const p = dependabotProblems({ config: cfg, expected: ["npm"] });
+  assert.deepEqual(p, [
+    "line 3: entry has no package-ecosystem",
+    "line 12: npm at /site is already covered by the entry at line 6",
+  ]);
+});
+
+test("fixture: expectedEcosystems treats a missing workflow directory as no workflows, so github-actions is implied only by an action manifest", () => {
+  const noDir = (files) => ({
+    existsSync: (p) => files.includes(p.slice("/r/".length)),
+    readdirSync: () => { throw Object.assign(new Error("ENOENT"), { code: "ENOENT" }); },
+  });
+  assert.deepEqual(expectedEcosystems("/r", noDir([])), []);
+  assert.deepEqual(expectedEcosystems("/r", noDir(["action.yaml"])), ["github-actions"]);
+});
+
 test("fixture: expectedEcosystems reads the root manifests and workflow directory through the injected fs", () => {
   const fake = (files, workflows) => ({
     existsSync: (p) => files.includes(p.slice("/r/".length)),
