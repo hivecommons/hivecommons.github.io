@@ -358,6 +358,27 @@ test("fixture: a README the parser can no longer read is reported instead of pas
   assert.ok(p.some((x) => x.includes("no \"HH:MM UTC\"")));
 });
 
+test("fixture: a workflow with no `on:`, no `name:`, no jobs or no `links` job is reported instead of passing vacuously", () => {
+  assert.deepEqual(triggers("name: x\njobs:\n  a:\n    runs-on: ubuntu-latest\n"), { dispatch: false, schedule: false, cron: undefined });
+
+  const unnamed = problems({ yaml: YAML.replace("name: Link check\n", "") });
+  assert.ok(unnamed.includes("links.yml has no `name:`"), unnamed.join("\n"));
+  // Without a name there is nothing to compare the docs' "**Link check** workflow" against.
+  assert.ok(!unnamed.some((x) => x.includes("calls the workflow")), unnamed.join("\n"));
+
+  // No jobs: the gate stops there, carrying only the name problem found so far.
+  const jobless = YAML.slice(0, YAML.indexOf("jobs:"));
+  assert.deepEqual(problems({ yaml: jobless }), ["links.yml has no jobs"]);
+  assert.deepEqual(problems({ yaml: jobless.replace("name: Link check\n", "") }), ["links.yml has no `name:`", "links.yml has no jobs"]);
+
+  // Jobs, but none named `links`: there is no step to read a flag from, and every
+  // doc claim about `links` is a claim about an undefined job.
+  const noLinks = problems({ yaml: YAML.replace("  links:\n", "  link-check:\n") });
+  assert.ok(noLinks.includes("the `links` job does not pass a flag to scripts/check-links.sh conditionally on schedule/workflow_dispatch"), noLinks.join("\n"));
+  assert.ok(noLinks.some((x) => x.startsWith("README.md names a `links` job that links.yml does not define")), noLinks.join("\n"));
+  assert.ok(!noLinks.some((x) => x.includes("scripts/check-links.sh accepts")), noLinks.join("\n"));
+});
+
 // --- live checks over the committed tree ------------------------------------
 
 const yaml = readFileSync(WORKFLOW, "utf8");
