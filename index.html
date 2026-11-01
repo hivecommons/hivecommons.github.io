@@ -261,8 +261,10 @@
 
     <div class="proof" role="group" aria-label="Figures from Hive's own project">
       <dl class="stats">
-        <div><dt>merged pull requests</dt><dd>5,600+</dd></div>
-        <div><dt>median issue close time</dt><dd>3 hours</dd></div>
+        <!-- As of 2026-10-31. Merged PRs: gh api 'search/issues?q=repo:hivecommons/hive+is:pr+is:merged' -> 9,817.
+             Median close time: median of closedAt - createdAt over every closed issue in hivecommons/hive (GraphQL repository.issues(states: CLOSED), 5,512 issues) -> 2.07 hours. -->
+        <div><dt>merged pull requests</dt><dd>9,800+</dd></div>
+        <div><dt>median issue close time</dt><dd>2 hours</dd></div>
         <div><dt>counting since</dt><dd>April 2026</dd></div>
       </dl>
       <p class="proof-note">Hive maintains its own project. These are its figures.</p>
