@@ -46,7 +46,6 @@ export const TEST_HELPER_BASELINE = {
   "scripts/story-cards.test.mjs": 14,
   "scripts/story-form-contract.test.mjs": 12,
   "scripts/style-contract.test.mjs": 13,
-  "scripts/workflow-docs.test.mjs": 4,
 };
 
 // --- analysis ---------------------------------------------------------------
