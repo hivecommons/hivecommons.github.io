@@ -32,7 +32,6 @@ const CHILD_ENV = "COVERAGE_FLOOR_CHILD";
 // raise one. The end state is an empty object and the same floor the
 // scripts/*.mjs helpers already meet.
 export const TEST_HELPER_BASELINE = {
-  "scripts/automation-docs.test.mjs": 4,
   "scripts/carousels.test.mjs": 6,
   "scripts/issue-forms.test.mjs": 15,
   "scripts/jsonld-contract.test.mjs": 14,
