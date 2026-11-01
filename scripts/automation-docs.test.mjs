@@ -47,7 +47,8 @@ function topBlock(yaml, key) {
 function onEntry(on, key) {
   const m = new RegExp(`^\\s{2}${key}:[ \\t]*(\\S.*)?$([\\s\\S]*?)(?=^\\s{2}\\S|(?![\\s\\S]))`, "m").exec(on ?? "");
   if (!m) return undefined;
-  return (m[1] ?? "") + (m[2] ?? "");
+  // m[2] always participates (`([\s\S]*?)` matches the empty string), so it needs no fallback.
+  return (m[1] ?? "") + m[2];
 }
 
 // `key: [a, b]` or a `key:` list, within one `on:` entry body; undefined when absent.
@@ -135,7 +136,9 @@ export function automationDocProblems({ docs, workflows }) {
       const t = workflowTriggers(yaml);
       const c = claims(ref.paragraph);
       if (c.pushMain && !(t.push && (t.pushBranches === undefined || t.pushBranches.includes("main")))) {
-        problems.push(`${where} as running on push to \`main\` but it declares ${t.push ? `push.branches: [${(t.pushBranches ?? []).join(", ")}]` : "no `push` trigger"}`);
+        // An unfiltered push (pushBranches undefined) runs on main, so reaching here with
+        // t.push set means pushBranches is a list.
+        problems.push(`${where} as running on push to \`main\` but it declares ${t.push ? `push.branches: [${t.pushBranches.join(", ")}]` : "no `push` trigger"}`);
       }
       if (c.everyPR && !t.pullRequest) problems.push(`${where} as running on every pull request but it declares no \`pull_request\` trigger`);
       if (c.weekly) {
@@ -335,6 +338,24 @@ test("fixture: docs the parser can no longer read are reported instead of passin
   const p = problems({ docs: { "README.md": "# Site\n\nWorkflows are described elsewhere.\n" } });
   assert.ok(p.some((x) => x.startsWith("no doc introduces a workflow")), p.join("\n"));
   assert.equal(p.filter((x) => x.includes("is not introduced in README.md")).length, 3);
+});
+
+test("fixture: no committed workflows and no README.md are reported instead of passing vacuously", () => {
+  // Every introduction points at a missing workflow, and the empty tree is named as such
+  // rather than as an empty list.
+  const none = problems({ workflows: {} });
+  assert.equal(none.length, 4, none.join("\n"));
+  assert.ok(none.every((x) => x.endsWith("but no such workflow is committed (have: none)")), none.join("\n"));
+  assert.ok(none.some((x) => x.startsWith("runbooks/release-rollback.md introduces **Link check**")), none.join("\n"));
+
+  // A runbook alone can introduce every workflow consistently, yet with no README.md in
+  // the doc set each committed workflow is still reported as undocumented there.
+  const runbookOnly = problems({ docs: { "runbooks/release-rollback.md": RUNBOOK } });
+  assert.deepEqual(runbookOnly, [
+    '.github/workflows/close-linked-issues.yml is not introduced in README.md as "**<name>** … (`.github/workflows/close-linked-issues.yml`)"',
+    '.github/workflows/links.yml is not introduced in README.md as "**<name>** … (`.github/workflows/links.yml`)"',
+    '.github/workflows/scorecard.yml is not introduced in README.md as "**<name>** … (`.github/workflows/scorecard.yml`)"',
+  ]);
 });
 
 // --- live checks over the committed tree ------------------------------------------
