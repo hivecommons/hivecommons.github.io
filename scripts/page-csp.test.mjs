@@ -7,15 +7,17 @@
 // (scripts/update-csp-hashes.mjs rewrites the policy; the helpers live in
 // scripts/page-csp.mjs).
 // It also keeps the policy from regressing to 'unsafe-inline'/'unsafe-eval',
-// keeps every external <img> origin covered by img-src and every external
-// <iframe> origin covered by frame-src (with no frame-src origin left unused).
+// keeps every external <img> origin, plus the redirect target of a known
+// redirecting image URL (github.com/<handle>.png), covered by img-src, and
+// every external <iframe> origin covered by frame-src (with no frame-src
+// origin left unused).
 // Zero dependencies. Usage: node --test scripts/page-csp.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
 import { ROOT, htmlFiles, isRedirectPage } from "./html-pages.mjs";
-import { REGEN_HINT, externalFrameOrigins, externalImageOrigins, inlineScriptSources, parseCsp, problemsOf, sha256Source } from "./page-csp.mjs";
+import { REGEN_HINT, externalFrameOrigins, externalImageOrigins, imageRedirectTargets, inlineScriptSources, parseCsp, problemsOf, sha256Source } from "./page-csp.mjs";
 
 // --- per-page gates ---------------------------------------------------------
 
@@ -184,7 +186,28 @@ test("fixture: external <img> origin must be in img-src", () => {
   const h = sha256Source("console.log(1)");
   const img = '<img src="https://github.com/octocat.png" alt="">';
   assert.deepEqual(problemsOf(fixture({ csp: `${BASE}; script-src ${h}`, img })), ["img-src does not allow external <img> origin https://github.com"]);
-  assert.deepEqual(problemsOf(fixture({ csp: `default-src 'none'; img-src 'self' https://github.com; base-uri 'none'; form-action 'none'; script-src ${h}`, img })), []);
+  assert.deepEqual(problemsOf(fixture({ csp: `default-src 'none'; img-src 'self' https://github.com https://avatars.githubusercontent.com; base-uri 'none'; form-action 'none'; script-src ${h}`, img })), []);
+});
+
+const AVATAR = '<img src="https://github.com/octocat.png?size=96" alt="">';
+
+test("fixture: only github.com/<handle>.png images map to the avatars redirect host", () => {
+  const html = `${AVATAR}<img src="https://GitHub.com/Octo-Cat.PNG" alt=""><img src="https://github.com/o/r.png" alt=""><img src="https://github.com/logo.svg" alt=""><img src="https://example.org/octocat.png" alt=""><img src="/og.png" alt="">`;
+  assert.deepEqual(imageRedirectTargets(html), [
+    { src: "https://github.com/octocat.png", target: "https://avatars.githubusercontent.com" },
+    { src: "https://github.com/Octo-Cat.PNG", target: "https://avatars.githubusercontent.com" },
+  ]);
+});
+
+test("fixture: img-src must allow the redirect target of a github.com avatar", () => {
+  const h = sha256Source("console.log(1)");
+  const csp = `default-src 'none'; img-src 'self' https://github.com; base-uri 'none'; form-action 'none'; script-src ${h}`;
+  // Two avatars behind the same redirect host are reported once.
+  assert.deepEqual(problemsOf(fixture({ csp, img: `${AVATAR}${AVATAR.replace("octocat", "hubot")}` })), [
+    "img-src does not allow redirect target https://avatars.githubusercontent.com for <img> https://github.com/octocat.png",
+  ]);
+  assert.deepEqual(problemsOf(fixture({ csp: csp.replace("https://github.com", "https://github.com https://avatars.githubusercontent.com"), img: AVATAR })), []);
+  assert.deepEqual(problemsOf(fixture({ csp: csp.replace("https://github.com", "https:"), img: AVATAR })), []);
 });
 
 const FRAME = '<iframe src="https://www.youtube-nocookie.com/embed/x" title="x"></iframe>';
