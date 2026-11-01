@@ -48,6 +48,28 @@ export function externalImageOrigins(html) {
   return [...out].sort();
 }
 
+// Image URLs known to answer with a redirect to another origin. CSP checks the
+// post-redirect URL against img-src too, so that origin must be allowed even
+// though no <img> names it. Static on purpose: the gate stays offline.
+// https://github.com/<handle>.png always 302s to avatars.githubusercontent.com.
+const IMAGE_REDIRECTS = [
+  { origin: "https://github.com", path: /^\/[a-z0-9-]+\.png$/i, target: "https://avatars.githubusercontent.com" },
+];
+
+// Every external <img> whose src matches IMAGE_REDIRECTS, with its redirect
+// target origin; src is reported without its query string.
+export function imageRedirectTargets(html) {
+  const out = [];
+  for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
+    const src = attrs(m[0]).src ?? "";
+    if (!/^https?:\/\//i.test(src)) continue;
+    const url = new URL(src);
+    const rule = IMAGE_REDIRECTS.find((r) => r.origin === url.origin && r.path.test(url.pathname));
+    if (rule) out.push({ src: url.origin + url.pathname, target: rule.target });
+  }
+  return out;
+}
+
 // Origins of every <iframe> whose src is absolute http(s); relative, srcdoc
 // and about: frames are same-document and governed by no fetch directive.
 export function externalFrameOrigins(html) {
@@ -128,6 +150,14 @@ export function problemsOf(html) {
   const imgSrc = d["img-src"] ?? d["default-src"] ?? [];
   for (const origin of externalImageOrigins(html)) {
     if (!imgSrc.includes(origin) && !imgSrc.includes("https:")) problems.push(`img-src does not allow external <img> origin ${origin}`);
+  }
+  // A redirect target is only reported when its source origin is allowed;
+  // otherwise the origin problem above already names the fix. One per target.
+  const reported = new Set();
+  for (const { src, target } of imageRedirectTargets(html)) {
+    if (reported.has(target) || imgSrc.includes(target) || imgSrc.includes("https:") || !imgSrc.includes(new URL(src).origin)) continue;
+    reported.add(target);
+    problems.push(`img-src does not allow redirect target ${target} for <img> ${src}`);
   }
   // Browsers resolve frame-src -> child-src -> default-src (CSP3). A frame
   // whose origin is not allowed is silently replaced by an empty box.
