@@ -649,3 +649,9 @@ test("popup blocked: fallback link obeys the URL byte budget and clipboard keeps
   await Promise.resolve();
   assert.equal(t.clipboard.written[0].split("### Story\n")[1], long, "clipboard markdown carries the full story");
 });
+
+test("fixture: the stub DOM rejects a selector the dialog script never uses, so a new query in the page fails loudly instead of matching nothing", () => {
+  const t = boot();
+  assert.throws(() => t.doc.querySelectorAll(".anything"), /unsupported selector in stub DOM: \.anything/);
+  assert.throws(() => t.dialog.querySelector("input[type=checkbox]"), /unsupported selector in stub DOM: input\[type=checkbox\]/);
+});

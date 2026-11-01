@@ -402,3 +402,16 @@ test("a level without a tab button is skipped by the wiring but still toggles wi
   assert.equal(t.panels[2].getAttribute("aria-hidden"), "false");
   assert.equal(t.doc.activeElement, t.tabs[1], "there is no button to move focus to");
 });
+
+test("fixture: the stub document ignores an event nobody listens to, rejects a selector the page script never uses, and the timer queue fires due timers in deadline order", () => {
+  const { doc } = makeDocument();
+  assert.doesNotThrow(() => doc.dispatch("nobody-listens"));
+  assert.throws(() => doc.querySelector(".anything"), /unsupported document selector in stub DOM: \.anything/);
+  const timers = makeTimers();
+  const fired = [];
+  timers.setTimeout(() => fired.push("late"), 30);
+  timers.setTimeout(() => fired.push("early"), 10);
+  timers.advance(50);
+  assert.deepEqual(fired, ["early", "late"]);
+  assert.equal(timers.pendingCount(), 0);
+});
