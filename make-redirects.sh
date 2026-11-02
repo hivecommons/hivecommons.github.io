@@ -10,6 +10,7 @@ set -euo pipefail
 declare -A MAP=(
   [tv]="https://youtube.com/@hivecommons|the Hive Commons YouTube channel"
   [youtube]="https://youtube.com/@hivecommons|the Hive Commons YouTube channel"
+  [twitch]="https://www.twitch.tv/hivecommons|the Hive Commons Twitch stream"
   [discord]="https://discord.gg/kQbCKGySvp|the Hive Commons Discord"
   [doc]="https://docs.hivecommons.dev|the Hive Commons docs"
   [docs]="https://docs.hivecommons.dev|the Hive Commons docs"
