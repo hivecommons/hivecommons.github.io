@@ -40,8 +40,6 @@ export const TEST_HELPER_BASELINE = {
   "scripts/page-images.test.mjs": 19,
   "scripts/page-meta.test.mjs": 20,
   "scripts/page-structure.test.mjs": 7,
-  "scripts/pages-build.test.mjs": 4,
-  "scripts/redirect-targets.test.mjs": 4,
   "scripts/story-cards.test.mjs": 14,
   "scripts/story-form-contract.test.mjs": 12,
   "scripts/style-contract.test.mjs": 13,

@@ -11,7 +11,8 @@
 // dependencies. Usage: node --test scripts/pages-build.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -202,6 +203,15 @@ test("fixture: unpublishedReason knows Jekyll's special-prefix, include:, exclud
   assert.equal(unpublishedReason("vendor/x.js", parseConfig("include:\n  - .well-known\n  - vendor\n")), null);
 });
 
+test("fixture: unpublishedReason treats a config with no include: list as an empty one", () => {
+  const noInclude = parseConfig("exclude:\n  - docs\n");
+  assert.equal(noInclude.lists.include, undefined);
+  assert.equal(unpublishedReason("index.html", noInclude), null);
+  assert.match(unpublishedReason(".well-known/security.txt", noInclude), /Jekyll drops unless/);
+  assert.match(unpublishedReason("vendor/x.js", noInclude), /default exclude list/);
+  assert.match(unpublishedReason("docs/index.html", noInclude), /docs is listed under _config.yml exclude:/);
+});
+
 test("fixture: urlToRelPath maps origin, directory and file URLs and rejects off-site URLs", () => {
   assert.equal(urlToRelPath(`${SITE_ORIGIN}/`), "index.html");
   assert.equal(urlToRelPath(SITE_ORIGIN), "index.html");
@@ -248,6 +258,15 @@ test("fixture: the same file reached from two sources is reported once", () => {
   assert.equal(p.length, 1);
 });
 
+test("fixture: off-site URLs are skipped, and a config with no include: list treats every dot-directory as unpublished", () => {
+  const offsite = [{ url: "https://example.com/", source: "sitemap.xml" }, { url: "http://hivecommons.dev/", source: "sitemap.xml" }];
+  assert.deepEqual(publishProblems({ config: GOOD_CONFIG, urls: offsite, files: {}, dotDirs: [] }), []);
+  const noInclude = parseConfig("exclude: []\n");
+  assert.equal(noInclude.lists.include, undefined);
+  const p = publishProblems({ config: noInclude, urls: offsite, files: {}, dotDirs: [".well-known"] });
+  assert.deepEqual(p, [".well-known/ holds site files but is not in _config.yml include:, so Pages will not publish it"]);
+});
+
 test("fixture: a published file with front matter is reported", () => {
   const p = publishProblems({ config: GOOD_CONFIG, urls: [], files: { "llms.txt": "---\nlayout: null\n---\n# x" }, dotDirs: [] });
   assert.match(p.join("\n"), /llms.txt opens with a `---` front matter block/);
@@ -257,6 +276,23 @@ test("fixture: contentDotDirs ignores tooling directories and empty dot-director
   const dirs = contentDotDirs(ROOT);
   assert.ok(dirs.includes(".well-known"), dirs.join(","));
   assert.ok(!dirs.includes(".git") && !dirs.includes(".github"), dirs.join(","));
+});
+
+test("fixture: contentDotDirs recurses into subdirectories, so a dot-directory whose files sit one level down counts and one holding only empty subdirectories does not", () => {
+  const root = mkdtempSync(join(tmpdir(), "pages-build-dotdirs-"));
+  try {
+    mkdirSync(join(root, ".nested", "sub"), { recursive: true });
+    writeFileSync(join(root, ".nested", "sub", "file.txt"), "x");
+    mkdirSync(join(root, ".hollow", "sub", "deeper"), { recursive: true });
+    mkdirSync(join(root, ".github"));
+    writeFileSync(join(root, ".github", "CODEOWNERS"), "x");
+    mkdirSync(join(root, "plain"));
+    writeFileSync(join(root, "plain", "index.html"), "x");
+    writeFileSync(join(root, ".dotfile"), "x");
+    assert.deepEqual(contentDotDirs(root), [".nested"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 // --- live checks -------------------------------------------------------------

@@ -326,6 +326,22 @@ test("fixture: a page that drifted from the MAP url, or lost a part, is reported
   assert.ok(redirectPageProblems(badContent, entry).some((p) => p.startsWith('refresh url= resolves to ""')));
 });
 
+test("fixture: a page without an <a> is missing both the link href and the link text, and nothing else", () => {
+  const entry = { path: "x", url: "https://example.test/new", label: "the page" };
+  const noAnchor = page(entry.url, entry.label).replace(/<a\b[^>]*>[\s\S]*?<\/a>/, "");
+  assert.equal(redirectParts(noAnchor).anchorHref, undefined);
+  assert.equal(redirectParts(noAnchor).anchorText, undefined);
+  assert.deepEqual(redirectPageProblems(noAnchor, entry), ["<a href> is missing", "link text is missing"]);
+});
+
+test("fixture: single-quoted attribute values are read like double-quoted ones", () => {
+  const entry = { path: "x", url: "https://example.test/c?a=1&b=2", label: "the page" };
+  const singleQuoted = page(entry.url, entry.label).replace(/(href|content)="([^"]*)"/g, "$1='$2'");
+  assert.ok(singleQuoted.includes("href='"), singleQuoted);
+  assert.deepEqual(redirectParts(singleQuoted), redirectParts(page(entry.url, entry.label)));
+  assert.deepEqual(redirectPageProblems(singleQuoted, entry), []);
+});
+
 test("fixture: numeric and semicolon-terminated references anywhere on the page are ambiguous ampersands", () => {
   const entry = { path: "x", url: "https://example.test/c", label: "the page" };
   const numeric = page(entry.url, entry.label).replace("Redirecting", "Redirecting&#8230;");
