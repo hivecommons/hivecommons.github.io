@@ -36,7 +36,7 @@ function markupOnly(html) {
 function attrValue(tag, name) {
   const m = new RegExp(`\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+))`, "i").exec(tag);
   if (!m) return null;
-  return m[1] ?? m[2] ?? m[3] ?? "";
+  return m[1] ?? m[2] ?? m[3];
 }
 
 function hasAttr(tag, name) {
@@ -402,6 +402,25 @@ test("fixture: a tab is no-js safe only when its panel is on the page and visibl
   assert.match(missing[0], /controls "p1" which is not on the page/);
   const noControls = deadWithoutScript(`<button type="button" role="tab">t</button>`, CSS, "p");
   assert.match(noControls[0], /controls "" which is not on the page/);
+});
+
+test("fixture: single-quoted and unquoted attribute values are read like double-quoted ones", () => {
+  const singleQuoted = CLEAN.replace(/(\w+)="([^"]*)"/g, "$1='$2'");
+  assert.ok(singleQuoted.includes("type='button'"), singleQuoted);
+  assert.deepEqual(deadWithoutScript(singleQuoted, CSS), []);
+  assert.equal(scriptOnlyButtons(singleQuoted).length, scriptOnlyButtons(CLEAN).length);
+  const unquoted = `<button type=button class=go data-a>a</button>`;
+  assert.equal(scriptOnlyButtons(unquoted).length, 1);
+  assert.deepEqual(elements(unquoted)[0].classes, ["go"]);
+  assert.deepEqual(deadWithoutScript(unquoted, `.no-js .go { display: none; }`), []);
+  assert.equal(deadWithoutScript(`<button type=\"\" data-a>a</button>`, "", "p").length, 0, "an empty type is the default submit button, not a script-only control");
+});
+
+test("fixture: a tag-qualified selector only matches that element, and a selector with no compounds hides nothing", () => {
+  assert.equal(deadWithoutScript(`<button type="button" class="go">a</button>`, `.no-js span.go { display: none; }`, "p").length, 1, "span.go does not match a <button class=\"go\">");
+  assert.deepEqual(deadWithoutScript(`<button type="button" class="go">a</button>`, `.no-js button.go { display: none; }`), []);
+  assert.deepEqual(noJsHidingSelectors(`> { display: none; } .a, + { display: none; }`), { noJs: [], always: [{ selector: ".a", parts: [{ tag: null, id: null, classes: ["a"], attrs: [] }], line: 1 }] });
+  assert.equal(deadWithoutScript(`<button type="button" data-a>a</button>`, `> { display: none; }`, "p").length, 1, "a bare combinator is skipped rather than matching every element");
 });
 
 test("fixture: selector parsing drops pseudo-classes and pseudo-elements and reads attribute selectors", () => {

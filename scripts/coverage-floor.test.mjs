@@ -35,8 +35,6 @@ export const TEST_HELPER_BASELINE = {
   "scripts/carousels.test.mjs": 6,
   "scripts/issue-forms.test.mjs": 15,
   "scripts/jsonld-contract.test.mjs": 14,
-  "scripts/no-js-controls.test.mjs": 5,
-  "scripts/page-404.test.mjs": 5,
   "scripts/page-images.test.mjs": 19,
   "scripts/page-meta.test.mjs": 20,
   "scripts/page-structure.test.mjs": 7,

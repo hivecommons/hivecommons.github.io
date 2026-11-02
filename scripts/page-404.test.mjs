@@ -196,6 +196,24 @@ test("fixture: relative URLs are rejected, root-absolute/external/anchor/mailto 
   assert.ok(errorPageProblems(GOOD.replace('href="/"', 'href="/stories/"')).some((p) => p.includes('<a href="/">')));
 });
 
+test("fixture: single-quoted attributes, a missing <head>, a content-less meta and a rel-less <link> are read without crashing", () => {
+  const singleQuoted = GOOD.replace(/(\w+)="([^"]*)"/g, "$1='$2'");
+  assert.ok(singleQuoted.includes("href='/'"), singleQuoted);
+  assert.deepEqual(pageUrls(singleQuoted), pageUrls(GOOD));
+  assert.deepEqual(errorPageProblems(singleQuoted), []);
+  const headless = GOOD.replace(/<head>[\s\S]*<\/head>/, "");
+  assert.deepEqual(errorPageProblems(headless), [
+    "missing <meta charset>",
+    'missing or empty <meta name="viewport">',
+    "error page needs exactly one non-empty <title>",
+    'expected exactly one <meta name="robots">, found 0',
+  ]);
+  const contentless = GOOD.replace('<meta name="robots" content="noindex">', '<meta name="robots">');
+  assert.deepEqual(errorPageProblems(contentless), ['error page lacks <meta name="robots" content="noindex">']);
+  const relless = GOOD.replace("<style>", '<link href="/style.css"><style>');
+  assert.deepEqual(errorPageProblems(relless), [], "a <link> without rel is not a canonical");
+});
+
 test("fixture: root-absolute targets must be committed files", () => {
   assert.deepEqual(localTargetProblems(GOOD), []);
   const dir = GOOD.replace("</main>", '<a href="/stories/">s</a><img src="/og.png?v=1" alt=""></main>');
@@ -207,6 +225,8 @@ test("fixture: root-absolute targets must be committed files", () => {
   ]);
   const bareDir = GOOD.replace("</main>", '<a href="/stories">s</a></main>');
   assert.ok(localTargetProblems(bareDir).some((p) => p.includes('href="/stories">')), "a directory without trailing slash is not a file");
+  const external = GOOD.replace("</main>", '<a href="//cdn.test/a">c</a><a href="https://example.test/">e</a></main>');
+  assert.deepEqual(localTargetProblems(external), [], "protocol-relative and absolute URLs are not local targets");
 });
 
 test("fixture: bodyText strips tags, style and script, collapsing whitespace", () => {
