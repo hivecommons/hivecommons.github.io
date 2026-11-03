@@ -386,3 +386,20 @@ test("Crux version in llms.txt matches the carousel tag in index.html and both a
   assert.equal(htmlVersion, llmsVersion, `Crux version mismatch: index.html has '${htmlVersion}' but llms.txt has '${llmsVersion}' — keep them in sync`);
 });
 
+
+// promptargs README (npm @hivecommons/promptargs 0.10.0): "Works as a CLI ...
+// and as a skill ... in Claude Code, Copilot, Codex, Gemini CLI, Goose, and Bob."
+const PROMPTARGS_HOSTS = ["Claude Code", "Copilot", "Codex", "Gemini CLI", "Goose", "Bob"];
+
+test("promptargs card, JSON-LD featureList and llms.txt bullet name every released skill host", () => {
+  const card = INDEX_HTML.match(/<h3>promptargs<\/h3>\s*<p>([^<]+)<\/p>/);
+  const feature = INDEX_HTML.match(/"Works as a CLI and as a skill in ([^"]+)"/);
+  const bullet = LLMS_TXT.match(/^- \[promptargs\]\([^)]+\): (.+)$/m);
+  const surfaces = { "index.html card": card, "index.html JSON-LD featureList": feature, "llms.txt Projects bullet": bullet };
+  for (const [where, m] of Object.entries(surfaces)) {
+    assert.ok(m, `${where}: promptargs entry not found`);
+    for (const host of PROMPTARGS_HOSTS) {
+      assert.ok(m[1].includes(host), `${where} omits promptargs skill host ${host}`);
+    }
+  }
+});

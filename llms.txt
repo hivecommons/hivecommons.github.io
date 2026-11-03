@@ -13,7 +13,7 @@ Hive Commons also maintains Spektacular (Spek), a spec-driven workflow tool; the
 - [Spektacular (Spek)](https://spektacular.dev): spec-driven development for AI coding agents; a markdown spek becomes a reviewed plan and an agent-driven implementation.
 - [hotshot](https://github.com/hivecommons/hotshot): watches for new screenshots and injects them into the terminal session you last used, for AI coding assistants that accept image paths.
 - [pluk](https://github.com/hivecommons/pluk): lightweight pub-sub event streaming for tmux sessions running AI coding agents; classifies, subscribes to, and reacts to their JSONL event streams.
-- [promptargs](https://github.com/hivecommons/promptargs): template arguments for AI prompts; fills `{{variables}}` in prompts for Claude Code, Copilot, Goose, Bob and others.
+- [promptargs](https://github.com/hivecommons/promptargs): template arguments for AI prompts; fills `{{variables}}` in prompts for Claude Code, Copilot, Codex, Gemini CLI, Goose, Bob and others.
 - [rationguard](https://github.com/hivecommons/rationguard): detects and rebuts rationalization patterns in AI agent output.
 - [dibs](https://dibs.hivecommons.dev): contributor attribution layer for the AI-agent era, connecting ideators with hive-managed repositories.
 
