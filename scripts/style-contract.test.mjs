@@ -13,7 +13,8 @@
 // Usage: node --test scripts/style-contract.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { htmlFiles, isRedirectPage, lineOf } from "./html-pages.mjs";
@@ -292,7 +293,7 @@ export function cssUrlReferences(css) {
   const out = [];
   const re = /\burl\(\s*(?:"([^"]*)"|'([^']*)'|([^)"'\s]*))\s*\)(?:\s*format\(\s*["']([^"']+)["']\s*\))?/g;
   for (const m of clean.matchAll(re)) {
-    const raw = (m[1] ?? m[2] ?? m[3] ?? "").trim();
+    const raw = (m[1] ?? m[2] ?? m[3]).trim();
     if (raw === "" || /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(raw)) continue;
     out.push({ url: raw.split(/[?#]/)[0], line: lineOf(clean, m.index), format: m[4] ? m[4].toLowerCase() : null });
   }
@@ -360,7 +361,7 @@ export function unreferencedFontFiles(fontFiles, referenced) {
   return [...fontFiles].filter((f) => !used.has(f)).sort().map((f) => `${f} is committed but no url() in any stylesheet or inline <style> references it`);
 }
 
-function readAssetFromDisk(path) {
+export function readAssetFromDisk(path) {
   try {
     if (!statSync(path).isFile()) return null;
     return readFileSync(path);
@@ -369,7 +370,7 @@ function readAssetFromDisk(path) {
   }
 }
 
-function fontFilesUnder(dir) {
+export function fontFilesUnder(dir) {
   if (!existsSync(dir)) return [];
   const out = [];
   for (const name of readdirSync(dir)) {
@@ -673,6 +674,54 @@ test("fixture: a committed font file no stylesheet references is reported", () =
     "assets/fonts/a.woff2 is committed but no url() in any stylesheet or inline <style> references it",
   ]);
   assert.deepEqual(unreferencedFontFiles(["assets/fonts/a.woff2"], ["assets/fonts/a.woff2"]), []);
+});
+
+test("fixture: an unquoted stylesheet href and a single-quoted style= attribute are read like quoted ones", () => {
+  assert.deepEqual(localStylesheetHrefs(`<html><head><link rel=stylesheet href=/bare.css?v=1></head></html>`), ["/bare.css"]);
+  assert.deepEqual([...pageCustomPropertyDefinitions(`<html><body><div style='--sq: 1; color: red'></div></body></html>`)], ["--sq"]);
+});
+
+test("fixture: stripComments blanks an unterminated comment to the end without changing the length", () => {
+  const css = ".a { color: red; }\n/* never\nclosed";
+  const out = stripComments(css);
+  assert.equal(out.length, css.length);
+  assert.equal(out, ".a { color: red; }\n        \n      ");
+});
+
+test("fixture: a backslash-escaped quote inside a string is inert and an extra \")\" is reported", () => {
+  assert.deepEqual(cssStructureProblems(`.a { content: "a\\"b;{"; }`), []);
+  assert.deepEqual(cssStructureProblems(`.a { width: calc(1px)); }`), ['css line 1: unexpected ")"']);
+  assert.deepEqual(unguardedSmoothScroll(`.a { content: "\\"{"; }\nhtml { scroll-behavior: smooth; }`).map((e) => /line (\d+)/.exec(e)[1]), ["2"]);
+  assert.deepEqual(unguardedSmoothScroll(`scroll-behavior: smooth`).map((e) => /line (\d+)/.exec(e)[1]), ["1"]);
+});
+
+test("fixture: a url() with no extension and no format() has no expected kind", () => {
+  assert.equal(expectedAssetKind("/assets/fonts/bare", null), null);
+  assert.ok(bytesMatchKind(Buffer.from("anything"), expectedAssetKind("/assets/fonts/bare", null)));
+});
+
+test("fixture: readAssetFromDisk returns null for a directory or a missing path and bytes for a file", () => {
+  assert.equal(readAssetFromDisk(join(ROOT, "assets")), null);
+  assert.equal(readAssetFromDisk(join(ROOT, "assets", "does-not-exist.png")), null);
+  assert.ok(Buffer.isBuffer(readAssetFromDisk(join(ROOT, "style.css"))));
+  assert.deepEqual(missingCssAssets(`.a { background: url(/assets); }\n.b { background: url(/assets/missing.png); }`, join(ROOT, "style.css"), readAssetFromDisk), [
+    "css line 1: url(/assets) names no committed file",
+    "css line 2: url(/assets/missing.png) names no committed file",
+  ]);
+});
+
+test("fixture: fontFilesUnder returns nothing for a missing directory and recurses into subdirectories", () => {
+  const root = mkdtempSync(join(tmpdir(), "style-contract-fonts-"));
+  try {
+    assert.deepEqual(fontFilesUnder(join(root, "absent")), []);
+    mkdirSync(join(root, "sub", "deeper"), { recursive: true });
+    writeFileSync(join(root, "a.woff2"), "wOF2");
+    writeFileSync(join(root, "sub", "deeper", "b.TTF"), "\u0000\u0001\u0000\u0000");
+    writeFileSync(join(root, "sub", "readme.txt"), "not a font");
+    assert.deepEqual(fontFilesUnder(root), [relative(ROOT, join(root, "a.woff2")), relative(ROOT, join(root, "sub", "deeper", "b.TTF"))].sort());
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 // ---------------------------------------------------------------------------

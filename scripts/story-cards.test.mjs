@@ -188,6 +188,48 @@ test("fixture: two cards for the same handle (any case) are reported once", () =
   assert.deepEqual(duplicateHandles(cards), [`line ${cards[2].line}: handle https://github.com/alice already has a card at line ${cards[0].line}`]);
 });
 
+test("fixture: single-quoted attribute values are read like double-quoted ones", () => {
+  const singleQuoted = fixtureCard().replace(/(\w+)="([^"]*)"/g, "$1='$2'");
+  assert.ok(singleQuoted.includes("class='story-card"), singleQuoted);
+  assert.deepEqual(problemsOf(singleQuoted), []);
+});
+
+test("fixture: a story-handle with the wrong number of avatars or links is reported and its handle rules are skipped", () => {
+  const twoLinks = fixtureCard({ text: '</a><a href="https://github.com/octocat">@octocat' }).replace('<img class="story-avatar"', "<img");
+  assert.deepEqual(problemsOf(twoLinks), [
+    'story-handle must contain exactly one <img class="story-avatar">, found 0',
+    "story-handle must contain exactly one <a>, found 2",
+  ]);
+});
+
+test("fixture: an avatar without src, alt, width or height and a handle link without href are reported", () => {
+  const noSrcNoHref = fixtureCard({ img: 'alt="@octocat" width="48" height="48" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true"' }).replace('<a href="https://github.com/octocat">', "<a>");
+  assert.deepEqual(problemsOf(noSrcNoHref), [
+    'avatar src "" is not https://github.com/<handle>.png',
+    'handle link href "" is not https://github.com/<handle>',
+    'link "" is not public GitHub evidence',
+  ]);
+  const repoLink = fixtureCard().replace('<a href="https://github.com/octocat">', '<a href="https://github.com/octocat/repo">');
+  assert.deepEqual(problemsOf(repoLink), ['handle link href "https://github.com/octocat/repo" is not https://github.com/<handle>']);
+  const noAlt = fixtureCard({ img: 'src="https://github.com/octocat.png?size=96" width="48" height="48" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true"' });
+  assert.deepEqual(problemsOf(noAlt), ['avatar alt "" should be "@octocat"']);
+  const widthOnly = fixtureCard({ img: 'src="https://github.com/octocat.png?size=96" alt="@octocat" width="48" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true"' });
+  assert.deepEqual(problemsOf(widthOnly), ["avatar must declare numeric width and height"]);
+});
+
+test("fixture: an evidence link without href fails both the evidence and the public-GitHub rule", () => {
+  assert.deepEqual(problemsOf(fixtureCard({ evidence: '<a class="inline-link">View evidence</a>' })), [
+    'evidence link "" is not a GitHub pull/issue/commit URL',
+    'link "" is not public GitHub evidence',
+  ]);
+});
+
+test("fixture: duplicateHandles skips a card with no GitHub link instead of counting it", () => {
+  const cards = [{ line: 1, html: "<p>no link</p>" }, ...storyCards(`${fixtureCard({ handle: "alice" })}\n${fixtureCard({ handle: "alice" })}`)];
+  assert.equal(cards.length, 3);
+  assert.deepEqual(duplicateHandles(cards), [`line ${cards[2].line}: handle https://github.com/alice already has a card at line ${cards[1].line}`]);
+});
+
 // ---------------------------------------------------------------------------
 // The committed page.
 // ---------------------------------------------------------------------------

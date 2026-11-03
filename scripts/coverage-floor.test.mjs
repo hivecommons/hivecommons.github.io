@@ -35,8 +35,6 @@ export const TEST_HELPER_BASELINE = {
   "scripts/jsonld-contract.test.mjs": 14,
   "scripts/page-images.test.mjs": 19,
   "scripts/page-meta.test.mjs": 20,
-  "scripts/story-cards.test.mjs": 14,
-  "scripts/style-contract.test.mjs": 13,
 };
 
 // --- analysis ---------------------------------------------------------------
