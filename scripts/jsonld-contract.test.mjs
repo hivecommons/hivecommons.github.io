@@ -604,6 +604,76 @@ test("fixture: helpers — includingLists, splitKeywords, infraSponsors, normali
   assert.ok(!text.includes("Host One\",\"url\""), "the JSON-LD body is not visible text");
 });
 
+test("fixture: a heading outside any <section>, a Projects list with no closing tag and a card without an <h3> are not matched", () => {
+  assert.equal(sectionByHeading('<div><h3 id="agent-cli-title">Agent CLIs</h3></div><section></section>', "agent-cli-title"), null, "a <section> only after the heading does not enclose it");
+  assert.equal(sectionByHeading('<section><h3 id="agent-cli-title">Agent CLIs</h3>', "agent-cli-title"), null, "no closing </section>");
+  assert.equal(projectCards('<ul aria-label="Projects"><li><h3>Widget</h3></li>'), null, "an unterminated carousel is treated as absent");
+  assert.deepEqual(projectCards('<ul aria-label="Projects"><li class="slide"><p>no heading</p></li><li><h3>Widget</h3></li></ul>'), [{ name: "Widget", repo: null }], "a card without an <h3> is skipped, not reported as an empty name");
+});
+
+test("fixture: a JSON-LD node without a string @type is rejected", () => {
+  const noType = goodLd();
+  delete noType[1]["@type"];
+  assert.throws(() => jsonLdNodes(fixturePage({ ld: noType })), /lacks a string @type/);
+  const emptyType = goodLd();
+  emptyType[1]["@type"] = "";
+  assert.throws(() => jsonLdNodes(fixturePage({ ld: emptyType })), /lacks a string @type/);
+});
+
+test("fixture: an Organization without url, sponsor or funder, and a sponsor whose infra logo has no link, are reported", () => {
+  const bare = goodLd();
+  delete bare[0].url;
+  delete bare[0].sponsor;
+  delete bare[0].funder;
+  const out = checkOrganization(bare, fixturePage({ ld: bare }));
+  assert.ok(out.includes(`Organization.url is undefined, expected ${SITE_ORIGIN}/`), out.join("\n"));
+  assert.ok(out.includes("Organization.sponsor is missing or empty"), out.join("\n"));
+  assert.doesNotMatch(out.join("\n"), /sponsor and Organization\.funder differ/, "two missing lists are equal, not drift");
+  assert.match(out.join("\n"), /infra logo "Host One \(Cloud\)" is on the page but Organization\.sponsor\/funder does not name "Host One"/);
+
+  const notArrays = goodLd();
+  notArrays[0].sponsor = { "@type": "Organization", name: "Host One", url: "https://host-one.example/" };
+  notArrays[0].funder = "Host One";
+  assert.ok(checkOrganization(notArrays, fixturePage({ ld: notArrays })).includes("Organization.sponsor is missing or empty"), "a non-array sponsor/funder counts as empty");
+
+  const unlinked = fixturePage({ ld: goodLd() }).replace('<a class="infra-logo-chip" href="https://host-one.example/">', '<a class="infra-logo-chip">');
+  assert.deepEqual(infraSponsors(unlinked)[0], { label: "Host One (Cloud)", name: "Host One", href: null });
+  assert.match(checkOrganization(goodLd(), unlinked).join("\n"), /"Host One" links https:\/\/host-one\.example\/ but the infra logo chip links null/);
+});
+
+test("fixture: a SoftwareApplication without featureList or keywords, and a featureList entry that is not a non-empty string, are reported", () => {
+  const base = goodLd();
+  base[1].name = "Hive";
+  const page = (ld) => fixturePage({ ld, extraHtml: "<p>Hive</p>" });
+
+  const missing = JSON.parse(JSON.stringify(base));
+  delete missing[1].featureList;
+  delete missing[1].keywords;
+  const out = checkSoftwareApplications(missing, page(missing));
+  assert.ok(out.includes('SoftwareApplication "Hive": featureList is missing or empty'), out.join("\n"));
+  assert.ok(out.includes('SoftwareApplication "Hive": keywords is missing or empty'), out.join("\n"));
+  assert.match(out.join("\n"), /chip "Alpha CLI" is on the page but missing from the Hive SoftwareApplication\.keywords/);
+
+  const stringList = JSON.parse(JSON.stringify(base));
+  stringList[1].featureList = "Drives agent CLIs including Alpha CLI.";
+  assert.ok(checkSoftwareApplications(stringList, page(stringList)).includes('SoftwareApplication "Hive": featureList is missing or empty'), "a string featureList is not a list");
+
+  const badEntry = JSON.parse(JSON.stringify(base));
+  badEntry[1].featureList = [42, "  ", "Drives agent CLIs including Alpha CLI."];
+  assert.deepEqual(checkSoftwareApplications(badEntry, page(badEntry)), [
+    'SoftwareApplication "Hive": featureList entry 42 is not a non-empty string',
+    'SoftwareApplication "Hive": featureList entry "  " is not a non-empty string',
+  ]);
+});
+
+test("fixture: a card with a repository link whose SoftwareApplication has no codeRepository is reported", () => {
+  const ld = goodLd();
+  delete ld[1].codeRepository;
+  assert.deepEqual(checkProjectCards(ld, fixturePage({ ld })), [
+    'SoftwareApplication "Widget".codeRepository is undefined but the project card links https://github.com/acme/widget',
+  ]);
+});
+
 // --- live checks -------------------------------------------------------------
 
 const NODES = jsonLdNodes(INDEX_HTML);
