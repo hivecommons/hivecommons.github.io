@@ -205,6 +205,30 @@ function runScript(src, { doc, win, timers, IntersectionObserver }) {
   run(doc, win, timers.setTimeout, timers.clearTimeout, timers.setInterval, timers.clearInterval, IntersectionObserver);
 }
 
+test("stub DOM: unlistened document/window events are no-ops, document.querySelectorAll searches the body, timers default to 0 ms and fire in due order, and a hero without a dots container reports no dots", () => {
+  const doc = makeDocument();
+  doc.dispatch("visibilitychange");
+  new Element(doc, "a", { attrs: { href: "#" }, parent: doc.body });
+  assert.equal(doc.querySelectorAll("a").length, 1);
+  assert.equal(doc.querySelectorAll("[data-missing]").length, 0);
+
+  const timers = makeTimers();
+  const { win } = makeWindow({ reduceMotion: false, timers, intersectionObserver: false, scrollend: false, hash: "" });
+  win.dispatch("resize");
+  const order = [];
+  timers.setTimeout(() => order.push("now"));
+  timers.setTimeout(() => order.push("late"), 20);
+  timers.setTimeout(() => order.push("early"), 10);
+  assert.deepEqual(timers.timeouts(), [0, 20, 10], "a missing delay is 0 ms");
+  timers.advance(30);
+  assert.deepEqual(order, ["now", "early", "late"], "several due timers fire in due order, not insertion order");
+  assert.equal(timers.pendingCount(), 0);
+
+  const noDots = bootHero({ withControls: false, withDots: false });
+  assert.equal(noDots.dotsWrap, null);
+  assert.deepEqual(noDots.dots(), []);
+});
+
 // ---------------------------------------------------------------------------
 // Hero carousel
 // ---------------------------------------------------------------------------

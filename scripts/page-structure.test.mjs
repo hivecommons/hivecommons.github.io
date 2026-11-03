@@ -389,6 +389,20 @@ test("fixture: stray, mismatched and missing end tags are reported with both lin
   ]);
 });
 
+test("fixture: a bare < in text and an unterminated <! or <? directive are skipped; a stray end tag with nothing open is reported", () => {
+  assert.deepEqual(tokenize(`<p>a < b and <3 </p>`).map((t) => `${t.type}:${t.name}`), ["start:p", "end:p"]);
+  assert.deepEqual(tokenize(`<p>x</p><!doctype html`).map((t) => `${t.type}:${t.name}`), ["start:p", "end:p"]);
+  assert.deepEqual(tokenize(`<p>x</p><?xml version="1.0"`).map((t) => `${t.type}:${t.name}`), ["start:p", "end:p"]);
+  assert.deepEqual(unbalancedTags(`</div>\n<html lang="en"><body></body></html>`), ["line 1: stray </div> with no open element"]);
+});
+
+test("fixture: closing <svg> over an unclosed child leaves foreign content, so a later self-closing tag is reported again", () => {
+  assert.deepEqual(unbalancedTags(`<html lang="en"><body>\n<svg><g>\n</svg>\n<div/>\n</body></html>`), [
+    "line 3: </svg> but <g> opened at line 2 is still open",
+    "line 4: <div/> is self-closing but div is not a void element; a browser opens it and never closes it",
+  ]);
+});
+
 test("fixture: optional end tags are honoured, but a block inside <p> leaves </p> stray", () => {
   assert.deepEqual(unbalancedTags(`<html lang="en"><body><ul><li>a<li>b</ul><p>x<p>y</body></html>`), []);
   assert.deepEqual(unbalancedTags(`<html lang="en"><body>\n<p>intro\n<div>block</div>\n</p>\n</body></html>`), [
@@ -423,6 +437,7 @@ test("fixture: elements with a fixed parent are reported elsewhere", () => {
     "line 3: <option> inside <div>; its parent must be one of <select>, <datalist>, <optgroup>",
     "line 4: <figcaption> inside <body>; its parent must be one of <figure>",
   ]);
+  assert.deepEqual(misparentedElements(`<li>a</li>`), ["line 1: <li> inside <nothing>; its parent must be one of <ul>, <ol>, <menu>"]);
 });
 
 test("fixture: interactive content nested in <a>, <button> or <label> is reported", () => {
@@ -456,6 +471,11 @@ test("fixture: document skeleton requires one html/head/body, at most one main",
     "line 2: <p> sits outside both <head> and <body>",
   ]);
   assert.deepEqual(documentSkeleton(`<html lang="en"><head></head><body><div><main></main></div><svg><title>t</title></svg></body></html>`), []);
+  assert.deepEqual(documentSkeleton(`<html lang="en">\n<div>\n<head></head>\n<body><main></main></body>\n</div></html>`), [
+    "line 2: <div> sits outside both <head> and <body>",
+    "line 3: <head> is not a direct child of <html>",
+    "line 4: <body> is not a direct child of <html>",
+  ]);
 });
 
 // ---------------------------------------------------------------------------
