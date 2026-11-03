@@ -156,3 +156,28 @@ test("fixtures: each rule rejects a bad input", () => {
   assert.ok(formProblems({ labels: ["nope"], body: [{ type: "markdown" }] }).length);
   assert.throws(() => parseYaml("a: 1\na: 2\n"));
 });
+
+test("fixture: parseYaml reads false, an empty flow list, a same-indent list under a key, a null value, and an empty document", () => {
+  assert.deepEqual(parseYaml("enabled: false\nlabels: []\n"), { enabled: false, labels: [] });
+  assert.deepEqual(parseYaml("links:\n- a\n- b\nafter: 1\n"), { links: ["a", "b"], after: "1" });
+  assert.deepEqual(parseYaml("empty:\nnext:\n  inner:\n"), { empty: null, next: { inner: null } });
+  assert.equal(parseYaml(""), null);
+  assert.equal(parseYaml("# only a comment\n\n"), null);
+});
+
+test("fixture: parseYaml rejects tab indentation, an unparsable map line, and content left after the top-level block", () => {
+  assert.throws(() => parseYaml("a:\n\tb: 1\n"), /tab indentation/);
+  assert.ok("a" in parseYaml("a: x\ty\n"), "a tab inside a value is not indentation");
+  assert.throws(() => parseYaml("a: 1\n!bad\n"), /line 2: cannot parse "!bad"/);
+  assert.throws(() => parseYaml("- a\nb: 1\n"), /line 2: unexpected content "b: 1"/);
+});
+
+test("fixture: configProblems and formProblems reject a non-mapping document, tolerate missing contact_links, and require a non-empty body and a labels list", () => {
+  assert.deepEqual(configProblems(null, () => true), ["config.yml is not a mapping"]);
+  assert.deepEqual(configProblems([], () => true), ["config.yml is not a mapping"]);
+  assert.deepEqual(configProblems({ blank_issues_enabled: true }, () => false), []);
+  assert.deepEqual(formProblems("name: x"), ["form is not a mapping"]);
+  assert.deepEqual(formProblems({ name: "x" }), ["body is missing or empty"]);
+  assert.deepEqual(formProblems({ body: [] }), ["body is missing or empty"]);
+  assert.deepEqual(formProblems({ body: [{ type: "markdown" }], labels: "bug" }), ["labels is not a list"]);
+});

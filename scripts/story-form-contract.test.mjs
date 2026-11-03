@@ -305,6 +305,23 @@ test("pageContract reads the template, title prefix, sent ids, role options, fal
   assert.throws(() => pageContract("<script>var x = 1;</script>"), /exactly one story-dialog script/);
 });
 
+test("pageContract: a dialog script without ISSUE_URL or buildIssue() is rejected; a bare buildIssue(), no <select> and an href-first fallback read as empty or found", () => {
+  const dialog = (script) => `<script>(function () {\n  var dialog = document.getElementById("story-dialog");\n${script}\n})();</script>`;
+  assert.throws(() => pageContract(dialog("")), /ISSUE_URL not found/);
+  assert.throws(() => pageContract(dialog('  var ISSUE_URL = "https://github.com/o/r/issues/new";')), /buildIssue\(\) not found/);
+  const bare = `<a href="https://github.com/o/r/issues/new?template=story.yml" id="story-fallback-link">open</a>\n`
+    + dialog('  var ISSUE_URL = "https://github.com/o/r/issues/new";\n  function buildIssue(data) {\n    return ISSUE_URL;\n  }');
+  assert.deepEqual(pageContract(bare), {
+    issueUrl: "https://github.com/o/r/issues/new",
+    templateFile: undefined,
+    titlePrefix: undefined,
+    sent: [],
+    roleOptions: [],
+    fallbackHref: "https://github.com/o/r/issues/new?template=story.yml",
+    promisedLabel: undefined,
+  });
+});
+
 test("parseIssueForm reads title, labels and the body fields it needs; markdown blocks and checkbox maps do not confuse it", () => {
   const form = parseIssueForm(FORM_FIXTURE);
   assert.equal(form.title, "📖 contributor story: ");
@@ -343,6 +360,14 @@ test("parseIssueForm: a checkbox option's own `required:` belongs to the option,
   assert.deepEqual(boxes.fields[1], { type: "input", id: "after", required: false, options: [] });
   const optionOnly = parseIssueForm(FORM_FIXTURE.replace('          required: false', '          required: true'));
   assert.equal(optionOnly.fields[4].required, false);
+});
+
+test("parseIssueForm: a document marker, an indented line outside body, a body line before any field, and flow-list options are read or skipped", () => {
+  assert.deepEqual(parseIssueForm("---\ntitle: x\n").title, "x");
+  assert.deepEqual(parseIssueForm("description: >\n  folded text\n  continues\nlabels: [a]\n"), { title: undefined, labels: ["a"], fields: [] });
+  assert.deepEqual(parseIssueForm("body:\n    type: input\n  - type: input\n    id: x\n").fields, [{ type: "input", id: "x", required: false, options: [] }]);
+  const flow = parseIssueForm("body:\n  - type: dropdown\n    id: role\n    attributes:\n      options: [\"a\", 'b', c]\n");
+  assert.deepEqual(flow.fields[0].options, ["a", "b", "c"]);
 });
 
 test("a matching page and template produce no problems", () => {
