@@ -75,7 +75,7 @@ export function imageReferences(html) {
     const srcset = attr(tag, "srcset");
     if (srcset !== null) {
       for (const candidate of srcset.split(",")) {
-        const url = candidate.trim().split(/\s+/)[0] ?? "";
+        const url = candidate.trim().split(/\s+/)[0];
         if (isLocalUrl(url)) out.push({ url: url.split(/[?#]/)[0], line, img: true, declared: null });
       }
     }
@@ -252,7 +252,7 @@ export function cssImageUrls(css) {
   const clean = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const out = [];
   for (const m of clean.matchAll(/\burl\(\s*(?:"([^"]*)"|'([^']*)'|([^)"'\s]*))\s*\)/g)) {
-    const raw = (m[1] ?? m[2] ?? m[3] ?? "").trim();
+    const raw = (m[1] ?? m[2] ?? m[3]).trim();
     if (isLocalUrl(raw)) out.push(raw.split(/[?#]/)[0]);
   }
   return out;
@@ -266,7 +266,7 @@ export function unreferencedImageFiles(imageFiles, referenced) {
   return [...imageFiles].filter((f) => !used.has(f)).sort().map((f) => `${f} is committed under assets/ but no <img>, <link>, og:image, JSON-LD logo/image or url() references it`);
 }
 
-function readAssetFromDisk(path) {
+export function readAssetFromDisk(path) {
   try {
     if (!statSync(path).isFile()) return null;
     return readFileSync(path);
@@ -275,7 +275,7 @@ function readAssetFromDisk(path) {
   }
 }
 
-function imageFilesUnder(dir, root = ROOT) {
+export function imageFilesUnder(dir, root = ROOT) {
   if (!existsSync(dir)) return [];
   const out = [];
   for (const name of readdirSync(dir)) {
@@ -286,7 +286,7 @@ function imageFilesUnder(dir, root = ROOT) {
   return out.sort();
 }
 
-function localStylesheetHrefs(html) {
+export function localStylesheetHrefs(html) {
   const out = [];
   for (const m of markupOnly(html).matchAll(/<link\b[^>]*>/gi)) {
     const tag = m[0];
@@ -499,6 +499,69 @@ test("fixture: a committed image under assets/ that nothing references is report
   const referenced = ["assets/a.png", ...cssImageUrls("body{background:url(/assets/c.gif) /* url(/assets/x.png) */}").map((u) => u.replace(/^\//, "")), "assets/sub/og.png"];
   assert.deepEqual(unreferencedImageFiles(files, referenced), ["assets/orphan.png is committed under assets/ but no <img>, <link>, og:image, JSON-LD logo/image or url() references it"]);
   assert.deepEqual(cssImageUrls('a{background:url("data:image/png;base64,AA") url(https://x/y.png) url(#frag) url(/assets/q.png?v=1)}'), ["/assets/q.png"]);
+});
+
+test("fixture: a preload-as-image <link> counts, a rel-less or non-image preload <link> and a content-less og:image <meta> do not, and malformed JSON-LD is skipped", () => {
+  const html = `<html><head>
+<link href="/assets/a.png">
+<link rel="preload" href="/style.css">
+<link rel="preload" as="font" href="/assets/a.png">
+<link rel="preload" as="image" href="/og.png">
+<meta property="og:image">
+<meta name="twitter:image" content="/assets/tiny.png">
+<script type="application/ld+json">{"logo": "/assets/a.png",</script>
+<script type="application/ld+json">{"logo": "/assets/b.jpg"}</script>
+</head><body></body></html>`;
+  assert.deepEqual(imageReferences(html).map((r) => [r.url, r.line]), [["/og.png", 5], ["/assets/tiny.png", 7], ["/assets/b.jpg", 9]]);
+});
+
+test("fixture: intrinsicSize returns null for a truncated GIF, a JPEG that ends or starts a scan before any frame header, and an SVG file with no <svg> root; stray, fill and standalone JPEG markers are stepped over", () => {
+  assert.equal(intrinsicSize(Buffer.from("GIF89a\x01\x00"), "gif"), null);
+  assert.equal(intrinsicSize(Buffer.from("<html><p>not svg</p></html>"), "svg"), null);
+  const full = jpegBytes(320, 200);
+  const rest = full.subarray(2);
+  const soi = Buffer.from([0xff, 0xd8]);
+  assert.deepEqual(intrinsicSize(Buffer.concat([soi, Buffer.from([0x00]), rest]), "jpg"), { width: 320, height: 200 }, "a stray non-marker byte is skipped");
+  assert.deepEqual(intrinsicSize(Buffer.concat([soi, Buffer.from([0xff]), rest]), "jpg"), { width: 320, height: 200 }, "a 0xFF fill byte is skipped");
+  assert.deepEqual(intrinsicSize(Buffer.concat([soi, Buffer.from([0xff, 0xd0]), rest]), "jpg"), { width: 320, height: 200 }, "a standalone RSTn marker has no length and is stepped over");
+  const app0 = full.subarray(2, 20);
+  const sof0 = full.subarray(20, 33);
+  const sos = Buffer.concat([Buffer.from([0xff, 0xda, 0x00, 0x0c]), Buffer.alloc(12)]);
+  assert.equal(intrinsicSize(Buffer.concat([soi, app0, sos, sof0]), "jpg"), null, "start-of-scan ends the header walk even if frame-like bytes follow");
+});
+
+test("fixture: the same image on the same line is reported once, and a zero-sized raster is reported", () => {
+  const html = `<html><body>
+<img src="/assets/nope.png" alt=""> <img src="/assets/nope.png" alt="">
+<img src="/assets/zero.png" width="10" height="10" alt="">
+<img src="/assets/wide.svg" alt=""> <img src="/assets/wide.svg" alt="">
+</body></html>`;
+  const tree = new Map(FIXTURE_TREE);
+  tree.set("/site/assets/zero.png", pngBytes(0, 10));
+  const read = (p) => tree.get(p) ?? null;
+  assert.deepEqual(imageProblems(html, FIXTURE_PAGE, read, "p", FIXTURE_ROOT).problems, [
+    "p line 2: /assets/nope.png names no committed file",
+    "p line 3: /assets/zero.png declares a zero-sized image",
+  ]);
+  assert.deepEqual(svgViewBoxProblems(html, FIXTURE_PAGE, read, "p", FIXTURE_ROOT), [
+    "p line 4: /assets/wide.svg is an <img> SVG whose root has no viewBox, so it cannot scale to its box",
+  ]);
+});
+
+test("fixture: disk helpers — a directory or missing path reads as null, a missing assets dir lists nothing, and only rel=stylesheet <link>s with a local href are stylesheets", () => {
+  assert.equal(readAssetFromDisk(ASSET_DIR), null, "a directory is not an asset");
+  assert.equal(readAssetFromDisk(join(ASSET_DIR, "definitely-not-committed.png")), null);
+  assert.ok(readAssetFromDisk(join(ROOT, "og.png")).length > 0);
+  assert.deepEqual(imageFilesUnder(join(ROOT, "no-such-dir")), []);
+  assert.ok(imageFilesUnder(ASSET_DIR).length > 0);
+  assert.deepEqual(localStylesheetHrefs(`<html><head>
+<link href="/no-rel.css">
+<link rel="preload" href="/preload.css">
+<link rel="stylesheet" href="https://cdn.example/x.css">
+<link rel="stylesheet">
+<link rel="stylesheet" href="/style.css?v=2">
+<link rel="stylesheet" href="assets/local.css">
+</head></html>`), ["/style.css", "assets/local.css"]);
 });
 
 // ---------------------------------------------------------------------------

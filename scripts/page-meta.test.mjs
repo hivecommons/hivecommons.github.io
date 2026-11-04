@@ -353,6 +353,61 @@ test("fixture: doc links — dead relative target and dead site URL are reported
   ]);
 });
 
+test("fixture: parseHead decodes numeric entities, leaves unknown named entities, reads single-quoted attributes and tolerates a page with no <head>", () => {
+  const decoded = parseHead(`<head><link rel="canonical" href="https://example.test/a&#x2F;b&#X2F;c&#47;d&nbsp;e&amp;f"></head>`);
+  assert.deepEqual(decoded.canonical, ["https://example.test/a/b/c/d&nbsp;e&f"], "hex (either case) and decimal references decode; an unknown named entity is kept verbatim");
+  const single = parseHead(`<head><meta name='description' content='single quoted'></head>`);
+  assert.equal(first(single.meta, "description"), "single quoted");
+  const headless = parseHead("<html><body><title>Not in head</title></body></html>");
+  assert.equal(headless.hasHead, false);
+  assert.deepEqual(headless.titles, [], "a <title> outside <head> is not a head title");
+  assert.deepEqual(headless.canonical, []);
+});
+
+test("fixture: parseHead skips a <meta> with no key, records a keyed <meta> without content as empty, and ignores rel-less and href-less <link>s", () => {
+  const h = parseHead(`<head>
+<meta itemprop="x" content="skipped">
+<meta name="keyed-no-content">
+<meta http-equiv="refresh" content="0">
+<link href="/style.css">
+<link rel="canonical">
+</head>`);
+  assert.deepEqual([...h.meta.keys()], ["keyed-no-content", "http-equiv:refresh"], "a <meta> with neither property, name, http-equiv nor charset is dropped");
+  assert.deepEqual(h.meta.get("keyed-no-content"), [""]);
+  assert.deepEqual(h.refresh, [null], "a refresh without url= yields a null target");
+  assert.deepEqual(h.canonical, [""], "a rel=canonical with no href is an empty canonical, not a missing one; a <link> without rel is not canonical");
+});
+
+test("fixture: a page without <head>, an empty <title>, missing charset/viewport, a second canonical and a relative og:image are reported", () => {
+  assert.deepEqual(canonicalPageProblems("<html><body></body></html>", "/fixture/"), ["no <head> element"]);
+  const emptyTitle = GOOD_HEAD.replace("<title>Fixture — Hive Commons</title>", "<title> </title>");
+  assert.ok(canonicalPageProblems(emptyTitle, "/fixture/").includes("<title> is empty"));
+  const noCharset = GOOD_HEAD.replace('<meta charset="utf-8">', "");
+  assert.ok(canonicalPageProblems(noCharset, "/fixture/").includes('missing <meta charset="utf-8">'));
+  const noViewport = GOOD_HEAD.replace(/<meta name="viewport"[^>]*>/, "");
+  assert.ok(canonicalPageProblems(noViewport, "/fixture/").includes('missing <meta name="viewport">'));
+  const twoCanonical = GOOD_HEAD.replace("</head>", `<link rel="canonical" href="${SITE_ORIGIN}/fixture/"></head>`);
+  const p = canonicalPageProblems(twoCanonical, "/fixture/");
+  assert.ok(p.includes('expected exactly one <link rel="canonical">, found 2'), p.join("\n"));
+  assert.ok(!p.some((x) => x.startsWith("canonical is") || x.startsWith("og:url")), "the per-canonical checks are skipped when the count is wrong");
+  const relativeImage = GOOD_HEAD.replaceAll(`${SITE_ORIGIN}/og.png`, "/og.png");
+  assert.ok(canonicalPageProblems(relativeImage, "/fixture/").includes(`og:image /og.png is not an absolute URL under ${SITE_ORIGIN}`));
+});
+
+test("fixture: a page with no og:image has nothing for the og:image rule to check", () => {
+  const noImage = GOOD_HEAD.replace(/<meta property="og:image"[^>]*>/, "");
+  assert.deepEqual(ogImageProblems(noImage), []);
+  assert.ok(canonicalPageProblems(noImage, "/fixture/").includes("missing or empty <meta og:image>"), "the canonical rule still demands one");
+});
+
+test("fixture: a redirect page whose refresh has no url= and whose canonical is missing is reported, without a drift message", () => {
+  const html = GOOD_REDIRECT.replace('content="0; url=https://example.test/x"', 'content="0"').replace(/<link rel="canonical"[^>]*>/, "");
+  const p = redirectPageProblems(html);
+  assert.ok(p.includes("refresh meta has no url="), p.join("\n"));
+  assert.ok(p.includes('expected exactly one <link rel="canonical">, found 0'), p.join("\n"));
+  assert.ok(!p.some((x) => x.startsWith("canonical (")), "no drift is reported when there is no target to compare");
+});
+
 // --- live checks over the committed tree ------------------------------------
 
 const pages = htmlFiles();

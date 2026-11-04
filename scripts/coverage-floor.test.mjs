@@ -31,10 +31,7 @@ const CHILD_ENV = "COVERAGE_FLOOR_CHILD";
 // landed. Lower an entry when you assert a branch; delete it at zero; never
 // raise one. The end state is an empty object and the same floor the
 // scripts/*.mjs helpers already meet.
-export const TEST_HELPER_BASELINE = {
-  "scripts/page-images.test.mjs": 19,
-  "scripts/page-meta.test.mjs": 20,
-};
+export const TEST_HELPER_BASELINE = {};
 
 // --- analysis ---------------------------------------------------------------
 
