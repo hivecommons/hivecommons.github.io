@@ -35,11 +35,13 @@ export function probedUrls(yaml) {
 }
 
 // The `PROJECT_SITES=( ... )` array of check-links.sh, one path prefix per
-// line, trailing `# comment` dropped. Returns [] when the array is absent.
+// line, optionally enclosed in matching single or double quotes, with trailing
+// `# comment` dropped. Returns [] when the array is absent.
 export function projectSitePrefixes(sh) {
   const arr = /^PROJECT_SITES=\(\s*$([\s\S]*?)^\)\s*$/m.exec(sh);
   if (!arr) return [];
-  return arr[1].split("\n").map((l) => l.replace(/#.*$/, "").trim()).filter(Boolean);
+  return arr[1].split("\n").map((l) => l.replace(/#.*$/, "").trim())
+    .map((l) => l.replace(/^(?:"([^"]*)"|'([^']*)')$/, (_, double, single) => double ?? single)).filter(Boolean);
 }
 
 export function isProjectSitePath(path, prefixes) {
@@ -155,6 +157,31 @@ test("fixture: PROJECT_SITES prefixes are read from check-links.sh with comments
   assert.deepEqual(projectSitePrefixes("PROJECT_SITES=(\n)\n"), []);
 });
 
+const QUOTED_CHECKER_FIXTURE = `PROJECT_SITES=(
+  '/single-quoted/'   # single quotes
+
+  "/double-quoted/"   # double quotes
+  /unquoted/         # unquoted entries still work
+)
+`;
+
+test("fixture: PROJECT_SITES accepts whole-entry single and double quotes alongside unquoted prefixes", () => {
+  assert.deepEqual(projectSitePrefixes(QUOTED_CHECKER_FIXTURE), ["/single-quoted/", "/double-quoted/", "/unquoted/"]);
+});
+
+test("fixture: PROJECT_SITES leaves unmatched or mismatched quotes intact", () => {
+  const prefixes = projectSitePrefixes(`PROJECT_SITES=(
+  '/unmatched-single/
+  "/unmatched-double/
+  '/mismatched/"
+)
+`);
+  assert.deepEqual(prefixes, ["'/unmatched-single/", '"/unmatched-double/', "'/mismatched/\""]);
+  for (const path of ["/unmatched-single/", "/unmatched-double/", "/mismatched/"]) {
+    assert.equal(isProjectSitePath(path, prefixes), false);
+  }
+});
+
 test("fixture: isProjectSitePath matches a prefix, ignores query/fragment, and rejects a near-miss", () => {
   const prefixes = ["/software-factory/"];
   assert.equal(isProjectSitePath("/software-factory/", prefixes), true);
@@ -162,6 +189,15 @@ test("fixture: isProjectSitePath matches a prefix, ignores query/fragment, and r
   assert.equal(isProjectSitePath("/software-factory/deep/", prefixes), true);
   assert.equal(isProjectSitePath("/software-factory-notes/", prefixes), false);
   assert.equal(isProjectSitePath("/software-factory/", []), false);
+});
+
+test("fixture: isProjectSitePath recognizes parsed quoted prefixes and rejects near-misses", () => {
+  const prefixes = projectSitePrefixes(QUOTED_CHECKER_FIXTURE);
+  for (const prefix of ["/single-quoted/", "/double-quoted/", "/unquoted/"]) {
+    assert.equal(isProjectSitePath(prefix, prefixes), true);
+    assert.equal(isProjectSitePath(prefix + "deep/?x=1#top", prefixes), true);
+    assert.equal(isProjectSitePath(prefix.slice(0, -1) + "-notes/", prefixes), false);
+  }
 });
 
 test("fixture: sitemap <loc> values are extracted", () => {
@@ -200,6 +236,12 @@ test("fixture: a project-site URL is accepted without a committed page only when
   assert.ok(noSlash.some((x) => x.includes("/software-factory is a directory page without its trailing slash")), noSlash.join("\n"));
   const query = probeListProblems([...GOOD_LIST, `${SITE_ORIGIN}/software-factory/?flow=spek`], { sitemap: FIXTURE_SITEMAP, projectSites });
   assert.ok(query.some((x) => x.includes("/software-factory/?flow=spek carries a query/fragment")), query.join("\n"));
+});
+
+test("fixture: project-site probes accept parsed single-quoted and double-quoted prefixes", () => {
+  const projectSites = projectSitePrefixes(QUOTED_CHECKER_FIXTURE);
+  const probed = [...GOOD_LIST, `${SITE_ORIGIN}/single-quoted/`, `${SITE_ORIGIN}/double-quoted/`, `${SITE_ORIGIN}/unquoted/`];
+  assert.deepEqual(probeListProblems(probed, { sitemap: FIXTURE_SITEMAP, projectSites }), []);
 });
 
 test("fixture: a directory URL without its trailing slash is reported", () => {
