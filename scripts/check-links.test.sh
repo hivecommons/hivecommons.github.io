@@ -161,6 +161,25 @@ expect_out 'ERROR internal target missing: index\.html -> /img-missing\.png$' "s
 expect_no_out 'query-missing' "?src= inside a URL is not an attribute"
 expect_out 'Internal errors: 3\.' "empty href is skipped"
 
+echo "case: sibling project-site paths are probed live, not resolved against the tree"
+root="$(new_site project-site)"
+cat > "$root/index.html" <<'HTML'
+<iframe src="/software-factory/?flow=spek&amp;mode=present" title="x"></iframe>
+<a href="https://hivecommons.dev/software-factory/">abs</a>
+<a href="/software-factory-notes/">not the prefix</a>
+HTML
+run_checker "$root"
+expect_rc 1 "a near-miss prefix is still an internal miss"
+expect_no_out 'internal target missing: index\.html -> /software-factory/' "project-site root-relative path is not an internal miss"
+expect_no_out 'internal target missing: index\.html -> https://hivecommons\.dev/software-factory/' "project-site site-absolute URL is not an internal miss"
+expect_out 'internal target missing: index\.html -> /software-factory-notes/' "near-miss prefix is reported"
+expect_out 'Internal errors: 1\. External failures: 0\.' "project-site URLs were probed and counted as fine"
+root="$(new_site project-site-broken)"
+echo '<a href="/software-factory/broken/">x</a>' > "$root/index.html"
+run_checker "$root"
+expect_rc 1 "a broken project-site page fails like any external link"
+expect_out 'ERROR external broken: index\.html -> https://hivecommons\.dev/software-factory/broken/ \(404' "probed as https://hivecommons.dev + path"
+
 echo "case: site-absolute hivecommons.dev URLs are checked as internal paths"
 root="$(new_site site-absolute)"
 echo '<a href="https://hivecommons.dev/missing-page">x</a>' > "$root/index.html"

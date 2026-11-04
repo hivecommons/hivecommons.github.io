@@ -17,6 +17,23 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 SOFT_404_RE="Page Not Found|>404<|doesn't exist or has moved"
 
+# Path prefixes served on hivecommons.dev by sibling GitHub Pages *project* repos
+# (an org user-site's custom domain also fronts the org's project sites). They have
+# no file in this tree, so they are probed live like an external link instead.
+PROJECT_SITES=(
+  /software-factory/   # hivecommons/software-factory
+)
+
+is_project_site_path() {
+  local path="${1%%\?*}"
+  path="${path%%#*}"
+  local prefix
+  for prefix in "${PROJECT_SITES[@]}"; do
+    [[ "$path" == "$prefix"* ]] && return 0
+  done
+  return 1
+}
+
 html_file_for_path() {
   local raw="${1%%\?*}"
   raw="${raw%/}"
@@ -203,8 +220,13 @@ while IFS=$'\t' read -r source url; do
   fi
 
   if [[ "$url" == /* ]] || is_site_url "$url"; then
-    check_internal "$source" "$url" "$(normalize_internal_path "$url")"
-    continue
+    local_path="$(normalize_internal_path "$url")"
+    if is_project_site_path "$local_path"; then
+      url="https://hivecommons.dev${local_path}"
+    else
+      check_internal "$source" "$url" "$local_path"
+      continue
+    fi
   fi
 
   if [[ ! "$url" =~ ^[a-zA-Z][a-zA-Z0-9+.-]*: ]]; then

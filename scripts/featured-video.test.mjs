@@ -41,7 +41,7 @@ test("the privacy-enhanced player starts at the Hive discussion without autoplay
   assert.match(attribute(frame, "title"), /Jorge Castro.*CI\/CD/);
   assert.equal(Number(attribute(frame, "width")) / Number(attribute(frame, "height")), 16 / 9);
   assert.match(frame, /\sallowfullscreen(?:\s|>)/);
-  assert.match(html, /frame-src https:\/\/www\.youtube-nocookie\.com;/);
+  assert.match(html, /frame-src 'self' https:\/\/www\.youtube-nocookie\.com;/);
 });
 
 test("the player is sandboxed to what the YouTube embed needs and cannot navigate the page", () => {

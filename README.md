@@ -40,6 +40,9 @@ red PR job against.
   security-contact link or machine-readable-summary link is reported too. It
   also checks `og:image`/`og:url`/`twitter:image` `content=` URLs and JSON-LD
   `url`/`logo`/`codeRepository`/`sameAs`/`license` values.
+  Paths listed in its `PROJECT_SITES` array (currently /software-factory/, served on
+  hivecommons.dev by the sibling `hivecommons/software-factory` Pages repo) have no file in
+  this tree and are probed live instead of being resolved against it.
 - `scripts/check-links.test.sh` — fixture-based self-test of the link checker; runs
   offline (fake `curl`).
 - `node --test scripts/story-dialog.test.mjs` — runs the Share-your-story dialog script
