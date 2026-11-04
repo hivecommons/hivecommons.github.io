@@ -5,7 +5,10 @@
 // removed (the weekly job then fails with a false alarm), when a new canonical
 // page is added to sitemap.xml but never probed, or when a directory URL loses
 // its trailing slash (GitHub Pages answers 301, which curl without -L reports
-// as a failure). Each rule has a fixture self-test. Zero dependencies.
+// as a failure). Paths under a `PROJECT_SITES` prefix of check-links.sh are
+// served on hivecommons.dev by a sibling Pages project repo: they have no
+// committed file, so the probe list may name them without resolving to one.
+// Each rule has a fixture self-test. Zero dependencies.
 // Usage: node --test scripts/availability-probes.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -17,6 +20,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 const SITE_ORIGIN = "https://hivecommons.dev";
 const WORKFLOW = join(ROOT, ".github", "workflows", "links.yml");
+const CHECKER = join(ROOT, "scripts", "check-links.sh");
 
 // --- parsing ---------------------------------------------------------------
 
@@ -28,6 +32,19 @@ export function probedUrls(yaml) {
   const loop = /for\s+url\s+in\s+([\s\S]*?);\s*do\b/.exec(job[1]);
   if (!loop) return null;
   return loop[1].replace(/\\\r?\n/g, " ").split(/\s+/).filter(Boolean);
+}
+
+// The `PROJECT_SITES=( ... )` array of check-links.sh, one path prefix per
+// line, trailing `# comment` dropped. Returns [] when the array is absent.
+export function projectSitePrefixes(sh) {
+  const arr = /^PROJECT_SITES=\(\s*$([\s\S]*?)^\)\s*$/m.exec(sh);
+  if (!arr) return [];
+  return arr[1].split("\n").map((l) => l.replace(/#.*$/, "").trim()).filter(Boolean);
+}
+
+export function isProjectSitePath(path, prefixes) {
+  const bare = path.replace(/[?#].*$/, "");
+  return prefixes.some((prefix) => bare.startsWith(prefix));
 }
 
 export function sitemapLocs(xml) {
@@ -52,7 +69,7 @@ export function siteUrlToFile(url, root = ROOT) {
 
 // --- rules -----------------------------------------------------------------
 
-export function probeListProblems(urls, { sitemap, root = ROOT }) {
+export function probeListProblems(urls, { sitemap, root = ROOT, projectSites = [] }) {
   const problems = [];
   if (!urls || urls.length === 0) return ["availability job has no `for url in ...; do` probe list"];
   if (new Set(urls).size !== urls.length) problems.push("probe list has duplicate URLs");
@@ -66,6 +83,7 @@ export function probeListProblems(urls, { sitemap, root = ROOT }) {
       problems.push(`${url} is a directory page without its trailing slash (GitHub Pages answers 301, not 200)`);
       continue;
     }
+    if (isProjectSitePath(path, projectSites)) continue;
     const file = siteUrlToFile(url, root);
     if (!file) { problems.push(`${url} does not resolve to a committed page`); continue; }
     if (file.endsWith(".html") && isRedirectPage(readFileSync(file, "utf8"))) redirects++;
@@ -118,6 +136,34 @@ test("fixture: siteUrlToFile resolves /, directories and bare files, and rejects
   assert.equal(siteUrlToFile(SITE_ORIGIN + "/definitely-not-a-page/"), null);
 });
 
+const CHECKER_FIXTURE = `SOFT_404_RE="x"
+
+PROJECT_SITES=(
+  /software-factory/   # hivecommons/software-factory
+
+  /other-site/
+)
+
+is_project_site_path() {
+  :
+}
+`;
+
+test("fixture: PROJECT_SITES prefixes are read from check-links.sh with comments and blank lines dropped", () => {
+  assert.deepEqual(projectSitePrefixes(CHECKER_FIXTURE), ["/software-factory/", "/other-site/"]);
+  assert.deepEqual(projectSitePrefixes(CHECKER_FIXTURE.replace("PROJECT_SITES=(", "OTHER=(")), []);
+  assert.deepEqual(projectSitePrefixes("PROJECT_SITES=(\n)\n"), []);
+});
+
+test("fixture: isProjectSitePath matches a prefix, ignores query/fragment, and rejects a near-miss", () => {
+  const prefixes = ["/software-factory/"];
+  assert.equal(isProjectSitePath("/software-factory/", prefixes), true);
+  assert.equal(isProjectSitePath("/software-factory/?flow=spek#top", prefixes), true);
+  assert.equal(isProjectSitePath("/software-factory/deep/", prefixes), true);
+  assert.equal(isProjectSitePath("/software-factory-notes/", prefixes), false);
+  assert.equal(isProjectSitePath("/software-factory/", []), false);
+});
+
 test("fixture: sitemap <loc> values are extracted", () => {
   assert.deepEqual(sitemapLocs(`<urlset><url><loc> ${SITE_ORIGIN}/ </loc></url><url><loc>${SITE_ORIGIN}/a/</loc></url></urlset>`), [
     `${SITE_ORIGIN}/`, `${SITE_ORIGIN}/a/`,
@@ -139,6 +185,21 @@ test("fixture: an empty or absent list is reported", () => {
 test("fixture: a probed URL with no committed page is reported", () => {
   const p = probeListProblems([...GOOD_LIST, `${SITE_ORIGIN}/nope/`], { sitemap: FIXTURE_SITEMAP });
   assert.ok(p.some((x) => x.includes("/nope/ does not resolve")), p.join("\n"));
+});
+
+test("fixture: a project-site URL is accepted without a committed page only when its prefix is declared", () => {
+  const projectSites = ["/software-factory/"];
+  const probed = [...GOOD_LIST, `${SITE_ORIGIN}/software-factory/`];
+  assert.deepEqual(probeListProblems(probed, { sitemap: FIXTURE_SITEMAP, projectSites }), []);
+  const undeclared = probeListProblems(probed, { sitemap: FIXTURE_SITEMAP });
+  assert.ok(undeclared.some((x) => x.includes("/software-factory/ does not resolve")), undeclared.join("\n"));
+  const nearMiss = probeListProblems([...GOOD_LIST, `${SITE_ORIGIN}/software-factory-notes/`], { sitemap: FIXTURE_SITEMAP, projectSites });
+  assert.ok(nearMiss.some((x) => x.includes("/software-factory-notes/ does not resolve")), nearMiss.join("\n"));
+  // The shape rules still apply: a project-site directory URL needs its slash and no query.
+  const noSlash = probeListProblems([...GOOD_LIST, `${SITE_ORIGIN}/software-factory`], { sitemap: FIXTURE_SITEMAP, projectSites });
+  assert.ok(noSlash.some((x) => x.includes("/software-factory is a directory page without its trailing slash")), noSlash.join("\n"));
+  const query = probeListProblems([...GOOD_LIST, `${SITE_ORIGIN}/software-factory/?flow=spek`], { sitemap: FIXTURE_SITEMAP, projectSites });
+  assert.ok(query.some((x) => x.includes("/software-factory/?flow=spek carries a query/fragment")), query.join("\n"));
 });
 
 test("fixture: a directory URL without its trailing slash is reported", () => {
@@ -167,11 +228,18 @@ test("fixture: missing 404.html probe, missing redirect probe, duplicates and fo
 
 // --- the real workflow -----------------------------------------------------
 
-test("links.yml availability job probes every canonical page, 404.html and a redirect, each a committed page", () => {
+test("check-links.sh declares at least one PROJECT_SITES prefix and each is a /-delimited directory path", () => {
+  const prefixes = projectSitePrefixes(readFileSync(CHECKER, "utf8"));
+  assert.ok(prefixes.includes("/software-factory/"), `the homepage embeds /software-factory/; parsed: ${JSON.stringify(prefixes)}`);
+  for (const prefix of prefixes) assert.match(prefix, /^\/[^\s/]+(\/[^\s/]+)*\/$/, `${prefix} is not a /-delimited directory prefix`);
+});
+
+test("links.yml availability job probes every canonical page, 404.html and a redirect, each a committed page or a project-site path", () => {
   const urls = probedUrls(readFileSync(WORKFLOW, "utf8"));
   const sitemap = sitemapLocs(readFileSync(join(ROOT, "sitemap.xml"), "utf8"));
+  const projectSites = projectSitePrefixes(readFileSync(CHECKER, "utf8"));
   assert.deepEqual(
-    probeListProblems(urls, { sitemap }),
+    probeListProblems(urls, { sitemap, projectSites }),
     [],
     "the availability probe list in .github/workflows/links.yml drifted from the committed site (fixing it needs a workflow edit)",
   );

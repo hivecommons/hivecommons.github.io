@@ -261,7 +261,9 @@ red PR job against.
   scheduled `availability` job in `links.yml` probes: every probed URL is `https`, under
   `hivecommons.dev`, carries its trailing slash when it is a directory page (GitHub Pages
   answers `301` for `/docs`, which `curl` without `-L` reports as a failure) and resolves
-  to a committed page; every canonical page in `sitemap.xml` and `/404.html` is probed; at
+  to a committed page or lies under a `PROJECT_SITES` prefix of `check-links.sh` (served by a
+  sibling Pages repo, so probing it is the only way to see it); every canonical page in
+  `sitemap.xml` and `/404.html` is probed; at
   least one redirect shortcut is probed; no duplicates. Fixing a failure means editing the
   workflow's probe list. Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/site-origin.test.mjs` — static gate tying the site origin to `CNAME`,
