@@ -403,3 +403,20 @@ test("promptargs card, JSON-LD featureList and llms.txt bullet name every releas
     }
   }
 });
+
+// hotshot README (v0.2.0): "Built for AI coding assistants like Claude Code,
+// GitHub Copilot CLI, aider, OpenCode, and Gemini CLI"; CHANGELOG [0.2.0] adds
+// `brew install hivecommons/hive/hotshot` via the hivecommons/homebrew-hive tap.
+const HOTSHOT_CLIS = ["Claude Code", "GitHub Copilot CLI", "aider", "OpenCode", "Gemini CLI"];
+
+test("hotshot JSON-LD featureList names every released target CLI and the Homebrew install", () => {
+  const feature = INDEX_HTML.match(/"Built for AI coding assistants that accept image paths as input, such as ([^"]+)"/);
+  assert.ok(feature, "index.html JSON-LD: hotshot CLI featureList item not found");
+  for (const cli of HOTSHOT_CLIS) {
+    assert.ok(feature[1].includes(cli), `hotshot JSON-LD featureList omits target CLI ${cli}`);
+  }
+  assert.ok(
+    INDEX_HTML.includes('"Installs with Homebrew (brew install hivecommons/hive/hotshot)."'),
+    "hotshot JSON-LD featureList omits the Homebrew install",
+  );
+});
