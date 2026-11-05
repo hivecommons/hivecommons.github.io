@@ -30,7 +30,8 @@ jobs:
                      https://hivecommons.dev/discord/ https://hivecommons.dev/join/ \
                      https://hivecommons.dev/llms.txt https://hivecommons.dev/sitemap.xml \
                      https://hivecommons.dev/robots.txt https://hivecommons.dev/.well-known/security.txt \
-                     https://hivecommons.dev/404.html; do
+                     https://hivecommons.dev/404.html \
+                     https://hivecommons.dev/software-factory/; do
             # `|| true` keeps a curl transport failure (DNS, TLS, timeout) from
             # tripping `set -e` before the ::error:: line below is printed;
             # --write-out still yields 000 in that case, which fails the != 200 test.
