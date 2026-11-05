@@ -179,6 +179,15 @@ echo '<a href="/software-factory/broken/">x</a>' > "$root/index.html"
 run_checker "$root"
 expect_rc 1 "a broken project-site page fails like any external link"
 expect_out 'ERROR external broken: index\.html -> https://hivecommons\.dev/software-factory/broken/ \(404' "probed as https://hivecommons.dev + path"
+# The site-absolute form must be probed as the normalized path re-rooted on the
+# site origin, not as origin + original URL (which the fake curl's default arm
+# would still answer 200 for, hiding the malformed probe).
+root="$(new_site project-site-broken-absolute)"
+echo '<a href="https://www.hivecommons.dev/software-factory/broken/?v=1">x</a>' > "$root/index.html"
+run_checker "$root"
+expect_rc 1 "a broken project-site page reached by site-absolute URL fails too"
+expect_out 'ERROR external broken: index\.html -> https://hivecommons\.dev/software-factory/broken/\?v=1 \(404' "www site-absolute URL is probed as https://hivecommons.dev + normalized path"
+expect_no_out 'hivecommons\.dev(https|/https)' "probe URL is not origin + full URL"
 
 echo "case: site-absolute hivecommons.dev URLs are checked as internal paths"
 root="$(new_site site-absolute)"
