@@ -149,7 +149,7 @@ p { margin: 0; }
 .factory-frame { width: 100vw; max-width: none; margin-inline: calc(50% - 50vw); padding: 0; }
 .factory-player { display: block; width: 100%; height: min(calc(100vw * 9 / 16), 85vh); border: 0; border-block-end: 1px solid var(--line); background: var(--bg-2); }
 .factory-hero { text-align: center; padding: clamp(1.75rem, 4vw, 3rem) 0 clamp(1.25rem, 3vw, 2rem); display: flex; flex-direction: column; align-items: center; }
-.factory-title { font-size: clamp(1.9rem, 5.2vw, 4rem); font-weight: 600; line-height: 1.04; letter-spacing: -0.02em; white-space: nowrap; margin: 0; }
+.factory-title { font-size: clamp(1.65rem, 5.2vw, 4rem); font-weight: 600; line-height: 1.04; letter-spacing: -0.02em; white-space: nowrap; margin: 0; }
 .factory-lede { margin-top: .85rem; font-size: clamp(1.05rem, 1.7vw, 1.3rem); color: var(--ink-2); max-width: 52ch; text-wrap: balance; }
 .factory-cta { justify-content: center; margin-top: 1.25rem; }
 .factory-cta .btn { padding: .85rem 1.4rem; font-size: 1.02rem; }
