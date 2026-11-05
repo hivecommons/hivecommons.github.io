@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Static gate over every <iframe> on every committed HTML page. The homepage's
 // hash-pinned script-src CSP only governs the homepage document: a frame that
-// is same-origin (a relative src, or one on hivecommons.dev — the org's project
-// sites are served under this custom domain by *other* repositories) and
-// unsandboxed can script `parent.document` and navigate `top`, so whatever
+// is same-origin (a relative src, one on hivecommons.dev, or its GitHub Pages
+// alias — the org's project sites are served under this custom domain by *other*
+// repositories) and unsandboxed can script `parent.document` and navigate `top`, so whatever
 // ships in that other repository rewrites this page with none of this repo's
 // gates in the way. featured-video.test.mjs pins the YouTube player's exact
 // sandbox; this gate is the floor every other frame must meet: a `sandbox`
@@ -20,15 +20,17 @@ import { ROOT, htmlFiles, isRedirectPage, lineOf } from "./html-pages.mjs";
 import { attrs } from "./page-csp.mjs";
 
 const SITE_ORIGIN = "https://hivecommons.dev";
+const KNOWN_FRAME_ORIGINS = new Set([SITE_ORIGIN, "https://hivecommons.github.io"]);
 const FORBIDDEN = /^allow-(top-navigation|forms|modals|downloads)/;
 
-// A frame is same-origin when its src is relative, or absolute on SITE_ORIGIN.
+// The GitHub Pages alias redirects to SITE_ORIGIN, so it counts as same-origin too.
+// Relative and protocol-relative src values conservatively count as same-origin.
 // srcdoc and about: frames inherit the embedder's origin and count as same-origin too.
 export function isSameOriginFrame(tag) {
   const a = attrs(tag);
   const src = a.src ?? "";
   if ("srcdoc" in a || src === "" || /^about:/i.test(src)) return true;
-  if (/^https?:\/\//i.test(src)) return new URL(src).origin === SITE_ORIGIN;
+  if (/^https?:\/\//i.test(src)) return KNOWN_FRAME_ORIGINS.has(new URL(src).origin);
   return !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(src);
 }
 
@@ -82,6 +84,30 @@ test("fixture: isSameOriginFrame — relative, site-origin, srcdoc, src-less and
   assert.equal(isSameOriginFrame('<iframe src="about:blank" title="x">'), true);
   assert.equal(isSameOriginFrame('<iframe src="https://www.youtube-nocookie.com/embed/x" title="x">'), false);
   assert.equal(isSameOriginFrame('<iframe src="HTTPS://HIVECOMMONS.DEV/x/" title="x">'), true);
+});
+
+test("fixture: GitHub Pages aliases count as same-origin and must keep scripts sandboxed", () => {
+  for (const src of [
+    "https://hivecommons.github.io/project/",
+    "HTTPS://HIVECOMMONS.GITHUB.IO/project/",
+    "//hivecommons.github.io/project/",
+  ]) {
+    assert.equal(isSameOriginFrame(`<iframe src="${src}" title="x">`), true);
+    assert.deepEqual(frameProblems(page(`<iframe src="${src}" sandbox="allow-scripts allow-same-origin" title="x"></iframe>`)), [
+      `line 2 <iframe src="${src}"> is same-origin and pairs allow-same-origin with allow-scripts, which is no sandbox at all`,
+    ]);
+    assert.deepEqual(frameProblems(page(`<iframe src="${src}" sandbox="allow-scripts" title="x"></iframe>`)), []);
+  }
+});
+
+test("fixture: unrelated GitHub Pages sites and lookalike domains stay cross-origin", () => {
+  for (const src of [
+    "https://other.github.io/project/",
+    "https://hivecommons.github.io.example.org/project/",
+  ]) {
+    assert.equal(isSameOriginFrame(`<iframe src="${src}" title="x">`), false);
+    assert.deepEqual(frameProblems(page(`<iframe src="${src}" sandbox="allow-scripts allow-same-origin" title="x"></iframe>`)), []);
+  }
 });
 
 test("fixture: a frame without sandbox is reported with its line and src", () => {
