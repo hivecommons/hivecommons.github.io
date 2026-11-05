@@ -61,6 +61,12 @@ red PR job against.
 - `node --test scripts/featured-video.test.mjs` — checks the Bluefin talk's placement,
   speaker attribution, privacy-enhanced lazy-loaded sandboxed player, 6:09 start without autoplay,
   direct links to the highlighted and full talk, and the adopter link. Zero dependencies.
+- `node --test scripts/page-frames.test.mjs` — static gate over every `<iframe>` on every
+  committed HTML page: each frame carries a `sandbox` attribute that grants no
+  top-navigation, forms, modals or downloads, and a same-origin frame (relative `src`, or
+  one on `hivecommons.dev`, where sibling project sites served under this domain by other
+  repositories live) never pairs `allow-same-origin` with `allow-scripts` — so the
+  embedded document cannot script this page or navigate it. Zero dependencies.
 - `node --test scripts/page-scripts.test.mjs` — static gate over every committed HTML
   page: each inline `<script>` parses, each JSON-LD block is valid schema.org JSON, no
   external `<script src>` is introduced, every inline behaviour script (other than the
