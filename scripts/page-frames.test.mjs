@@ -3,15 +3,16 @@
 // hash-pinned script-src CSP only governs the homepage document: a frame that
 // is same-origin (a relative src, one on hivecommons.dev, or its GitHub Pages
 // alias — the org's project sites are served under this custom domain by *other*
-// repositories) and unsandboxed can script `parent.document` and navigate `top`, so whatever
-// ships in that other repository rewrites this page with none of this repo's
-// gates in the way. featured-video.test.mjs pins the YouTube player's exact
-// sandbox; this gate is the floor every other frame must meet: a `sandbox`
-// attribute is present, it never grants top navigation, forms, modals or
-// downloads, and a same-origin frame never pairs `allow-same-origin` with
-// `allow-scripts` (on a same-origin document that pair lets the content strip
-// its own sandbox, i.e. it is no sandbox at all). Each rule has a fixture
-// self-test. Zero dependencies. Usage: node --test scripts/page-frames.test.mjs
+// repositories) and unsandboxed can script `parent.document` and navigate
+// `top`, so whatever ships in that other repository rewrites this page with
+// none of this repo's gates in the way. featured-video.test.mjs pins the
+// YouTube player's exact sandbox; this gate is the floor every other frame
+// must meet: a `sandbox` attribute is present, it never grants top navigation,
+// forms, modals or downloads, and a same-origin frame never pairs
+// `allow-same-origin` with `allow-scripts` (on a same-origin document that
+// pair lets the content strip its own sandbox, i.e. it is no sandbox at all).
+// Each rule has a fixture self-test. Zero dependencies. Usage: node --test
+// scripts/page-frames.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
