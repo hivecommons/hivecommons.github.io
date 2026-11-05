@@ -442,7 +442,8 @@ The **Link check** workflow runs every Monday at 09:17 UTC, every 6 hours for
 the availability probe alone, and can also be run manually from the Actions tab.
 On those runs, its separate `availability` job
 requests the live homepage, `/stories/`, a sample of the shortcut redirects,
-`/404.html` and the `/software-factory/` project site over HTTPS and fails unless every one returns HTTP 200 (the list is
+`/404.html` and the /software-factory/ project site (served from the sibling
+`hivecommons/software-factory` repo, so it has no file here) over HTTPS and fails unless every one returns HTTP 200 (the list is
 kept in step with the committed pages by `scripts/availability-probes.test.mjs`).
 Connection/TLS errors and timeouts also fail the job. Requests
 have bounded retries for transient failures. PR and push-to-`main` runs only check
