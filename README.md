@@ -416,7 +416,7 @@ red PR job against.
 - `node --test scripts/issue-forms.test.mjs` — static gate over `.github/ISSUE_TEMPLATE/`:
   `config.yml` and every form parse and `blank_issues_enabled` is boolean; every
   `contact_links[].url` is `https` and a `hivecommons.dev` URL resolves to a committed
-  page; `body[].id` is unique within a form and every `type` is one of GitHub's five
+  page, and the chooser links the `/discord` and `/twitch` shortcuts; `body[].id` is unique within a form and every `type` is one of GitHub's five
   form element types; every `labels[]` entry is in `KNOWN_LABELS`. GitHub silently falls
   back to a blank issue when a form fails to parse, so CI would otherwise stay green on a
   broken form. Each rule has a fixture self-test. Zero dependencies.

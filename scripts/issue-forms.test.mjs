@@ -133,6 +133,12 @@ test("config.yml parses and its contact links are sound", () => {
   assert.deepEqual(configProblems(cfg, siteHas), []);
 });
 
+test("config.yml links the community channels the homepage lists", () => {
+  const cfg = parseYaml(readFileSync(join(DIR, "config.yml"), "utf8"));
+  const urls = cfg.contact_links.map((l) => l.url);
+  for (const path of ["/discord", "/twitch"]) assert.ok(urls.includes(`https://hivecommons.dev${path}`), `no contact link to ${path}`);
+});
+
 test("every issue form parses and is sound", () => {
   const forms = readdirSync(DIR).filter((n) => /\.ya?ml$/.test(n) && n !== "config.yml");
   assert.ok(forms.length > 0, "no issue forms found");
