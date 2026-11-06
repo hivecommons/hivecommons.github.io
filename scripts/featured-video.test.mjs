@@ -78,3 +78,14 @@ test("the Bluefin adopter links to the talk and its original GitHub link remains
   assert.match(html, /<a href="#hive-in-practice"><img src="\/assets\/adopters\/projectbluefin\.png"/);
   assert.match(section, /<a href="https:\/\/github\.com\/projectbluefin">Project Bluefin<\/a>/);
 });
+
+test("What Hive does links the How Hive works video", () => {
+  const hive = /<section\b[^>]*\bid="hive"[^>]*>[\s\S]*?<\/section>/.exec(html)?.[0];
+  assert.ok(hive, "missing What Hive does section");
+  const link = /<a\b[^>]*>Prefer to watch\? See how Hive works<\/a>/.exec(hive)?.[0];
+  assert.ok(link, "missing How Hive works link");
+  const url = new URL(attribute(link, "href"));
+  assert.equal(url.origin, "https://www.youtube.com");
+  assert.equal(url.pathname, "/watch");
+  assert.equal(url.searchParams.get("v"), "uo1KGTyJJyU");
+});

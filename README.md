@@ -60,7 +60,8 @@ red PR job against.
   IntersectionObserver). Zero dependencies.
 - `node --test scripts/featured-video.test.mjs` — checks the Bluefin talk's placement,
   speaker attribution, privacy-enhanced lazy-loaded sandboxed player, 6:09 start without autoplay,
-  direct links to the highlighted and full talk, and the adopter link. Zero dependencies.
+  direct links to the highlighted and full talk, the adopter link, and the "How Hive works"
+  video link under What Hive does. Zero dependencies.
 - `node --test scripts/page-frames.test.mjs` — static gate over every `<iframe>` on every
   committed HTML page: each frame carries a `sandbox` attribute (bare, quoted or
   unquoted) that grants no
