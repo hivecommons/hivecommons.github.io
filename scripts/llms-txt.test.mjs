@@ -443,6 +443,13 @@ export function communityLinks(html) {
   });
 }
 
+// Markdown link targets of the llms.txt "## Community" list, or [] when the
+// section is absent.
+export function communityLinksInLlms(text) {
+  const section = llmsSection(text, "Community");
+  return section ? [...section.matchAll(/^- \[[^\]]*\]\(([^)\s]+)\)/gm)].map((m) => m[1]) : [];
+}
+
 // "A, B, and C run Hive in production." from the adopters note -> ["A","B","C"].
 export function productionAdopters(html) {
   const m = html.match(/<p class="adopters-note">([^<]+?) run Hive in production\./);
@@ -472,14 +479,17 @@ test("fixture: llmsSection stops at the next heading and reports a missing secti
   assert.equal(llmsSection(text, "Adopters"), null);
 });
 
-test("llms.txt Community section links every Join in link on index.html", () => {
+test("fixture: communityLinksInLlms reads only the Community list targets and is empty without the section", () => {
+  const text = "# T\n\n## Community\n\n- [A](https://a)\n- [B, c](https://b/?x=1&y=2)\nprose [ignored](https://p)\n\n## Other\n\n- [C](https://c)\n";
+  assert.deepEqual(communityLinksInLlms(text), ["https://a", "https://b/?x=1&y=2"]);
+  assert.deepEqual(communityLinksInLlms("# T\n\n## Other\n\n- [C](https://c)\n"), []);
+});
+
+test("llms.txt Community section lists exactly the Join in links on index.html", () => {
   const links = communityLinks(INDEX_HTML);
   assert.ok(links.length > 0, "index.html lost its Join in community links");
-  const section = llmsSection(LLMS_TXT, "Community");
-  assert.ok(section, "llms.txt lost its '## Community' section — restore it or update this gate");
-  for (const url of links) {
-    assert.ok(section.includes(`](${url})`), `llms.txt '## Community' omits the index.html Join in link ${url}`);
-  }
+  assert.ok(llmsSection(LLMS_TXT, "Community"), "llms.txt lost its '## Community' section — restore it or update this gate");
+  assertSameSet(links, communityLinksInLlms(LLMS_TXT), "community links");
 });
 
 test("llms.txt Adopters section names the production adopters and links ADOPTERS.md and the How Hive works video", () => {
