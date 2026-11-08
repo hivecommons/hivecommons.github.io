@@ -159,6 +159,34 @@ function assertSameSet(pageNames, llmsNames, what) {
   );
 }
 
+// Absolute URLs llms.txt must carry for the home page's community surface:
+// every "Join in" link in #community, the ADOPTERS.md link and the
+// "See how Hive works" video. Root-relative hrefs resolve against SITE.
+const SITE = "https://hivecommons.dev";
+
+export function absolutize(href) {
+  return href.startsWith("/") ? SITE + href : href;
+}
+
+export function communityHrefs(html) {
+  const s = html.indexOf('id="community"');
+  if (s < 0) return [];
+  const start = html.indexOf("<h3>Join in</h3>", s);
+  const end = html.indexOf("</ul>", start);
+  if (start < 0 || end < 0) return [];
+  return [...html.slice(start, end).matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)].map((m) => absolutize(decode(m[1])));
+}
+
+export function adoptersHref(html) {
+  const m = html.match(/<a href="([^"]+\/ADOPTERS\.md)"/);
+  return m ? decode(m[1]) : null;
+}
+
+export function videoHref(html) {
+  const m = html.match(/<a class="inline-link" href="([^"]+)">[^<]*See how Hive works/);
+  return m ? decode(m[1]) : null;
+}
+
 // --- fixture self-tests ------------------------------------------------------
 
 test("splitProseList handles Oxford and non-Oxford lists, 'and', and single items", () => {
@@ -318,6 +346,20 @@ test("fixture: cruxVersionFromLlms extracts version from llms.txt or returns nul
   assert.equal(cruxVersionFromLlms(""), null);
 });
 
+test("community link extractors read Join in, ADOPTERS.md and video hrefs", () => {
+  const html = `<a class="inline-link" href="https://v.example/x">Prefer to watch? See how Hive works</a>
+<p>Listed in <a href="https://g.example/ADOPTERS.md">ADOPTERS.md</a>.</p>
+<section id="community"><a href="/ignored">x</a><h3>Join in</h3><ul>
+<li><a href="/join">m</a></li><li><a href="https://docs.example">d</a></li></ul></section>`;
+  assert.deepEqual(communityHrefs(html), ["https://hivecommons.dev/join", "https://docs.example"]);
+  assert.equal(adoptersHref(html), "https://g.example/ADOPTERS.md");
+  assert.equal(videoHref(html), "https://v.example/x");
+  assert.deepEqual(communityHrefs("<p>none</p>"), []);
+  assert.deepEqual(communityHrefs('<section id="community"><h3>Other</h3></section>'), []);
+  assert.equal(adoptersHref("<p>none</p>"), null);
+  assert.equal(videoHref("<p>none</p>"), null);
+});
+
 // --- live checks -------------------------------------------------------------
 
 const live = parseLlmsTxt(LLMS_TXT);
@@ -419,4 +461,15 @@ test("hotshot JSON-LD featureList names every released target CLI and the Homebr
     INDEX_HTML.includes('"Installs with Homebrew (brew install hivecommons/hive/hotshot)."'),
     "hotshot JSON-LD featureList omits the Homebrew install",
   );
+});
+
+test("llms.txt carries every Join in link, the ADOPTERS.md link and the How Hive works video from index.html", () => {
+  const hrefs = communityHrefs(INDEX_HTML);
+  assert.ok(hrefs.length > 0, "index.html lost its #community 'Join in' list");
+  const adopters = adoptersHref(INDEX_HTML);
+  assert.ok(adopters, "index.html lost its ADOPTERS.md link");
+  const video = videoHref(INDEX_HTML);
+  assert.ok(video, "index.html lost its 'See how Hive works' video link");
+  const missing = [...hrefs, adopters, video].filter((u) => !LLMS_TXT.includes(`(${u})`));
+  assert.deepEqual(missing, [], "on index.html but missing from llms.txt — add them as markdown links");
 });

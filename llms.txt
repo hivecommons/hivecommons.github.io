@@ -6,6 +6,8 @@ Crux is the agent runtime taken from Hive. Use it without Hive to start agents, 
 
 Hive Commons also maintains Spektacular (Spek), a spec-driven workflow tool; the specs it produces are called speks.
 
+Video: [How Hive works](https://www.youtube.com/watch?v=uo1KGTyJJyU)
+
 ## Projects
 
 - [Hive](https://github.com/hivecommons/hive): control layer for governed, audited fleets of AI coding agents. Docs: https://docs.hivecommons.dev
@@ -16,6 +18,21 @@ Hive Commons also maintains Spektacular (Spek), a spec-driven workflow tool; the
 - [promptargs](https://github.com/hivecommons/promptargs): template arguments for AI prompts; fills `{{variables}}` in prompts for Claude Code, Copilot, Codex, Gemini CLI, Goose, Bob and others.
 - [rationguard](https://github.com/hivecommons/rationguard): detects and rebuts rationalization patterns in AI agent output.
 - [dibs](https://dibs.hivecommons.dev): contributor attribution layer for the AI-agent era, connecting ideators with hive-managed repositories.
+
+## Adopters
+
+KubeStellar Console, tunaos.org and Project Bluefin run Hive in production; Frostyard, Open Horizon, Open Horizon Services and Danathar are pre-production adopters. Full list: [ADOPTERS.md](https://github.com/hivecommons/hive/blob/HEAD/ADOPTERS.md)
+
+## Community
+
+- [Join the mailing list](https://hivecommons.dev/join)
+- [Chat on Discord](https://hivecommons.dev/discord)
+- [Watch the hive live on Twitch](https://hivecommons.dev/twitch)
+- [Biweekly meeting, Thursdays 10:00 AM ET](https://hivecommons.dev/meet)
+- [Agenda and notes](https://hivecommons.dev/agenda)
+- [Meeting recordings](https://hivecommons.dev/tv)
+- [Documentation](https://docs.hivecommons.dev)
+- [Governance, maintainers, and security policy](https://github.com/hivecommons/.github/blob/HEAD/GOVERNANCE.md)
 
 ## Supported agents and inference engines
 
