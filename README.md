@@ -2,8 +2,8 @@ Source for hivecommons.dev (GitHub Pages). Static site: `index.html`, `style.css
 `assets/` — no build step.
 
 Custom domain is pinned via `CNAME`. `llms.txt` carries a short machine-readable summary
-for LLM crawlers (its integration and sponsor lists are gated against `index.html` by
-`scripts/llms-txt.test.mjs`), and `sitemap.xml` lists the canonical top-level pages (not every
+for LLM crawlers (its integration, sponsor, community and adopter lists are gated against
+`index.html` by `scripts/llms-txt.test.mjs`), and `sitemap.xml` lists the canonical top-level pages (not every
 shortcut redirect) for `robots.txt`'s `Sitemap:` entry — when adding a new top-level
 page, add it to `sitemap.xml` too.
 
