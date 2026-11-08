@@ -25,6 +25,23 @@ Hive supports inference engines and gateways including vLLM, llm-d, LiteLLM, IBM
 
 See all integrations: https://docs.hivecommons.dev/docs/hive/integrations
 
+## Adopters
+
+Hive runs in production at KubeStellar Console, tunaos.org and Project Bluefin; other adopters are pre-production. The list is kept in ADOPTERS.md: https://github.com/hivecommons/hive/blob/HEAD/ADOPTERS.md
+
+Video overview, How Hive works: https://www.youtube.com/watch?v=uo1KGTyJJyU
+
+## Community
+
+- [Mailing list](https://hivecommons.dev/join)
+- [Discord](https://hivecommons.dev/discord)
+- [Twitch live stream of the hive](https://hivecommons.dev/twitch)
+- [Biweekly community meeting, Thursdays 10:00 AM ET](https://hivecommons.dev/meet)
+- [Meeting agenda and notes](https://hivecommons.dev/agenda)
+- [Meeting recordings](https://hivecommons.dev/tv)
+- [Documentation](https://docs.hivecommons.dev)
+- [Governance, maintainers and security policy](https://github.com/hivecommons/.github/blob/HEAD/GOVERNANCE.md)
+
 ## Infrastructure thanks
 
 Thanks to Akamai (Linode), Oracle Cloud (OKE), Cloudflare, GitHub Copilot and Bluehost for powering Hive Commons.

@@ -5,8 +5,9 @@
 // the infrastructure sponsors by name. Those lists are hand-copied from the
 // integration chips and the infra-thanks logo row on index.html; nothing else
 // notices when a chip is added, renamed or dropped while the summary keeps
-// advertising the old list. page-meta.test.mjs only checks the links inside
-// llms.txt. Each rule has a fixture self-test. Zero dependencies.
+// advertising the old list. The Community and Adopters sections are gated the
+// same way against the Join in links, the adopters note and the How Hive works
+// video link. page-meta.test.mjs only checks the links inside llms.txt. Each rule has a fixture self-test. Zero dependencies.
 // Usage: node --test scripts/llms-txt.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -419,4 +420,80 @@ test("hotshot JSON-LD featureList names every released target CLI and the Homebr
     INDEX_HTML.includes('"Installs with Homebrew (brew install hivecommons/hive/hotshot)."'),
     "hotshot JSON-LD featureList omits the Homebrew install",
   );
+});
+
+// --- community and adopters ----------------------------------------------------
+
+const SITE_ORIGIN = "https://hivecommons.dev";
+
+// Returns the markdown of an llms.txt "## <heading>" section, or null.
+export function llmsSection(text, heading) {
+  const m = text.match(new RegExp(`^## ${heading}\\s*\\n([\\s\\S]*?)(?=^## |$(?![\\s\\S]))`, "m"));
+  return m ? m[1] : null;
+}
+
+// The "Join in" link targets on index.html, site-relative ones made absolute.
+export function communityLinks(html) {
+  const start = html.indexOf('<div class="community-links">');
+  if (start < 0) return [];
+  const block = html.slice(start, html.indexOf("</ul>", start));
+  return [...block.matchAll(/<a href="([^"]+)"/g)].map((m) => {
+    const href = decode(m[1]);
+    return href.startsWith("/") ? SITE_ORIGIN + href : href;
+  });
+}
+
+// "A, B, and C run Hive in production." from the adopters note -> ["A","B","C"].
+export function productionAdopters(html) {
+  const m = html.match(/<p class="adopters-note">([^<]+?) run Hive in production\./);
+  return m ? splitProseList(decode(m[1])) : [];
+}
+
+const FIXTURE_COMMUNITY_HTML = `
+<div class="community-links"><h3>Join in</h3><ul>
+<li><a href="/join"><svg></svg>Join the mailing list</a></li>
+<li><a href="https://docs.example/?a=1&amp;b=2"><svg></svg>Docs</a></li>
+</ul></div><ul><li><a href="/elsewhere">Not community</a></li></ul>
+<p class="adopters-note">Org A, Org B, and Org C run Hive in production. The others are pre-production.</p>`;
+
+test("fixture: communityLinks reads only the Join in list and makes site-relative links absolute", () => {
+  assert.deepEqual(communityLinks(FIXTURE_COMMUNITY_HTML), [`${SITE_ORIGIN}/join`, "https://docs.example/?a=1&b=2"]);
+  assert.deepEqual(communityLinks("<p>no list</p>"), []);
+});
+
+test("fixture: productionAdopters reads the production names from the adopters note", () => {
+  assert.deepEqual(productionAdopters(FIXTURE_COMMUNITY_HTML), ["Org A", "Org B", "Org C"]);
+  assert.deepEqual(productionAdopters("<p>none</p>"), []);
+});
+
+test("fixture: llmsSection stops at the next heading and reports a missing section as null", () => {
+  const text = "# T\n\n## Community\n\n- [A](https://a)\n\n## Other\n\n- [B](https://b)\n";
+  assert.equal(llmsSection(text, "Community"), "- [A](https://a)\n\n");
+  assert.equal(llmsSection(text, "Adopters"), null);
+});
+
+test("llms.txt Community section links every Join in link on index.html", () => {
+  const links = communityLinks(INDEX_HTML);
+  assert.ok(links.length > 0, "index.html lost its Join in community links");
+  const section = llmsSection(LLMS_TXT, "Community");
+  assert.ok(section, "llms.txt lost its '## Community' section — restore it or update this gate");
+  for (const url of links) {
+    assert.ok(section.includes(`](${url})`), `llms.txt '## Community' omits the index.html Join in link ${url}`);
+  }
+});
+
+test("llms.txt Adopters section names the production adopters and links ADOPTERS.md and the How Hive works video", () => {
+  const section = llmsSection(LLMS_TXT, "Adopters");
+  assert.ok(section, "llms.txt lost its '## Adopters' section — restore it or update this gate");
+  const names = productionAdopters(INDEX_HTML);
+  assert.ok(names.length > 0, "index.html adopters note no longer names its production adopters");
+  for (const name of names) {
+    assert.ok(section.includes(name), `llms.txt '## Adopters' omits production adopter ${name}`);
+  }
+  const adopters = INDEX_HTML.match(/<p class="adopters-note">[\s\S]*?<a href="([^"]+ADOPTERS\.md)">/);
+  assert.ok(adopters, "index.html adopters note lost its ADOPTERS.md link");
+  assert.ok(section.includes(adopters[1]), `llms.txt '## Adopters' omits ${adopters[1]}`);
+  const video = INDEX_HTML.match(/<a class="inline-link" href="([^"]+)">Prefer to watch\? See how Hive works/);
+  assert.ok(video, "index.html lost its How Hive works video link");
+  assert.ok(section.includes(video[1]), `llms.txt '## Adopters' omits the How Hive works video ${video[1]}`);
 });

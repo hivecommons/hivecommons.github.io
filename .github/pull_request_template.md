@@ -23,5 +23,5 @@ Closes #<!-- issue number, if this PR resolves one -->
 - [ ] Shortcut redirects were changed only through the `MAP` in `make-redirects.sh`, followed by `./make-redirects.sh` (no hand-edited redirect pages)
 - [ ] After editing an inline `<script>`, I ran `node scripts/update-csp-hashes.mjs`
 - [ ] A new top-level page is listed in `sitemap.xml`
-- [ ] A change to the integration or sponsor lists in `index.html` is mirrored in `llms.txt`
+- [ ] A change to the integration, sponsor, community-link or adopter lists in `index.html` is mirrored in `llms.txt`
 - [ ] Commits are signed off (`git commit -s`), as the org [CONTRIBUTING.md](https://github.com/hivecommons/.github/blob/main/CONTRIBUTING.md) requires
