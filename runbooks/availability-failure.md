@@ -15,8 +15,10 @@ probe runs (about 12 hours) should be treated as an outage, not a blip.
 
 ## Triage
 
-1. Read the failing step's log: the `::error::` line names the URL and the HTTP status.
-   A connection or TLS error (no status) points at DNS, certificate or network; a
+1. Read the failing step's log: each `::error::` line names a URL and its HTTP status,
+   and the final `N of M probed pages did not return HTTP 200` line tells one path from
+   every path directly.
+   A connection or TLS error (`HTTP 000`) points at DNS, certificate or network; a
    `404` on one path points at content; a `404` or other error on every path points
    at Pages or the custom domain.
 2. Re-run the probe to rule out a transient fault:

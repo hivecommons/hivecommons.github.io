@@ -68,6 +68,15 @@ export function runbookProbedPaths(markdown) {
   return paths;
 }
 
+// Text of the availability loop from `do` to its closing `done`, and what
+// follows it. Returns null when the job or the loop is absent.
+export function probeLoopParts(yaml) {
+  const job = /^\s{2}availability:\s*$([\s\S]*?)(?=^\s{2}\S|(?![\s\S]))/m.exec(yaml);
+  if (!job) return null;
+  const loop = /for\s+url\s+in\s+[\s\S]*?;\s*do\b([\s\S]*?)^\s*done\b([\s\S]*)$/m.exec(job[1]);
+  return loop ? { body: loop[1], after: loop[2] } : null;
+}
+
 export function sitemapLocs(xml) {
   return [...xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => m[1]);
 }
@@ -368,4 +377,19 @@ test("runbooks/availability-failure.md names exactly the paths the links.yml ava
     [],
     "the availability runbook's probe list drifted from .github/workflows/links.yml; update the runbook intro (or, if a probe was dropped, the workflow)",
   );
+});
+
+test("fixture: probeLoopParts separates the loop body from the code after done", () => {
+  const yaml = "jobs:\n  availability:\n    steps:\n      - run: |\n          for url in a b; do\n            exit 1\n          done\n          exit 2\n";
+  const parts = probeLoopParts(yaml);
+  assert.match(parts.body, /exit 1/);
+  assert.match(parts.after, /exit 2/);
+  assert.equal(probeLoopParts("jobs:\n  other:\n"), null);
+});
+
+test("links.yml availability loop probes every URL: `exit` only after `done`, never inside the loop", () => {
+  const parts = probeLoopParts(readFileSync(WORKFLOW, "utf8"));
+  assert.ok(parts, "availability job has no `for url in ...; do ... done` loop");
+  assert.doesNotMatch(parts.body, /^[^#\n]*\bexit\b/m, "exit inside the loop stops at the first failing URL; count failures and exit after done");
+  assert.match(parts.after, /\bexit\s+1\b/, "the job must still fail after done when any probe failed");
 });

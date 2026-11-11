@@ -25,6 +25,10 @@ jobs:
       - name: Check live Pages availability
         shell: bash
         run: |
+          # Probe every URL before failing so the log shows how many pages broke
+          # (one path vs every path); runbooks/availability-failure.md relies on it.
+          probed=0
+          failed=0
           for url in https://hivecommons.dev/ https://hivecommons.dev/stories/ \
                      https://hivecommons.dev/docs/ https://hivecommons.dev/code/ \
                      https://hivecommons.dev/discord/ https://hivecommons.dev/join/ \
@@ -38,12 +42,18 @@ jobs:
             status=$(curl --silent --show-error --output /dev/null \
               --write-out '%{http_code}' --connect-timeout 10 --max-time 30 \
               --retry 2 --retry-delay 5 "$url" || true)
+            probed=$((probed + 1))
             if [[ "$status" != 200 ]]; then
               echo "::error::Live page $url returned HTTP $status (expected 200)"
-              exit 1
+              failed=$((failed + 1))
+              continue
             fi
             echo "$url returned HTTP $status"
           done
+          if (( failed > 0 )); then
+            echo "::error::$failed of $probed probed pages did not return HTTP 200"
+            exit 1
+          fi
 
   links:
     if: github.event_name != 'schedule' || github.event.schedule == '17 9 * * 1'
