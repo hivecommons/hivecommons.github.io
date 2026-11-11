@@ -420,10 +420,16 @@ red PR job against.
 - `node --test scripts/issue-forms.test.mjs` — static gate over `.github/ISSUE_TEMPLATE/`:
   `config.yml` and every form parse and `blank_issues_enabled` is boolean; every
   `contact_links[].url` is `https` and a `hivecommons.dev` URL resolves to a committed
-  page, and the chooser links the `/discord` and `/twitch` shortcuts; `body[].id` is unique within a form and every `type` is one of GitHub's five
+  page, and the chooser links the `/discord` and `/twitch` shortcuts and the community
+  meeting page; `body[].id` is unique within a form and every `type` is one of GitHub's five
   form element types; every `labels[]` entry is in `KNOWN_LABELS`. GitHub silently falls
   back to a blank issue when a form fails to parse, so CI would otherwise stay green on a
   broken form. Each rule has a fixture self-test. Zero dependencies.
+- `node --test scripts/contributing.test.mjs` — static gate over `CONTRIBUTING.md`, which
+  GitHub links from the new-issue and new-PR pages (without it GitHub shows the org-wide
+  guide, whose `v4`/`v5` branch rules are hive's): it must name `main` as the PR target and
+  link the `good first issue` and `help wanted` labels, the Website problem form, Discord and
+  the community meeting. Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/artifact-registry.test.mjs` — advisory (report-only) registry
   check: every tracked file should be covered by a page/asset/script class gate or named
   literally in a `scripts/*.test.mjs` or `scripts/check-*.sh`; unregistered files are
@@ -483,7 +489,9 @@ requirements first (see [issue #73](https://github.com/hivecommons/hivecommons.g
 
 ## Contributing
 
-Contributions follow the org-wide [CONTRIBUTING.md](https://github.com/hivecommons/.github/blob/main/CONTRIBUTING.md);
+Start with [CONTRIBUTING.md](CONTRIBUTING.md): the PR target, the checks, starter issues and
+where to ask. Review and governance follow the org-wide
+[CONTRIBUTING.md](https://github.com/hivecommons/.github/blob/main/CONTRIBUTING.md);
 every commit needs a DCO sign-off (`git commit -s`). Opening a pull request pre-fills
 `.github/pull_request_template.md`, whose checklist covers this repository's own rules: the
 checks under [Local preview and running the checks](#local-preview-and-running-the-checks),

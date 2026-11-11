@@ -24,6 +24,8 @@ export const FORM_TYPES = new Set(["markdown", "textarea", "input", "dropdown", 
 // Labels that exist on the repository; add new labels here in the same PR that uses them.
 export const KNOWN_LABELS = new Set(["bug"]);
 const SITE_ORIGIN = "https://hivecommons.dev";
+// The meetings page (schedule, join link, agenda) every other managed repo's chooser links.
+const MEETINGS_URL = "https://docs.hivecommons.dev/docs/community/meetings";
 
 function scalar(s) {
   s = s.trim();
@@ -137,6 +139,7 @@ test("config.yml links the community channels the homepage lists", () => {
   const cfg = parseYaml(readFileSync(join(DIR, "config.yml"), "utf8"));
   const urls = cfg.contact_links.map((l) => l.url);
   for (const path of ["/discord", "/twitch"]) assert.ok(urls.includes(`https://hivecommons.dev${path}`), `no contact link to ${path}`);
+  assert.ok(urls.includes(MEETINGS_URL), `no contact link to ${MEETINGS_URL}`);
 });
 
 test("every issue form parses and is sound", () => {
