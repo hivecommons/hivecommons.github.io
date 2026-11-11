@@ -8,6 +8,9 @@
 // as a failure). Paths under a `PROJECT_SITES` prefix of check-links.sh are
 // served on hivecommons.dev by a sibling Pages project repo: they have no
 // committed file, so the probe list may name them without resolving to one.
+// runbooks/availability-failure.md restates the probed paths for the on-call
+// reader; its intro must name exactly the paths the job probes, or the runbook
+// sends them looking at the wrong pages (#378 fixed that drift by hand).
 // Each rule has a fixture self-test. Zero dependencies.
 // Usage: node --test scripts/availability-probes.test.mjs
 import { test } from "node:test";
@@ -21,6 +24,7 @@ const ROOT = join(HERE, "..");
 const SITE_ORIGIN = "https://hivecommons.dev";
 const WORKFLOW = join(ROOT, ".github", "workflows", "links.yml");
 const CHECKER = join(ROOT, "scripts", "check-links.sh");
+const RUNBOOK = join(ROOT, "runbooks", "availability-failure.md");
 
 // --- parsing ---------------------------------------------------------------
 
@@ -47,6 +51,21 @@ export function projectSitePrefixes(sh) {
 export function isProjectSitePath(path, prefixes) {
   const bare = path.replace(/[?#].*$/, "");
   return prefixes.some((prefix) => bare.startsWith(prefix));
+}
+
+// Site paths the availability runbook's intro (everything before its first
+// `## ` heading) says the job probes: each `/...` code span and each bare
+// parenthesised (/...) — the latter is how a project-site path served by a
+// sibling repo is written, since doc-paths.test.mjs resolves code spans to
+// committed files. Returns the distinct paths in order of first mention.
+export function runbookProbedPaths(markdown) {
+  const intro = markdown.split(/^## /m)[0];
+  const paths = [];
+  for (const m of intro.matchAll(/`(\/[^`\s]*)`|\((\/[^()\s]*)\)/g)) {
+    const path = m[1] ?? m[2];
+    if (!paths.includes(path)) paths.push(path);
+  }
+  return paths;
 }
 
 export function sitemapLocs(xml) {
@@ -95,6 +114,24 @@ export function probeListProblems(urls, { sitemap, root = ROOT, projectSites = [
   }
   if (!urls.includes(SITE_ORIGIN + "/404.html")) problems.push(`${SITE_ORIGIN}/404.html is not probed (the error page must serve HTTP 200)`);
   if (redirects === 0) problems.push("no redirect shortcut page is probed");
+  return problems;
+}
+
+// The runbook intro and the probe list must name the same paths. The homepage
+// is probed as the bare `/`, which the prose calls "the homepage" rather than
+// spelling out; every other probe must appear verbatim.
+export function runbookProblems(urls, markdown) {
+  const problems = [];
+  const probed = (urls ?? []).filter((u) => u.startsWith(SITE_ORIGIN + "/")).map((u) => u.slice(SITE_ORIGIN.length));
+  const named = runbookProbedPaths(markdown);
+  const intro = markdown.split(/^## /m)[0];
+  if (probed.includes("/") && !/\bhomepage\b/i.test(intro)) problems.push("the job probes the homepage but the runbook intro never says so");
+  for (const path of probed) {
+    if (path !== "/" && !named.includes(path)) problems.push(`the job probes ${path} but the runbook intro does not name it`);
+  }
+  for (const path of named) {
+    if (!probed.includes(path)) problems.push(`the runbook intro names ${path} but the job does not probe it`);
+  }
   return problems;
 }
 
@@ -268,6 +305,43 @@ test("fixture: missing 404.html probe, missing redirect probe, duplicates and fo
   assert.ok(query.some((x) => x.includes("query/fragment")), query.join("\n"));
 });
 
+const GOOD_RUNBOOK = `# Runbook: probe failing
+
+The job requests the live homepage, \`/stories/\`, the \`/docs/\` shortcut redirect,
+\`/llms.txt\`, \`/sitemap.xml\`, \`/robots.txt\`, \`/404.html\` and
+the project site (/software-factory/) over HTTPS. See the [rollback runbook](release-rollback.md)
+and the workflow (\`.github/workflows/links.yml\`).
+
+## Who is affected
+
+Every visitor to \`https://hivecommons.dev/\` and \`/stories/\`; also \`/never-probed/\`.
+`;
+const GOOD_RUNBOOK_LIST = [...GOOD_LIST, `${SITE_ORIGIN}/software-factory/`];
+
+test("fixture: runbook probe paths are the intro's /-prefixed code spans and bare (/...) parentheticals, deduplicated, up to the first ## heading", () => {
+  assert.deepEqual(runbookProbedPaths(GOOD_RUNBOOK), ["/stories/", "/docs/", "/llms.txt", "/sitemap.xml", "/robots.txt", "/404.html", "/software-factory/"]);
+  assert.deepEqual(runbookProbedPaths("Intro names \`/a/\` twice: \`/a/\` and (/a/), plus \`a/b\`, \`.github/x\`, (b/) and (/sp ace/).\n"), ["/a/"]);
+  assert.deepEqual(runbookProbedPaths("No headings and no paths.\n"), []);
+});
+
+test("fixture: a runbook naming exactly the probed paths (and the homepage in prose) passes", () => {
+  assert.deepEqual(runbookProblems(GOOD_RUNBOOK_LIST, GOOD_RUNBOOK), []);
+  // Without a homepage probe the prose need not mention it; foreign URLs are ignored here (probeListProblems reports them).
+  assert.deepEqual(runbookProblems([...GOOD_RUNBOOK_LIST.filter((u) => u !== SITE_ORIGIN + "/"), "https://example.com/"], GOOD_RUNBOOK.replace("live homepage", "live site")), []);
+  assert.deepEqual(runbookProblems(null, "Nothing here.\n"), []);
+});
+
+test("fixture: a probed path the runbook omits, a runbook path the job dropped, and an unmentioned homepage are each reported", () => {
+  const omitted = runbookProblems([...GOOD_RUNBOOK_LIST, `${SITE_ORIGIN}/.well-known/security.txt`], GOOD_RUNBOOK);
+  assert.deepEqual(omitted, ["the job probes /.well-known/security.txt but the runbook intro does not name it"]);
+  const dropped = runbookProblems(GOOD_RUNBOOK_LIST.filter((u) => !u.endsWith("/robots.txt")), GOOD_RUNBOOK);
+  assert.deepEqual(dropped, ["the runbook intro names /robots.txt but the job does not probe it"]);
+  const noHome = runbookProblems(GOOD_RUNBOOK_LIST, GOOD_RUNBOOK.replace("live homepage", "live site"));
+  assert.deepEqual(noHome, ["the job probes the homepage but the runbook intro never says so"]);
+  // A path only named after the first ## heading does not count as a probe claim.
+  assert.ok(!runbookProblems(GOOD_RUNBOOK_LIST, GOOD_RUNBOOK).some((x) => x.includes("/never-probed/")));
+});
+
 // --- the real workflow -----------------------------------------------------
 
 test("check-links.sh declares at least one PROJECT_SITES prefix and each is a /-delimited directory path", () => {
@@ -284,5 +358,14 @@ test("links.yml availability job probes every canonical page, 404.html and a red
     probeListProblems(urls, { sitemap, projectSites }),
     [],
     "the availability probe list in .github/workflows/links.yml drifted from the committed site (fixing it needs a workflow edit)",
+  );
+});
+
+test("runbooks/availability-failure.md names exactly the paths the links.yml availability job probes", () => {
+  const urls = probedUrls(readFileSync(WORKFLOW, "utf8"));
+  assert.deepEqual(
+    runbookProblems(urls, readFileSync(RUNBOOK, "utf8")),
+    [],
+    "the availability runbook's probe list drifted from .github/workflows/links.yml; update the runbook intro (or, if a probe was dropped, the workflow)",
   );
 });
