@@ -273,8 +273,11 @@ red PR job against.
   to a committed page or lies under a `PROJECT_SITES` prefix of `check-links.sh` (served by a
   sibling Pages repo, so probing it is the only way to see it); every canonical page in
   `sitemap.xml` and `/404.html` is probed; at
-  least one redirect shortcut is probed; no duplicates. Fixing a failure means editing the
-  workflow's probe list. Each rule has a fixture self-test. Zero dependencies.
+  least one redirect shortcut is probed; no duplicates; and the intro of
+  `runbooks/availability-failure.md` names exactly the probed paths (the homepage in prose,
+  every other probe verbatim), so the on-call reader is not sent to pages the job never
+  requests. Fixing a failure means editing the workflow's probe list or the runbook intro.
+  Each rule has a fixture self-test. Zero dependencies.
 - `node --test scripts/site-origin.test.mjs` — static gate tying the site origin to `CNAME`,
   the one file GitHub Pages actually reads for the host: `CNAME` must be a single bare
   lowercase DNS host (no scheme, path, port, trailing dot, second line or CRLF); every
