@@ -385,6 +385,7 @@ test("fixture: probeLoopParts separates the loop body from the code after done",
   assert.match(parts.body, /exit 1/);
   assert.match(parts.after, /exit 2/);
   assert.equal(probeLoopParts("jobs:\n  other:\n"), null);
+  assert.equal(probeLoopParts("jobs:\n  availability:\n    steps:\n      - run: curl -fsS a\n"), null, "job without a for-loop");
 });
 
 test("links.yml availability loop probes every URL: `exit` only after `done`, never inside the loop", () => {
