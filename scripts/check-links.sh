@@ -22,6 +22,7 @@ SOFT_404_RE="Page Not Found|>404<|doesn't exist or has moved"
 # no file in this tree, so they are probed live like an external link instead.
 PROJECT_SITES=(
   /software-factory/   # hivecommons/software-factory
+  /benchmarks/         # hivecommons/benchmarks
 )
 
 is_project_site_path() {
