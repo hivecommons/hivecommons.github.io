@@ -200,15 +200,61 @@ export function redirectPageProblems(html) {
   return problems;
 }
 
-// Links in Markdown/llms.txt: relative targets must exist; site-origin URLs must map to a page.
-export function docLinkProblems(text, fileAbs, root = ROOT) {
+// Heading anchors GitHub renders for a Markdown document, slugged the way
+// github-slugger does: lowercase, inline markup stripped, punctuation other
+// than `-`/`_` dropped, each space to `-`, repeats suffixed `-1`, `-2`, …; plus any
+// explicit `id="…"`/`name="…"` on inline HTML. Fenced blocks are skipped so a
+// `# comment` inside ```sh is not a heading.
+export function markdownAnchors(markdown) {
+  const anchors = new Set();
+  const seen = new Map();
+  let inFence = false;
+  for (const line of markdown.split("\n")) {
+    if (/^\s*(```|~~~)/.test(line)) { inFence = !inFence; continue; }
+    if (inFence) continue;
+    for (const m of line.matchAll(/<[a-z][^>]*\s(?:id|name)=["']([^"']+)["']/gi)) anchors.add(m[1]);
+    const h = /^\s{0,3}#{1,6}\s+(.*?)\s*#*\s*$/.exec(line);
+    if (!h) continue;
+    const plain = h[1]
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/<[^>]+>/g, "")
+      .replace(/[`*_~]/g, "");
+    let slug = plain.trim().toLowerCase().replace(/[^\p{L}\p{N} _-]/gu, "").replace(/ /g, "-");
+    const n = seen.get(slug) ?? 0;
+    seen.set(slug, n + 1);
+    if (n > 0) slug = `${slug}-${n}`;
+    anchors.add(slug);
+  }
+  return anchors;
+}
+
+// Links in Markdown/llms.txt: relative targets must exist; a `#fragment` on a
+// Markdown target (or on the document itself) must name a heading it renders;
+// site-origin URLs must map to a page.
+export function docLinkProblems(text, fileAbs, root = ROOT, fs = { existsSync, readFileSync }) {
   const problems = [];
   const dir = dirname(fileAbs);
+  const anchorsOf = new Map();
+  const anchors = (file, source) => {
+    if (!anchorsOf.has(file)) anchorsOf.set(file, markdownAnchors(source ?? fs.readFileSync(file, "utf8")));
+    return anchorsOf.get(file);
+  };
   for (const m of text.matchAll(/\]\(([^)\s]+)\)/g)) {
     const target = m[1];
-    if (/^(https?:|mailto:|#)/i.test(target)) continue;
+    if (/^(https?:|mailto:)/i.test(target)) continue;
+    const fragment = decodeURIComponent(target.replace(/^[^#]*#?/, ""));
+    if (target.startsWith("#")) {
+      if (fragment && !anchors(fileAbs, text).has(fragment)) problems.push(`anchor ${target} is not a heading in this document`);
+      continue;
+    }
     const full = resolve(dir, target.replace(/[?#].*$/, ""));
-    if (!full.startsWith(resolve(root)) || !existsSync(full)) problems.push(`relative link ${target} does not exist`);
+    if (!full.startsWith(resolve(root)) || !fs.existsSync(full)) {
+      problems.push(`relative link ${target} does not exist`);
+      continue;
+    }
+    if (fragment && full.endsWith(".md") && !anchors(full).has(fragment)) {
+      problems.push(`relative link ${target} names an anchor that is not a heading in ${relative(root, full)}`);
+    }
   }
   for (const m of text.matchAll(/https?:\/\/(?:www\.)?hivecommons\.dev(\/[A-Za-z0-9._~\/-]*)?(?=$|[\s)\]>`"'.,;])/g)) {
     const url = SITE_ORIGIN + (m[1] ?? "/");
@@ -341,6 +387,7 @@ test("fixture: siteUrlToFile resolves /, directories, bare files and rejects tra
 
 test("fixture: doc links — dead relative target and dead site URL are reported, externals and placeholders skipped", () => {
   const md = [
+    "# Top",
     "[ok](../README.md) [ext](https://github.com/x) [mail](mailto:a@b) [anchor](#top)",
     "[dead](../no-such-file.md)",
     `${SITE_ORIGIN}/ and ${SITE_ORIGIN}/stories/ are fine; ${SITE_ORIGIN}/nope/ is not.`,
@@ -350,6 +397,47 @@ test("fixture: doc links — dead relative target and dead site URL are reported
   assert.deepEqual(p, [
     "relative link ../no-such-file.md does not exist",
     `site link ${SITE_ORIGIN}/nope/ does not resolve to a committed page`,
+  ]);
+});
+
+test("fixture: markdownAnchors slugs headings like GitHub, de-duplicates, skips fences and keeps explicit ids", () => {
+  const md = [
+    "# Local preview and running the checks",
+    "## `code` & *emphasis*, [a link](x.md) too!",
+    "## Checks",
+    "## Checks",
+    "```sh",
+    "# not a heading",
+    "```",
+    "  ### Trailing hashes ##",
+    '<a id="explicit-id"></a>',
+    "#NoSpaceIsNotAHeading",
+  ].join("\n");
+  assert.deepEqual([...markdownAnchors(md)].sort(), [
+    "checks", "checks-1", "code--emphasis-a-link-too", "explicit-id",
+    "local-preview-and-running-the-checks", "trailing-hashes",
+  ].sort());
+});
+
+test("fixture: doc links — a fragment must be a heading of the target Markdown file or of the document itself", () => {
+  const target = join(ROOT, "fixture-target.md");
+  const fs = {
+    existsSync: (p) => p === target,
+    readFileSync: (p) => (p === target ? "# Intro\n\n## Running the checks\n" : ""),
+  };
+  const md = [
+    "## Here",
+    "[ok](fixture-target.md#running-the-checks) [ok-self](#here) [ok-encoded](fixture-target.md#running%2Dthe%2Dchecks)",
+    "[no-fragment](fixture-target.md) [bare-hash](#)",
+    "[dead](fixture-target.md#runing-the-checks) [dead-self](#there)",
+  ].join("\n");
+  assert.deepEqual(docLinkProblems(md, join(ROOT, "fixture.md"), ROOT, fs), [
+    "relative link fixture-target.md#runing-the-checks names an anchor that is not a heading in fixture-target.md",
+    "anchor #there is not a heading in this document",
+  ]);
+  // A dead file is reported once; its fragment is not then also reported.
+  assert.deepEqual(docLinkProblems("[x](gone.md#intro)", join(ROOT, "fixture.md"), ROOT, fs), [
+    "relative link gone.md#intro does not exist",
   ]);
 });
 
@@ -447,7 +535,7 @@ test("Markdown and llms.txt documents exist to check", () => {
 
 for (const doc of docs) {
   const rel = relative(ROOT, doc);
-  test(`${rel}: relative links exist and hivecommons.dev links resolve to committed pages`, () => {
+  test(`${rel}: relative links and their heading anchors exist and hivecommons.dev links resolve to committed pages`, () => {
     assert.deepEqual(docLinkProblems(readFileSync(doc, "utf8"), doc), []);
   });
 }
