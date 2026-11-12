@@ -29,6 +29,8 @@ See all integrations: https://docs.hivecommons.dev/docs/hive/integrations
 
 Hive runs in production at KubeStellar Console, tunaos.org and Project Bluefin; other adopters are pre-production. The list is kept in ADOPTERS.md: https://github.com/hivecommons/hive/blob/HEAD/ADOPTERS.md
 
+Live benchmarks: real pull-request outcomes per model and agent across the hosted fleet (merge rate, CI first-try, estimated cost), published at the Benchmarks page linked from the site navigation; data, schema and methodology: https://github.com/hivecommons/benchmarks
+
 Video overview, How Hive works: https://www.youtube.com/watch?v=uo1KGTyJJyU
 
 ## Community

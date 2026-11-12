@@ -702,8 +702,9 @@ h1 {
   .page-hero { background-image: radial-gradient(900px 520px at 78% 10%, #ecdcb4 0%, transparent 62%); }
 }
 @media (max-width: 52rem) {
-  .page-hero-grid, .story-steps, .story-grid, .story-stats { grid-template-columns: 1fr; }
+  .page-hero-grid, .story-steps, .story-grid, .story-stats, .benchmarks-grid { grid-template-columns: 1fr; }
   .story-art { order: -1; }
+  .benchmarks-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* ---------- footer ---------- */
@@ -796,3 +797,9 @@ button.btn { cursor: pointer; font-family: inherit; }
   .story-field > label, .story-field-label { min-height: auto; }
   .story-count-row, .story-dialog-head { flex-direction: column; }
 }
+
+/* live benchmarks band */
+.benchmarks-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: center; }
+.benchmarks-copy h2 { max-width: 20ch; }
+.benchmarks-copy p:not(.kicker) { margin-top: 1rem; color: var(--ink-2); max-width: 62ch; }
+.benchmarks-stats { grid-template-columns: 1fr; gap: 1.25rem; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); }
