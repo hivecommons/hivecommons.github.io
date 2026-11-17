@@ -16,6 +16,7 @@ Hive Commons also maintains Spektacular (Spek), a spec-driven workflow tool; the
 - [promptargs](https://github.com/hivecommons/promptargs): template arguments for AI prompts; fills `{{variables}}` in prompts for Claude Code, Copilot, Codex, Gemini CLI, Goose, Bob and others.
 - [rationguard](https://github.com/hivecommons/rationguard): detects and rebuts rationalization patterns in AI agent output.
 - [dibs](https://dibs.hivecommons.dev): contributor attribution layer for the AI-agent era, connecting ideators with hive-managed repositories.
+- [quorum](https://github.com/hivecommons/quorum): lets AI agents take part in live Microsoft Teams, Google Meet, Zoom and Discord meetings; streams a per-speaker transcript and exposes the meeting as Model Context Protocol (MCP) tools.
 
 ## Supported agents and inference engines
 
