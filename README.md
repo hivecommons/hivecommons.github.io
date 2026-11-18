@@ -485,6 +485,8 @@ requirements first (see [issue #73](https://github.com/hivecommons/hivecommons.g
 
 **OpenSSF Scorecard** (`.github/workflows/scorecard.yml`) — Runs OpenSSF security scorecard analysis on every push to `main`, weekly (cron `23 5 * * 1`), and on manual dispatch from the Actions tab. Results are published to GitHub's code scanning dashboard.
 
+**FOSSA license scan** (`.github/workflows/fossa.yml`) — Uploads the repository to the CNCF FOSSA instance on every push to `main` and every pull request targeting `main`, and on manual dispatch from the Actions tab. Pull requests also run a license policy test. The scan is skipped when the `FOSSA_API_KEY` secret is not configured.
+
 **Close linked issues** (`.github/workflows/close-linked-issues.yml`) — Automatically closes issues linked to a closed pull request when a PR transitions to `closed`.
 
 **Incident response** — When a bad deploy or incident impacts visitors of `hivecommons.dev` (broken pages, dead redirects, domain issues), use the [postmortem template](runbooks/postmortem-template.md) to document it blamelessly and fact-based. Coordinate recovery using the [release-rollback runbook](runbooks/release-rollback.md).
